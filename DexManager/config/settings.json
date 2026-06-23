@@ -1,0 +1,74 @@
+{
+  "SchemaVersion": 7,
+  "Paths": {
+    "AdbPath": "",
+    "AdbSelectionMode": 0,
+    "Win7AdbPath": "tools\\adb\\legacy\\adb.exe",
+    "ModernAdbPath": "tools\\adb\\modern\\adb.exe",
+    "ScrcpyPath": "tools\\scrcpy\\scrcpy.exe",
+    "ScreenshotFolder": "screenshot",
+    "DeviceScreenshotFolder": "/sdcard/DCIM/DeX Screenshots",
+    "LogFolder": "logs"
+  },
+  "VirtualDisplay": {
+    "Width": 1600,
+    "Height": 900,
+    "Dpi": 150,
+    "Suffix": "hdmi",
+    "ReuseExistingDisplay": true
+  },
+  "Scrcpy": {
+    "BitRate": "20M",
+    "MaxFps": 60,
+    "WindowTitle": "DEX Manager - Scrcpy",
+    "TurnScreenOff": true,
+    "UseHidKeyboard": true,
+    "UseHidMouse": true,
+    "ForceStopStartApp": true,
+    "StartAppPackage": "com.sec.android.app.sbrowser",
+    "AdditionalArguments": "",
+    "StayAwake": true
+  },
+  "Timing": {
+    "DeviceMonitorIntervalMs": 1000,
+    "DisconnectMonitorIntervalMs": 2000,
+    "ConnectedStartDelayMs": 3000,
+    "AdbWakeUpDelayMs": 3000,
+    "AutoHideIdleSeconds": 30,
+    "CaptureWaitSeconds": 5,
+    "ProcessTimeoutMs": 15000
+  },
+  "Features": {
+    "StartWithWindows": false,
+    "StartMinimizedToTray": true,
+    "RegisterAdbPathAutomatically": false,
+    "ScrcpyWakeUpMode": 1,
+    "AutoHideEnabled": true,
+    "PushCaptureToDevice": true,
+    "ResetVirtualDisplayOnStop": true,
+    "DisableStayAwakeOnStop": true,
+    "AutoStartDexOnDeviceConnected": true
+  },
+  "KeyMappings": {
+    "CaptureHotkey": "F8",
+    "ExitHotkey": "LeftAlt+F8",
+    "UseLowLevelHotkeys": true,
+    "LogKeyboardDiagnostics": false,
+    "ConvertKoreanEnglishKey": true,
+    "KoreanEnglishInputMode": 1,
+    "HandleRightWindowsKey": true,
+    "ConvertEnterToShiftEnter": true,
+    "EnterInputMode": 1,
+    "IgnoreShiftSpace": true
+  },
+  "LastSuccess": {
+    "Width": 0,
+    "Height": 0,
+    "Dpi": 0,
+    "AdbPath": "",
+    "ScrcpyPath": "",
+    "ScrcpyArguments": "",
+    "DisplayId": 0,
+    "SavedAtUtc": ""
+  }
+}

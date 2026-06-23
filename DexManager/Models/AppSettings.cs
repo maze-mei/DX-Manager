@@ -1,0 +1,290 @@
+using System.ComponentModel;
+using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
+
+namespace DexManager.Models
+{
+    [DataContract]
+    public sealed class AppSettings
+    {
+        [DataMember(Order = 1)] public int SchemaVersion { get; set; }
+        [DataMember(Order = 2)] public PathSettings Paths { get; set; }
+        [DataMember(Order = 3)] public VirtualDisplaySettings VirtualDisplay { get; set; }
+        [DataMember(Order = 4)] public ScrcpySettings Scrcpy { get; set; }
+        [DataMember(Order = 5)] public TimingSettings Timing { get; set; }
+        [DataMember(Order = 6)] public FeatureSettings Features { get; set; }
+        [DataMember(Order = 7)] public KeyMappingSettings KeyMappings { get; set; }
+        [DataMember(Order = 8)] public LastSuccessSettings LastSuccess { get; set; }
+
+        public static AppSettings CreateDefault()
+        {
+            return new AppSettings
+            {
+                SchemaVersion = 7,
+                Paths = new PathSettings
+                {
+                    AdbPath = string.Empty,
+                    AdbSelectionMode = AdbSelectionMode.Auto,
+                    Win7AdbPath = @"tools\adb\legacy\adb.exe",
+                    ModernAdbPath = @"tools\adb\modern\adb.exe",
+                    ScrcpyPath = @"tools\scrcpy\scrcpy.exe",
+                    ScreenshotFolder = "screenshot",
+                    DeviceScreenshotFolder = "/sdcard/DCIM/DeX Screenshots",
+                    LogFolder = "logs"
+                },
+                VirtualDisplay = new VirtualDisplaySettings
+                {
+                    Width = 1600,
+                    Height = 900,
+                    Dpi = 150,
+                    Suffix = "hdmi",
+                    ReuseExistingDisplay = true
+                },
+                Scrcpy = new ScrcpySettings
+                {
+                    BitRate = "20M",
+                    MaxFps = 60,
+                    WindowTitle = "DEX Manager - Scrcpy",
+                    TurnScreenOff = true,
+                    UseHidKeyboard = true,
+                    UseHidMouse = true,
+                    ForceStopStartApp = true,
+                    StartAppPackage = "com.sec.android.app.sbrowser",
+                    AdditionalArguments = string.Empty,
+                    StayAwake = true
+                },
+                Timing = new TimingSettings
+                {
+                    DeviceMonitorIntervalMs = 1000,
+                    DisconnectMonitorIntervalMs = 2000,
+                    ConnectedStartDelayMs = 3000,
+                    AdbWakeUpDelayMs = 3000,
+                    AutoHideIdleSeconds = 30,
+                    CaptureWaitSeconds = 5,
+                    ProcessTimeoutMs = 15000
+                },
+                Features = new FeatureSettings
+                {
+                    StartWithWindows = false,
+                    StartMinimizedToTray = true,
+                    RegisterAdbPathAutomatically = false,
+                    ScrcpyWakeUpMode = ScrcpyWakeUpMode.OnAdbFailure,
+                    AutoHideEnabled = true,
+                    PushCaptureToDevice = true,
+                    ResetVirtualDisplayOnStop = true,
+                    DisableStayAwakeOnStop = true,
+                    AutoStartDexOnDeviceConnected = true
+                },
+                KeyMappings = new KeyMappingSettings
+                {
+                    CaptureHotkey = "F8",
+                    ExitHotkey = "LeftAlt+F8",
+                    UseLowLevelHotkeys = true,
+                    LogKeyboardDiagnostics = false,
+                    ConvertKoreanEnglishKey = true,
+                    KoreanEnglishInputMode = KeyInputMode.SendInputScanCode,
+                    HandleRightWindowsKey = true,
+                    ConvertEnterToShiftEnter = true,
+                    EnterInputMode = KeyInputMode.SendInputScanCode,
+                    IgnoreShiftSpace = true
+                },
+                LastSuccess = new LastSuccessSettings()
+            };
+        }
+
+        public void EnsureDefaults()
+        {
+            var defaults = CreateDefault();
+
+            if (Paths == null) Paths = defaults.Paths;
+            if (VirtualDisplay == null) VirtualDisplay = defaults.VirtualDisplay;
+            if (Scrcpy == null) Scrcpy = defaults.Scrcpy;
+            if (Timing == null) Timing = defaults.Timing;
+            if (Features == null) Features = defaults.Features;
+            if (KeyMappings == null) KeyMappings = defaults.KeyMappings;
+            if (LastSuccess == null) LastSuccess = defaults.LastSuccess;
+            var oldSchemaVersion = SchemaVersion;
+            if (SchemaVersion <= 0) SchemaVersion = defaults.SchemaVersion;
+
+            if (string.IsNullOrWhiteSpace(KeyMappings.CaptureHotkey))
+                KeyMappings.CaptureHotkey = defaults.KeyMappings.CaptureHotkey;
+            if (string.IsNullOrWhiteSpace(KeyMappings.ExitHotkey))
+                KeyMappings.ExitHotkey = defaults.KeyMappings.ExitHotkey;
+            if (oldSchemaVersion < 2)
+            {
+                KeyMappings.UseLowLevelHotkeys = defaults.KeyMappings.UseLowLevelHotkeys;
+                KeyMappings.LogKeyboardDiagnostics = defaults.KeyMappings.LogKeyboardDiagnostics;
+                KeyMappings.KoreanEnglishInputMode = defaults.KeyMappings.KoreanEnglishInputMode;
+                SchemaVersion = defaults.SchemaVersion;
+            }
+            if (oldSchemaVersion < 3)
+            {
+                KeyMappings.EnterInputMode = defaults.KeyMappings.EnterInputMode;
+                SchemaVersion = defaults.SchemaVersion;
+            }
+            if (oldSchemaVersion < 4)
+            {
+                KeyMappings.ConvertEnterToShiftEnter =
+                    defaults.KeyMappings.ConvertEnterToShiftEnter;
+                SchemaVersion = defaults.SchemaVersion;
+            }
+            if (oldSchemaVersion < 5)
+            {
+                KeyMappings.ConvertEnterToShiftEnter =
+                    defaults.KeyMappings.ConvertEnterToShiftEnter;
+                SchemaVersion = defaults.SchemaVersion;
+            }
+            if (oldSchemaVersion < 6)
+            {
+                Paths.AdbSelectionMode = AdbSelectionMode.Auto;
+                Paths.Win7AdbPath = defaults.Paths.Win7AdbPath;
+                Paths.ModernAdbPath = defaults.Paths.ModernAdbPath;
+                SchemaVersion = defaults.SchemaVersion;
+            }
+            if (oldSchemaVersion < 7)
+            {
+                Scrcpy.StayAwake = HasStayAwakeArgument(
+                    Scrcpy.AdditionalArguments) || defaults.Scrcpy.StayAwake;
+                Scrcpy.AdditionalArguments = RemoveStayAwakeArgument(
+                    Scrcpy.AdditionalArguments);
+                SchemaVersion = defaults.SchemaVersion;
+            }
+            if (string.IsNullOrWhiteSpace(Paths.Win7AdbPath))
+                Paths.Win7AdbPath = defaults.Paths.Win7AdbPath;
+            if (string.IsNullOrWhiteSpace(Paths.ModernAdbPath))
+                Paths.ModernAdbPath = defaults.Paths.ModernAdbPath;
+            if (!System.Enum.IsDefined(
+                typeof(AdbSelectionMode),
+                Paths.AdbSelectionMode))
+            {
+                Paths.AdbSelectionMode = AdbSelectionMode.Auto;
+            }
+            if (!System.Enum.IsDefined(typeof(KeyInputMode), KeyMappings.KoreanEnglishInputMode))
+                KeyMappings.KoreanEnglishInputMode = defaults.KeyMappings.KoreanEnglishInputMode;
+            if (!System.Enum.IsDefined(typeof(KeyInputMode), KeyMappings.EnterInputMode))
+                KeyMappings.EnterInputMode = defaults.KeyMappings.EnterInputMode;
+        }
+
+        private static bool HasStayAwakeArgument(string value)
+        {
+            return Regex.IsMatch(
+                value ?? string.Empty,
+                @"(?<!\S)(?:-w|--stay-awake)(?!\S)",
+                RegexOptions.IgnoreCase);
+        }
+
+        private static string RemoveStayAwakeArgument(string value)
+        {
+            return Regex.Replace(
+                value ?? string.Empty,
+                @"(?<!\S)(?:-w|--stay-awake)(?!\S)",
+                string.Empty,
+                RegexOptions.IgnoreCase).Trim();
+        }
+    }
+
+    [DataContract]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public sealed class PathSettings
+    {
+        [DataMember(Order = 1)] public string AdbPath { get; set; }
+        [DataMember(Order = 2)] public AdbSelectionMode AdbSelectionMode { get; set; }
+        [DataMember(Order = 3)] public string Win7AdbPath { get; set; }
+        [DataMember(Order = 4)] public string ModernAdbPath { get; set; }
+        [DataMember(Order = 5)] public string ScrcpyPath { get; set; }
+        [DataMember(Order = 6)] public string ScreenshotFolder { get; set; }
+        [DataMember(Order = 7)] public string DeviceScreenshotFolder { get; set; }
+        [DataMember(Order = 8)] public string LogFolder { get; set; }
+    }
+
+    public enum AdbSelectionMode
+    {
+        Auto = 0,
+        Manual = 1
+    }
+
+    [DataContract]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public sealed class VirtualDisplaySettings
+    {
+        [DataMember(Order = 1)] public int Width { get; set; }
+        [DataMember(Order = 2)] public int Height { get; set; }
+        [DataMember(Order = 3)] public int Dpi { get; set; }
+        [DataMember(Order = 4)] public string Suffix { get; set; }
+        [DataMember(Order = 5)] public bool ReuseExistingDisplay { get; set; }
+    }
+
+    [DataContract]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public sealed class ScrcpySettings
+    {
+        [DataMember(Order = 1)] public string BitRate { get; set; }
+        [DataMember(Order = 2)] public int MaxFps { get; set; }
+        [DataMember(Order = 3)] public string WindowTitle { get; set; }
+        [DataMember(Order = 4)] public bool TurnScreenOff { get; set; }
+        [DataMember(Order = 5)] public bool UseHidKeyboard { get; set; }
+        [DataMember(Order = 6)] public bool UseHidMouse { get; set; }
+        [DataMember(Order = 7)] public bool ForceStopStartApp { get; set; }
+        [DataMember(Order = 8)] public string StartAppPackage { get; set; }
+        [DataMember(Order = 9)] public string AdditionalArguments { get; set; }
+        [DataMember(Order = 10)] public bool StayAwake { get; set; }
+    }
+
+    [DataContract]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public sealed class TimingSettings
+    {
+        [DataMember(Order = 1)] public int DeviceMonitorIntervalMs { get; set; }
+        [DataMember(Order = 2)] public int DisconnectMonitorIntervalMs { get; set; }
+        [DataMember(Order = 3)] public int ConnectedStartDelayMs { get; set; }
+        [DataMember(Order = 4)] public int AdbWakeUpDelayMs { get; set; }
+        [DataMember(Order = 5)] public int AutoHideIdleSeconds { get; set; }
+        [DataMember(Order = 6)] public int CaptureWaitSeconds { get; set; }
+        [DataMember(Order = 7)] public int ProcessTimeoutMs { get; set; }
+    }
+
+    [DataContract]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public sealed class FeatureSettings
+    {
+        [DataMember(Order = 1)] public bool StartWithWindows { get; set; }
+        [DataMember(Order = 2)] public bool StartMinimizedToTray { get; set; }
+        [DataMember(Order = 3)] public bool RegisterAdbPathAutomatically { get; set; }
+        [DataMember(Order = 4)] public ScrcpyWakeUpMode ScrcpyWakeUpMode { get; set; }
+        [DataMember(Order = 5)] public bool AutoHideEnabled { get; set; }
+        [DataMember(Order = 6)] public bool PushCaptureToDevice { get; set; }
+        [DataMember(Order = 7)] public bool ResetVirtualDisplayOnStop { get; set; }
+        [DataMember(Order = 8)] public bool DisableStayAwakeOnStop { get; set; }
+        [DataMember(Order = 9)] public bool AutoStartDexOnDeviceConnected { get; set; }
+    }
+
+    [DataContract]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public sealed class KeyMappingSettings
+    {
+        [DataMember(Order = 1)] public string CaptureHotkey { get; set; }
+        [DataMember(Order = 2)] public string ExitHotkey { get; set; }
+        [DataMember(Order = 3)] public bool UseLowLevelHotkeys { get; set; }
+        [DataMember(Order = 4)] public bool LogKeyboardDiagnostics { get; set; }
+        [DataMember(Order = 5)] public bool ConvertKoreanEnglishKey { get; set; }
+        [DataMember(Order = 6)] public KeyInputMode KoreanEnglishInputMode { get; set; }
+        [DataMember(Order = 7)] public bool HandleRightWindowsKey { get; set; }
+        [DataMember(Order = 8)] public bool ConvertEnterToShiftEnter { get; set; }
+        [DataMember(Order = 9)] public KeyInputMode EnterInputMode { get; set; }
+        [DataMember(Order = 10)] public bool IgnoreShiftSpace { get; set; }
+    }
+
+    public enum KeyInputMode
+    {
+        SendInputVirtualKey = 0,
+        SendInputScanCode = 1,
+        Adb = 2
+    }
+
+    public enum ScrcpyWakeUpMode
+    {
+        Disabled = 0,
+        OnAdbFailure = 1,
+        AlwaysOnStartup = 2
+    }
+}

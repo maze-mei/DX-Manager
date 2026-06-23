@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" Condition="false" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{73D79582-CC69-4AEC-A24E-F3755E77A32C}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>DexManager</RootNamespace>
+    <AssemblyName>DexManager</AssemblyName>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Forms\MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\CaptureHintOverlayForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\LogForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RegionSelectionForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\SettingsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\EnvironmentCheckForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ThemedControls.cs" />
+    <Compile Include="Models\AppSettings.cs" />
+    <Compile Include="Models\AdbDeviceInfo.cs" />
+    <Compile Include="Models\LastSuccessSettings.cs" />
+    <Compile Include="Models\ProcessResult.cs" />
+    <Compile Include="Models\DeviceState.cs" />
+    <Compile Include="Models\EnvironmentCheckItem.cs" />
+    <Compile Include="Models\ScrcpyAppInfo.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\LogService.cs" />
+    <Compile Include="Services\AdbService.cs" />
+    <Compile Include="Services\AutoHideService.cs" />
+    <Compile Include="Services\AutoStartService.cs" />
+    <Compile Include="Services\CaptureCoordinator.cs" />
+    <Compile Include="Services\CaptureService.cs" />
+    <Compile Include="Services\DeviceMonitorService.cs" />
+    <Compile Include="Services\EnvironmentCheckService.cs" />
+    <Compile Include="Services\DexOrchestrator.cs" />
+    <Compile Include="Services\PathService.cs" />
+    <Compile Include="Services\HotkeyService.cs" />
+    <Compile Include="Services\KeyMappingService.cs" />
+    <Compile Include="Services\ScrcpyService.cs" />
+    <Compile Include="Services\SettingsService.cs" />
+    <Compile Include="Services\TrayService.cs" />
+    <Compile Include="Services\VirtualDisplayService.cs" />
+    <Compile Include="Utils\ProcessRunner.cs" />
+    <Compile Include="Utils\NativeMethods.cs" />
+    <Compile Include="Utils\WindowsVersionHelper.cs" />
+    <Compile Include="Utils\AdminHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="app.manifest" />
+    <None Include="README.md" />
+    <None Include="config\settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Content Include="tools\scrcpy\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="tools\adb\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

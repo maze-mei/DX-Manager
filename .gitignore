@@ -1,0 +1,23 @@
+# Visual Studio user and build output
+.vs/
+**/[Bb]in/
+**/[Oo]bj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Local build helper downloaded for this machine
+.build-tools/
+
+# Runtime-only data
+**/logs/
+**/screenshots/
+DexManager/screenshot/*
+!DexManager/screenshot/.gitkeep
+*.log
+*.tmp
+
+# NuGet restore output
+packages/
+*.nupkg
