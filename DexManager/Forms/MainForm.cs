@@ -51,6 +51,10 @@ namespace DexManager.Forms
         private readonly ComboBox _startAppBox;
         private readonly Button _loadAppsButton;
         private readonly Label _modeHintLabel;
+        private ThemedButton _dexModeButton;
+        private ThemedButton _singleModeButton1;
+        private ThemedButton _singleModeButton2;
+        private ThemedButton _singleModeButton3;
         private DeviceState _lastDeviceState;
         private string _connectionError;
         private bool _allowExit;
@@ -478,8 +482,8 @@ namespace DexManager.Forms
             _heightBox.Visible = custom;
             _widthLabel.Visible = custom;
             _heightLabel.Visible = custom;
-            _dpiBox.Location = new Point(custom ? 515 : 495, 263);
-            _dpiLabel.Location = new Point(custom ? 480 : 425, 269);
+            _dpiBox.Location = new Point(495, 263);
+            _dpiLabel.Location = new Point(425, 269);
             if (!custom)
             {
                 _widthBox.Value = preset.Width;
@@ -784,21 +788,21 @@ namespace DexManager.Forms
                 Text = "모드"
             });
 
-            var dexButton = CreateSidebarButton("DeX", 68, true);
-            dexButton.Click += delegate { SelectDexMode(); };
-            sidebar.Controls.Add(dexButton);
+            _dexModeButton = CreateSidebarButton("DeX", 68, true);
+            _dexModeButton.Click += delegate { SelectDexMode(); };
+            sidebar.Controls.Add(_dexModeButton);
 
-            var single1 = CreateSidebarButton("단일창 1", 110, false);
-            single1.Click += delegate { SelectSingleWindowPreview(1); };
-            sidebar.Controls.Add(single1);
+            _singleModeButton1 = CreateSidebarButton("단일창 1", 110, false);
+            _singleModeButton1.Click += delegate { SelectSingleWindowPreview(1); };
+            sidebar.Controls.Add(_singleModeButton1);
 
-            var single2 = CreateSidebarButton("단일창 2", 152, false);
-            single2.Click += delegate { SelectSingleWindowPreview(2); };
-            sidebar.Controls.Add(single2);
+            _singleModeButton2 = CreateSidebarButton("단일창 2", 152, false);
+            _singleModeButton2.Click += delegate { SelectSingleWindowPreview(2); };
+            sidebar.Controls.Add(_singleModeButton2);
 
-            var single3 = CreateSidebarButton("단일창 3", 194, false);
-            single3.Click += delegate { SelectSingleWindowPreview(3); };
-            sidebar.Controls.Add(single3);
+            _singleModeButton3 = CreateSidebarButton("단일창 3", 194, false);
+            _singleModeButton3.Click += delegate { SelectSingleWindowPreview(3); };
+            sidebar.Controls.Add(_singleModeButton3);
 
             sidebar.Controls.Add(new Label
             {
@@ -826,6 +830,7 @@ namespace DexManager.Forms
 
         private void SelectDexMode()
         {
+            SetSelectedModeButton(0);
             _modeHintLabel.Text = "DeX 모드";
             _startButton.Text = "DeX 시작";
             _stopButton.Text = "DeX 중지";
@@ -835,6 +840,7 @@ namespace DexManager.Forms
 
         private void SelectSingleWindowPreview(int slot)
         {
+            SetSelectedModeButton(slot);
             _modeHintLabel.Text = "단일창 " + slot + " 모드 UI 미리보기";
             _startButton.Text = "단일창 시작";
             _stopButton.Text = "단일창 중지";
@@ -844,6 +850,21 @@ namespace DexManager.Forms
                 Color.FromArgb(37, 99, 235),
                 "단일창 " + slot + " 준비 중",
                 "아직 실행 로직은 연결하지 않았습니다. 화면 구성 미리보기입니다.");
+        }
+
+        private void SetSelectedModeButton(int slot)
+        {
+            SetButtonPrimary(_dexModeButton, slot == 0);
+            SetButtonPrimary(_singleModeButton1, slot == 1);
+            SetButtonPrimary(_singleModeButton2, slot == 2);
+            SetButtonPrimary(_singleModeButton3, slot == 3);
+        }
+
+        private static void SetButtonPrimary(ThemedButton button, bool selected)
+        {
+            if (button == null) return;
+            button.Primary = selected;
+            button.Invalidate();
         }
 
         private void AddTopMenu(string text, int x, Action action)
