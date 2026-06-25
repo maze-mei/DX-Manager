@@ -76,16 +76,9 @@ namespace DexManager.Services
                     throw new InvalidOperationException(
                         "승인된 ADB 장치가 연결되어 있지 않습니다.");
 
-                if (!_virtualDisplayService.EnsureVirtualDisplay(
+                var displayId = _virtualDisplayService.EnsureVirtualDisplay(
                     _settings.VirtualDisplay,
-                    _settings.Timing.ConnectedStartDelayMs))
-                {
-                    throw new InvalidOperationException(
-                        "가상 디스플레이를 생성하지 못했습니다.");
-                }
-
-                var displayId = _virtualDisplayService.GetPreferredVirtualDisplayId();
-
+                    _settings.Timing.ConnectedStartDelayMs);
                 _scrcpyService.Start(_settings.Scrcpy, displayId);
                 SaveLastSuccess(displayId);
                 _logService.Info("DeX 실행 흐름을 완료했습니다.");
@@ -154,15 +147,9 @@ namespace DexManager.Services
 
                 Thread.Sleep(1000);
 
-                if (!_virtualDisplayService.EnsureVirtualDisplay(
+                var displayId = _virtualDisplayService.EnsureVirtualDisplay(
                     _settings.VirtualDisplay,
-                    _settings.Timing.ConnectedStartDelayMs))
-                {
-                    throw new InvalidOperationException(
-                        "새 가상 디스플레이를 생성하지 못했습니다.");
-                }
-
-                var displayId = _virtualDisplayService.GetPreferredVirtualDisplayId();
+                    _settings.Timing.ConnectedStartDelayMs);
                 _scrcpyService.Start(_settings.Scrcpy, displayId);
                 SaveLastSuccess(displayId);
                 _logService.Info("새 실행 설정을 즉시 적용했습니다.");

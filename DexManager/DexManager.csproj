@@ -66,6 +66,7 @@
     <Compile Include="Models\LastSuccessSettings.cs" />
     <Compile Include="Models\ProcessResult.cs" />
     <Compile Include="Models\DeviceState.cs" />
+    <Compile Include="Models\DisplayInfo.cs" />
     <Compile Include="Models\EnvironmentCheckItem.cs" />
     <Compile Include="Models\ScrcpyAppInfo.cs" />
     <Compile Include="Program.cs" />
