@@ -90,7 +90,7 @@ namespace DexManager.Forms
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = Color.FromArgb(248, 250, 252);
             Font = new Font("Segoe UI", 9F, FontStyle.Regular);
-            ClientSize = new Size(640, 616);
+            ClientSize = new Size(640, 650);
             MinimumSize = Size;
 
             Controls.Add(new Label
