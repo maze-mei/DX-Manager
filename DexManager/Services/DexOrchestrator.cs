@@ -14,6 +14,7 @@ namespace DexManager.Services
         private readonly LogService _logService;
         private readonly AppSettings _settings;
         private int _operationRunning;
+        private ManagedDisplaySession _currentSession;
 
         public DexOrchestrator(
             AdbService adbService,
@@ -34,6 +35,11 @@ namespace DexManager.Services
         public bool IsRunning
         {
             get { return _scrcpyService.IsRunning; }
+        }
+
+        public ManagedDisplaySession CurrentSession
+        {
+            get { return _currentSession; }
         }
 
         public Task StartAsync()
@@ -80,6 +86,7 @@ namespace DexManager.Services
                     _settings.VirtualDisplay,
                     _settings.Timing.ConnectedStartDelayMs);
                 _scrcpyService.Start(_settings.Scrcpy, displayId);
+                TrackSession("DeX", displayId);
                 SaveLastSuccess(displayId);
                 _logService.Info("DeX 실행 흐름을 완료했습니다.");
             }
@@ -105,6 +112,7 @@ namespace DexManager.Services
             try
             {
                 _scrcpyService.Stop();
+                ClearSession();
 
                 if (_settings.Features.ResetVirtualDisplayOnStop)
                     _virtualDisplayService.Reset();
@@ -142,6 +150,7 @@ namespace DexManager.Services
 
                 _logService.Info("새 실행 설정 적용을 위해 기존 가상화면을 제거합니다.");
                 _scrcpyService.Stop();
+                ClearSession();
                 if (!_virtualDisplayService.Reset())
                     throw new InvalidOperationException("기존 가상화면을 제거하지 못했습니다.");
 
@@ -151,6 +160,7 @@ namespace DexManager.Services
                     _settings.VirtualDisplay,
                     _settings.Timing.ConnectedStartDelayMs);
                 _scrcpyService.Start(_settings.Scrcpy, displayId);
+                TrackSession("DeX", displayId);
                 SaveLastSuccess(displayId);
                 _logService.Info("새 실행 설정을 즉시 적용했습니다.");
                 return true;
@@ -177,6 +187,7 @@ namespace DexManager.Services
             try
             {
                 _scrcpyService.Stop();
+                ClearSession();
                 _virtualDisplayService.Reset();
                 _adbService.Shell(
                     "settings put global stay_on_while_plugged_in 0");
@@ -205,6 +216,27 @@ namespace DexManager.Services
             _settings.LastSuccess.DisplayId = displayId;
             _settings.LastSuccess.SavedAtUtc = DateTime.UtcNow.ToString("o");
             _settingsService.Save(_settings);
+        }
+
+        private void TrackSession(string mode, int displayId)
+        {
+            _currentSession = new ManagedDisplaySession
+            {
+                Mode = mode,
+                AppPackage = _settings.Scrcpy.StartAppPackage,
+                DisplayId = displayId,
+                ScrcpyProcessId = _scrcpyService.CurrentProcessId,
+                CreatedAtUtc = DateTime.UtcNow.ToString("o")
+            };
+            _logService.Info("관리 세션 시작: " + _currentSession);
+        }
+
+        private void ClearSession()
+        {
+            if (_currentSession == null) return;
+
+            _logService.Info("관리 세션 종료: " + _currentSession);
+            _currentSession = null;
         }
     }
 }

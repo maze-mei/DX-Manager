@@ -54,6 +54,17 @@ namespace DexManager.Services
             get { return _scrcpyPath; }
         }
 
+        public int CurrentProcessId
+        {
+            get
+            {
+                lock (_syncRoot)
+                {
+                    return IsProcessRunning(_process) ? _process.Id : 0;
+                }
+            }
+        }
+
         public IntPtr MainWindowHandle
         {
             get

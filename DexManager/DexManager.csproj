@@ -68,6 +68,7 @@
     <Compile Include="Models\DeviceState.cs" />
     <Compile Include="Models\DisplayInfo.cs" />
     <Compile Include="Models\EnvironmentCheckItem.cs" />
+    <Compile Include="Models\ManagedDisplaySession.cs" />
     <Compile Include="Models\ScrcpyAppInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
