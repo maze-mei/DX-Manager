@@ -50,6 +50,7 @@ namespace DexManager.Forms
         private readonly TextBox _additionalArgumentsBox;
         private readonly ComboBox _startAppBox;
         private readonly Button _loadAppsButton;
+        private readonly Label _modeHintLabel;
         private DeviceState _lastDeviceState;
         private string _connectionError;
         private bool _allowExit;
@@ -90,7 +91,7 @@ namespace DexManager.Forms
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = Color.FromArgb(248, 250, 252);
             Font = new Font("Segoe UI", 9F, FontStyle.Regular);
-            ClientSize = new Size(640, 650);
+            ClientSize = new Size(752, 650);
             MinimumSize = Size;
 
             Controls.Add(new Label
@@ -228,6 +229,17 @@ namespace DexManager.Forms
             Controls.Add(_startButton);
             Controls.Add(_stopButton);
             Controls.Add(applyRunSettingsButton);
+            _modeHintLabel = new Label
+            {
+                AutoEllipsis = true,
+                ForeColor = Color.FromArgb(107, 114, 128),
+                Location = new Point(32, 614),
+                Size = new Size(360, 22),
+                Text = "DeX 모드"
+            };
+            Controls.Add(_modeHintLabel);
+            OffsetMainContent(112);
+            AddModeSidebar();
             LoadRunSettings();
 
             Shown += MainForm_Shown;
@@ -744,6 +756,94 @@ namespace DexManager.Forms
                 Location = new Point(x, y),
                 Size = new Size(width, 34)
             };
+        }
+
+        private void OffsetMainContent(int offsetX)
+        {
+            foreach (Control control in Controls)
+            {
+                control.Left += offsetX;
+            }
+        }
+
+        private void AddModeSidebar()
+        {
+            var sidebar = new Panel
+            {
+                BackColor = Color.FromArgb(243, 246, 250),
+                Location = new Point(0, 0),
+                Size = new Size(112, ClientSize.Height)
+            };
+
+            sidebar.Controls.Add(new Label
+            {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(75, 85, 99),
+                Location = new Point(18, 29),
+                Text = "모드"
+            });
+
+            var dexButton = CreateSidebarButton("DeX", 68, true);
+            dexButton.Click += delegate { SelectDexMode(); };
+            sidebar.Controls.Add(dexButton);
+
+            var single1 = CreateSidebarButton("단일창 1", 110, false);
+            single1.Click += delegate { SelectSingleWindowPreview(1); };
+            sidebar.Controls.Add(single1);
+
+            var single2 = CreateSidebarButton("단일창 2", 152, false);
+            single2.Click += delegate { SelectSingleWindowPreview(2); };
+            sidebar.Controls.Add(single2);
+
+            var single3 = CreateSidebarButton("단일창 3", 194, false);
+            single3.Click += delegate { SelectSingleWindowPreview(3); };
+            sidebar.Controls.Add(single3);
+
+            sidebar.Controls.Add(new Label
+            {
+                AutoEllipsis = true,
+                ForeColor = Color.FromArgb(107, 114, 128),
+                Location = new Point(16, 250),
+                Size = new Size(80, 80),
+                Text = "단일창은 UI 미리보기 단계입니다."
+            });
+
+            Controls.Add(sidebar);
+            sidebar.BringToFront();
+        }
+
+        private ThemedButton CreateSidebarButton(string text, int y, bool selected)
+        {
+            return new ThemedButton
+            {
+                Text = text,
+                Primary = selected,
+                Location = new Point(14, y),
+                Size = new Size(84, 32)
+            };
+        }
+
+        private void SelectDexMode()
+        {
+            _modeHintLabel.Text = "DeX 모드";
+            _startButton.Text = "DeX 시작";
+            _stopButton.Text = "DeX 중지";
+            UpdateRunningState();
+            UpdateIndicatorForDevice(_lastDeviceState);
+        }
+
+        private void SelectSingleWindowPreview(int slot)
+        {
+            _modeHintLabel.Text = "단일창 " + slot + " 모드 UI 미리보기";
+            _startButton.Text = "단일창 시작";
+            _stopButton.Text = "단일창 중지";
+            _startButton.Enabled = false;
+            _stopButton.Enabled = false;
+            SetConnectionIndicator(
+                Color.FromArgb(37, 99, 235),
+                "단일창 " + slot + " 준비 중",
+                "아직 실행 로직은 연결하지 않았습니다. 화면 구성 미리보기입니다.");
         }
 
         private void AddTopMenu(string text, int x, Action action)
