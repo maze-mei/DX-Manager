@@ -90,7 +90,7 @@ namespace DexManager.Forms
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = Color.FromArgb(248, 250, 252);
             Font = new Font("Segoe UI", 9F, FontStyle.Regular);
-            ClientSize = new Size(840, 700);
+            ClientSize = new Size(760, 616);
             MinimumSize = Size;
 
             Controls.Add(new Label
@@ -101,9 +101,9 @@ namespace DexManager.Forms
                 Location = new Point(32, 28),
                 Text = "DeX Manager"
             });
-            AddTopMenu("로그", 590, ShowLogForm);
-            AddTopMenu("설정", 656, ShowSettingsForm);
-            AddTopMenu("환경 점검", 716, ShowEnvironmentCheck);
+            AddTopMenu("로그", 520, ShowLogForm);
+            AddTopMenu("설정", 586, ShowSettingsForm);
+            AddTopMenu("환경 점검", 646, ShowEnvironmentCheck);
 
             _indicatorDot = new Label
             {
@@ -126,14 +126,14 @@ namespace DexManager.Forms
                 AutoEllipsis = true,
                 ForeColor = Color.FromArgb(75, 85, 99),
                 Location = new Point(35, 130),
-                Size = new Size(740, 22)
+                Size = new Size(680, 22)
             };
             _deviceInfoLabel = new Label
             {
                 AutoEllipsis = true,
                 ForeColor = Color.FromArgb(75, 85, 99),
                 Location = new Point(35, 157),
-                Size = new Size(740, 22),
+                Size = new Size(680, 22),
                 Text = "휴대폰 USB 연결을 기다립니다."
             };
             Controls.Add(_indicatorDot);
@@ -142,62 +142,56 @@ namespace DexManager.Forms
             Controls.Add(_deviceInfoLabel);
             SetConnectionIndicator(Color.DarkOrange, "연결 대기 중", "ADB 초기화를 준비합니다.");
 
-            AddDivider(192);
-            AddSummaryCaption("ADB 상태", 32, 214);
-            AddSummaryCaption("Scrcpy 상태", 272, 214);
-            AddSummaryCaption("DeX 상태", 512, 214);
-            _adbStatusValue = AddSummaryValue("준비", 32, 241);
-            _scrcpyStatusValue = AddSummaryValue("중지", 272, 241);
-            _dexStatusValue = AddSummaryValue("대기", 512, 241);
+            _adbStatusValue = new Label { Visible = false };
+            _scrcpyStatusValue = new Label { Visible = false };
+            _dexStatusValue = new Label { Visible = false };
             _deviceStatusValue = new Label { Visible = false };
-            AddVerticalDivider(272, 212);
-            AddVerticalDivider(512, 212);
-            AddDivider(276);
+            AddDivider(204);
 
-            AddSectionTitle("DeX 화면 설정", 32, 298);
-            _resolutionBox = CreateStyledCombo(105, 335, 160, true);
+            AddSectionTitle("DeX 화면 설정", 32, 226);
+            _resolutionBox = CreateStyledCombo(105, 263, 160, true);
             _resolutionBox.Items.Add(new ResolutionPreset("1600 x 900", 1600, 900));
             _resolutionBox.Items.Add(new ResolutionPreset("1920 x 1080", 1920, 1080));
             _resolutionBox.Items.Add(new ResolutionPreset("3840 x 2160 (4K)", 3840, 2160));
             _resolutionBox.Items.Add(new ResolutionPreset("사용자 지정", 0, 0));
             _resolutionBox.SelectedIndexChanged += ResolutionBox_SelectedIndexChanged;
-            _widthBox = CreateStyledNumber(320, 7680, 305, 335, 55);
-            _heightBox = CreateStyledNumber(240, 4320, 405, 335, 55);
-            _dpiBox = CreateStyledNumber(80, 640, 495, 335, 90);
-            _bitRateBox = CreateStyledTextBox(105, 370, 130, true);
-            _maxFpsBox = CreateStyledCombo(495, 370, 90, true);
+            _widthBox = CreateStyledNumber(320, 7680, 305, 263, 55);
+            _heightBox = CreateStyledNumber(240, 4320, 405, 263, 55);
+            _dpiBox = CreateStyledNumber(80, 640, 495, 263, 90);
+            _bitRateBox = CreateStyledTextBox(105, 298, 130, true);
+            _maxFpsBox = CreateStyledCombo(495, 298, 90, true);
             _maxFpsBox.Items.Add(30);
             _maxFpsBox.Items.Add(60);
-            AddFieldLabel("해상도", 32, 341);
-            _widthLabel = AddFieldLabel("가로", 270, 341);
-            _heightLabel = AddFieldLabel("세로", 370, 341);
-            _dpiLabel = AddFieldLabel("DPI", 425, 341);
-            AddFieldLabel("비트레이트", 32, 376);
-            AddFieldLabel("최대 FPS", 425, 376);
+            AddFieldLabel("해상도", 32, 269);
+            _widthLabel = AddFieldLabel("가로", 270, 269);
+            _heightLabel = AddFieldLabel("세로", 370, 269);
+            _dpiLabel = AddFieldLabel("DPI", 425, 269);
+            AddFieldLabel("비트레이트", 32, 304);
+            AddFieldLabel("최대 FPS", 425, 304);
 
-            AddDivider(411);
-            AddSectionTitle("실행 옵션", 32, 432);
-            _turnScreenOffBox = CreateOption("폰 화면 끄기 (-S)", 32, 467);
-            _useHidKeyboardBox = CreateOption("HID 키보드 (-K)", 32, 501);
-            _useHidMouseBox = CreateOption("HID 마우스 (-M)", 32, 535);
-            _forceStopAppBox = CreateOption("선택 앱 강제 종료", 392, 467);
-            _reuseDisplayBox = CreateOption("기존 가상화면 재사용", 392, 501);
-            _stayAwakeBox = CreateOption("잠자기 방지 (-w)", 392, 535);
+            AddDivider(339);
+            AddSectionTitle("실행 옵션", 32, 360);
+            _turnScreenOffBox = CreateOption("폰 화면 끄기 (-S)", 32, 395);
+            _useHidKeyboardBox = CreateOption("HID 키보드 (-K)", 32, 429);
+            _useHidMouseBox = CreateOption("HID 마우스 (-M)", 32, 463);
+            _forceStopAppBox = CreateOption("선택 앱 강제 종료", 392, 395);
+            _reuseDisplayBox = CreateOption("기존 가상화면 재사용", 392, 429);
+            _stayAwakeBox = CreateOption("잠자기 방지 (-w)", 392, 463);
 
-            _startAppBox = CreateStyledCombo(132, 574, 458);
+            _startAppBox = CreateStyledCombo(132, 502, 418);
             _startAppBox.DropDownStyle = ComboBoxStyle.DropDown;
-            _loadAppsButton = CreateThemedButton("앱 목록 불러오기", false, 600, 573, 150);
+            _loadAppsButton = CreateThemedButton("앱 목록 불러오기", false, 560, 501, 150);
             _loadAppsButton.Click += LoadAppsButton_Click;
-            AddFieldLabel("시작 앱", 32, 580);
+            AddFieldLabel("시작 앱", 32, 508);
 
-            _additionalArgumentsBox = CreateStyledTextBox(32, 649, 440);
+            _additionalArgumentsBox = CreateStyledTextBox(32, 577, 440);
             _additionalArgumentsBox.Visible = false;
             var advancedToggle = new LinkLabel
             {
                 AutoSize = true,
                 LinkColor = Color.FromArgb(75, 85, 99),
                 ActiveLinkColor = Color.FromArgb(37, 99, 235),
-                Location = new Point(32, 618),
+                Location = new Point(32, 546),
                 Text = "▶  고급 옵션 (추가 인자)"
             };
             advancedToggle.LinkClicked += delegate
@@ -209,12 +203,12 @@ namespace DexManager.Forms
             };
             Controls.Add(advancedToggle);
 
-            _startButton = CreateThemedButton("DeX 시작", true, 500, 652, 120);
+            _startButton = CreateThemedButton("DeX 시작", true, 468, 580, 120);
             _startButton.Click += StartButton_Click;
-            _stopButton = CreateThemedButton("DeX 중지", true, 500, 652, 120);
+            _stopButton = CreateThemedButton("DeX 중지", true, 468, 580, 120);
             _stopButton.Click += StopButton_Click;
             _stopButton.Visible = false;
-            var applyRunSettingsButton = CreateThemedButton("실행 설정 적용", false, 632, 652, 120);
+            var applyRunSettingsButton = CreateThemedButton("실행 설정 적용", false, 600, 580, 120);
             applyRunSettingsButton.Click += ApplyRunSettingsButton_Click;
             Controls.Add(_resolutionBox);
             Controls.Add(_widthBox);
@@ -472,8 +466,8 @@ namespace DexManager.Forms
             _heightBox.Visible = custom;
             _widthLabel.Visible = custom;
             _heightLabel.Visible = custom;
-            _dpiBox.Location = new Point(custom ? 515 : 495, 335);
-            _dpiLabel.Location = new Point(custom ? 480 : 425, 341);
+            _dpiBox.Location = new Point(custom ? 515 : 495, 263);
+            _dpiLabel.Location = new Point(custom ? 480 : 425, 269);
             if (!custom)
             {
                 _widthBox.Value = preset.Width;
@@ -797,17 +791,7 @@ namespace DexManager.Forms
             {
                 BackColor = Color.FromArgb(229, 231, 235),
                 Location = new Point(32, y),
-                Size = new Size(720, 1)
-            });
-        }
-
-        private void AddVerticalDivider(int x, int y)
-        {
-            Controls.Add(new Panel
-            {
-                BackColor = Color.FromArgb(209, 213, 219),
-                Location = new Point(x - 1, y),
-                Size = new Size(2, 48)
+                Size = new Size(680, 1)
             });
         }
 
@@ -834,36 +818,6 @@ namespace DexManager.Forms
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
                 TextFormatFlags.EndEllipsis);
             e.DrawFocusRectangle();
-        }
-
-        private void AddSummaryCaption(string text, int x, int y)
-        {
-            Controls.Add(new Label
-            {
-                AutoSize = false,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(31, 41, 55),
-                Location = new Point(x + 4, y),
-                Size = new Size(232, 20),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Text = text
-            });
-        }
-
-        private Label AddSummaryValue(string text, int x, int y)
-        {
-            var label = new Label
-            {
-                AutoSize = false,
-                Font = new Font("Segoe UI", 10F),
-                ForeColor = Color.FromArgb(75, 85, 99),
-                Location = new Point(x + 4, y),
-                Size = new Size(232, 24),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Text = text
-            };
-            Controls.Add(label);
-            return label;
         }
 
         private static string GetDeviceStatusText(DeviceState state)
