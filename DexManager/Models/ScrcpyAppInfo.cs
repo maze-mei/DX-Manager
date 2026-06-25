@@ -8,6 +8,7 @@ namespace DexManager.Models
 
         public override string ToString()
         {
+            if (string.IsNullOrWhiteSpace(PackageName)) return Name;
             return Name + " (" + PackageName + ")";
         }
     }

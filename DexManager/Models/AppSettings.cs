@@ -20,7 +20,7 @@ namespace DexManager.Models
         {
             return new AppSettings
             {
-                SchemaVersion = 7,
+                SchemaVersion = 8,
                 Paths = new PathSettings
                 {
                     AdbPath = string.Empty,
@@ -48,8 +48,8 @@ namespace DexManager.Models
                     TurnScreenOff = true,
                     UseHidKeyboard = true,
                     UseHidMouse = true,
-                    ForceStopStartApp = true,
-                    StartAppPackage = "com.sec.android.app.sbrowser",
+                    ForceStopStartApp = false,
+                    StartAppPackage = string.Empty,
                     AdditionalArguments = string.Empty,
                     StayAwake = true
                 },
@@ -147,6 +147,11 @@ namespace DexManager.Models
                     Scrcpy.AdditionalArguments) || defaults.Scrcpy.StayAwake;
                 Scrcpy.AdditionalArguments = RemoveStayAwakeArgument(
                     Scrcpy.AdditionalArguments);
+                SchemaVersion = defaults.SchemaVersion;
+            }
+            if (oldSchemaVersion < 8)
+            {
+                Scrcpy.ForceStopStartApp = defaults.Scrcpy.ForceStopStartApp;
                 SchemaVersion = defaults.SchemaVersion;
             }
             if (string.IsNullOrWhiteSpace(Paths.Win7AdbPath))

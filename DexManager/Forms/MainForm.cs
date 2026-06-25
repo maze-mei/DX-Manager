@@ -9,6 +9,8 @@ namespace DexManager.Forms
 {
     public sealed class MainForm : Form
     {
+        private const string NoStartAppText = "선택 안 함";
+
         private readonly SettingsService _settingsService;
         private readonly AppSettings _settings;
         private readonly LogService _logService;
@@ -185,6 +187,7 @@ namespace DexManager.Forms
 
             _startAppBox = CreateStyledCombo(132, 502, 313);
             _startAppBox.DropDownStyle = ComboBoxStyle.DropDown;
+            AddNoStartAppItem();
             _loadAppsButton = CreateThemedButton("앱 목록 불러오기", false, 455, 501, 150);
             _loadAppsButton.Click += LoadAppsButton_Click;
             AddFieldLabel("시작 앱", 32, 508);
@@ -505,7 +508,9 @@ namespace DexManager.Forms
             _forceStopAppBox.Checked = _settings.Scrcpy.ForceStopStartApp;
             _reuseDisplayBox.Checked = _settings.VirtualDisplay.ReuseExistingDisplay;
             _additionalArgumentsBox.Text = _settings.Scrcpy.AdditionalArguments;
-            _startAppBox.Text = _settings.Scrcpy.StartAppPackage;
+            _startAppBox.Text = string.IsNullOrWhiteSpace(_settings.Scrcpy.StartAppPackage)
+                ? NoStartAppText
+                : _settings.Scrcpy.StartAppPackage;
             _resolutionBox.SelectedIndex = FindResolutionPresetIndex(
                 _settings.VirtualDisplay.Width,
                 _settings.VirtualDisplay.Height);
@@ -599,10 +604,16 @@ namespace DexManager.Forms
 
                 _startAppBox.BeginUpdate();
                 _startAppBox.Items.Clear();
+                AddNoStartAppItem();
                 foreach (var app in apps) _startAppBox.Items.Add(app);
                 _startAppBox.EndUpdate();
 
                 var selected = false;
+                if (string.IsNullOrWhiteSpace(selectedPackage))
+                {
+                    _startAppBox.SelectedIndex = 0;
+                    selected = true;
+                }
                 foreach (var app in apps)
                 {
                     if (!string.Equals(
@@ -618,7 +629,10 @@ namespace DexManager.Forms
                     break;
                 }
 
-                if (!selected) _startAppBox.Text = selectedPackage;
+                if (!selected)
+                    _startAppBox.Text = string.IsNullOrWhiteSpace(selectedPackage)
+                        ? NoStartAppText
+                        : selectedPackage;
                 _logService.Info("Scrcpy 앱 목록을 메인 화면에 표시했습니다.");
             }
             catch (Exception ex)
@@ -668,7 +682,21 @@ namespace DexManager.Forms
         private string GetSelectedAppPackage()
         {
             var app = _startAppBox.SelectedItem as ScrcpyAppInfo;
-            return app == null ? _startAppBox.Text.Trim() : app.PackageName;
+            if (app != null) return app.PackageName ?? string.Empty;
+
+            var text = _startAppBox.Text.Trim();
+            return string.Equals(text, NoStartAppText, StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : text;
+        }
+
+        private void AddNoStartAppItem()
+        {
+            _startAppBox.Items.Add(new ScrcpyAppInfo
+            {
+                Name = NoStartAppText,
+                PackageName = string.Empty
+            });
         }
 
         private static NumericUpDown CreateNumber(int min, int max, int width)
@@ -834,6 +862,7 @@ namespace DexManager.Forms
             _modeHintLabel.Text = "DeX 모드";
             _startButton.Text = "DeX 시작";
             _stopButton.Text = "DeX 중지";
+            _reuseDisplayBox.Enabled = true;
             UpdateRunningState();
             UpdateIndicatorForDevice(_lastDeviceState);
         }
@@ -846,6 +875,7 @@ namespace DexManager.Forms
             _stopButton.Text = "단일창 중지";
             _startButton.Enabled = false;
             _stopButton.Enabled = false;
+            _reuseDisplayBox.Enabled = false;
             SetConnectionIndicator(
                 Color.FromArgb(37, 99, 235),
                 "단일창 " + slot + " 준비 중",

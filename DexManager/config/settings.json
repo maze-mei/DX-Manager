@@ -1,5 +1,5 @@
 {
-  "SchemaVersion": 7,
+  "SchemaVersion": 8,
   "Paths": {
     "AdbPath": "",
     "AdbSelectionMode": 0,
@@ -24,8 +24,8 @@
     "TurnScreenOff": true,
     "UseHidKeyboard": true,
     "UseHidMouse": true,
-    "ForceStopStartApp": true,
-    "StartAppPackage": "com.sec.android.app.sbrowser",
+    "ForceStopStartApp": false,
+    "StartAppPackage": "",
     "AdditionalArguments": "",
     "StayAwake": true
   },
