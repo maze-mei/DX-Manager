@@ -90,7 +90,7 @@ namespace DexManager.Forms
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = Color.FromArgb(248, 250, 252);
             Font = new Font("Segoe UI", 9F, FontStyle.Regular);
-            ClientSize = new Size(760, 616);
+            ClientSize = new Size(640, 616);
             MinimumSize = Size;
 
             Controls.Add(new Label
@@ -101,9 +101,9 @@ namespace DexManager.Forms
                 Location = new Point(32, 28),
                 Text = "DeX Manager"
             });
-            AddTopMenu("로그", 520, ShowLogForm);
-            AddTopMenu("설정", 586, ShowSettingsForm);
-            AddTopMenu("환경 점검", 646, ShowEnvironmentCheck);
+            AddTopMenu("로그", 454, ShowLogForm);
+            AddTopMenu("설정", 510, ShowSettingsForm);
+            AddTopMenu("환경 점검", 560, ShowEnvironmentCheck);
 
             _indicatorDot = new Label
             {
@@ -126,14 +126,14 @@ namespace DexManager.Forms
                 AutoEllipsis = true,
                 ForeColor = Color.FromArgb(75, 85, 99),
                 Location = new Point(35, 130),
-                Size = new Size(680, 22)
+                Size = new Size(570, 22)
             };
             _deviceInfoLabel = new Label
             {
                 AutoEllipsis = true,
                 ForeColor = Color.FromArgb(75, 85, 99),
                 Location = new Point(35, 157),
-                Size = new Size(680, 22),
+                Size = new Size(570, 22),
                 Text = "휴대폰 USB 연결을 기다립니다."
             };
             Controls.Add(_indicatorDot);
@@ -178,9 +178,9 @@ namespace DexManager.Forms
             _reuseDisplayBox = CreateOption("기존 가상화면 재사용", 392, 429);
             _stayAwakeBox = CreateOption("잠자기 방지 (-w)", 392, 463);
 
-            _startAppBox = CreateStyledCombo(132, 502, 418);
+            _startAppBox = CreateStyledCombo(132, 502, 313);
             _startAppBox.DropDownStyle = ComboBoxStyle.DropDown;
-            _loadAppsButton = CreateThemedButton("앱 목록 불러오기", false, 560, 501, 150);
+            _loadAppsButton = CreateThemedButton("앱 목록 불러오기", false, 455, 501, 150);
             _loadAppsButton.Click += LoadAppsButton_Click;
             AddFieldLabel("시작 앱", 32, 508);
 
@@ -203,12 +203,12 @@ namespace DexManager.Forms
             };
             Controls.Add(advancedToggle);
 
-            _startButton = CreateThemedButton("DeX 시작", true, 468, 580, 120);
+            _startButton = CreateThemedButton("DeX 시작", true, 353, 580, 120);
             _startButton.Click += StartButton_Click;
-            _stopButton = CreateThemedButton("DeX 중지", true, 468, 580, 120);
+            _stopButton = CreateThemedButton("DeX 중지", true, 353, 580, 120);
             _stopButton.Click += StopButton_Click;
             _stopButton.Visible = false;
-            var applyRunSettingsButton = CreateThemedButton("실행 설정 적용", false, 600, 580, 120);
+            var applyRunSettingsButton = CreateThemedButton("실행 설정 적용", false, 485, 580, 120);
             applyRunSettingsButton.Click += ApplyRunSettingsButton_Click;
             Controls.Add(_resolutionBox);
             Controls.Add(_widthBox);
@@ -666,7 +666,7 @@ namespace DexManager.Forms
             {
                 Text = text,
                 Location = new Point(x, y),
-                Size = new Size(270, 28)
+                Size = new Size(220, 28)
             };
         }
 
@@ -791,7 +791,7 @@ namespace DexManager.Forms
             {
                 BackColor = Color.FromArgb(229, 231, 235),
                 Location = new Point(32, y),
-                Size = new Size(680, 1)
+                Size = new Size(573, 1)
             });
         }
 
