@@ -202,6 +202,8 @@ namespace DexManager.Forms
 
             _startAppBox = CreateStyledCombo(132, 502, 313);
             _startAppBox.DropDownStyle = ComboBoxStyle.DropDown;
+            _startAppBox.SelectionChangeCommitted +=
+                StartAppBox_SelectionChangeCommitted;
             AddNoStartAppItem();
             _loadAppsButton = CreateThemedButton("앱 목록 불러오기", false, 455, 501, 150);
             _loadAppsButton.Click += LoadAppsButton_Click;
@@ -766,6 +768,7 @@ namespace DexManager.Forms
             bool useHidMouse;
             bool forceStopStartApp;
             string startAppPackage;
+            string startAppName;
             string additionalArguments;
 
             _loadingRunSettings = true;
@@ -783,6 +786,7 @@ namespace DexManager.Forms
                 useHidMouse = _settings.Scrcpy.UseHidMouse;
                 forceStopStartApp = _settings.Scrcpy.ForceStopStartApp;
                 startAppPackage = _settings.Scrcpy.StartAppPackage;
+                startAppName = _settings.Scrcpy.StartAppName;
                 additionalArguments = _settings.Scrcpy.AdditionalArguments;
                 _reuseDisplayBox.Checked =
                     _settings.VirtualDisplay.ReuseExistingDisplay;
@@ -801,6 +805,7 @@ namespace DexManager.Forms
                 useHidMouse = slot.UseHidMouse;
                 forceStopStartApp = slot.ForceStopStartApp;
                 startAppPackage = slot.StartAppPackage;
+                startAppName = slot.StartAppName;
                 additionalArguments = slot.AdditionalArguments;
             }
 
@@ -815,7 +820,7 @@ namespace DexManager.Forms
             _useHidMouseBox.Checked = useHidMouse;
             _forceStopAppBox.Checked = forceStopStartApp;
             _additionalArgumentsBox.Text = additionalArguments;
-            SetSelectedAppPackage(startAppPackage);
+            SetSelectedAppPackage(startAppPackage, startAppName);
             _resolutionBox.SelectedIndex = FindResolutionPresetIndex(
                 width,
                 height);
@@ -974,6 +979,7 @@ namespace DexManager.Forms
             {
                 var apps = await Task.Run(delegate { return _scrcpyService.ListApps(); });
                 var selectedPackage = GetSelectedAppPackage();
+                var selectedName = GetSelectedAppName(selectedPackage);
 
                 _startAppBox.BeginUpdate();
                 _startAppBox.Items.Clear();
@@ -1003,9 +1009,8 @@ namespace DexManager.Forms
                 }
 
                 if (!selected)
-                    _startAppBox.Text = string.IsNullOrWhiteSpace(selectedPackage)
-                        ? NoStartAppText
-                        : selectedPackage;
+                    SetSelectedAppPackage(selectedPackage, selectedName);
+                SaveSelectedAppIdentity();
                 _logService.Info("Scrcpy 앱 목록을 메인 화면에 표시했습니다.");
             }
             catch (Exception ex)
@@ -1052,7 +1057,10 @@ namespace DexManager.Forms
                 _settings.Scrcpy.UseHidKeyboard = _useHidKeyboardBox.Checked;
                 _settings.Scrcpy.UseHidMouse = _useHidMouseBox.Checked;
                 _settings.Scrcpy.ForceStopStartApp = _forceStopAppBox.Checked;
-                _settings.Scrcpy.StartAppPackage = GetSelectedAppPackage();
+                var selectedPackage = GetSelectedAppPackage();
+                var selectedName = GetSelectedAppName(selectedPackage);
+                _settings.Scrcpy.StartAppPackage = selectedPackage;
+                _settings.Scrcpy.StartAppName = selectedName;
                 _settings.Scrcpy.AdditionalArguments =
                     _additionalArgumentsBox.Text.Trim();
             }
@@ -1074,8 +1082,10 @@ namespace DexManager.Forms
                 slot.UseHidKeyboard = _useHidKeyboardBox.Checked;
                 slot.UseHidMouse = _useHidMouseBox.Checked;
                 slot.ForceStopStartApp = _forceStopAppBox.Checked;
-                slot.StartAppPackage = GetSelectedAppPackage();
-                slot.StartAppName = GetSelectedAppName();
+                var selectedPackage = GetSelectedAppPackage();
+                var selectedName = GetSelectedAppName(selectedPackage);
+                slot.StartAppPackage = selectedPackage;
+                slot.StartAppName = selectedName;
                 slot.AdditionalArguments =
                     _additionalArgumentsBox.Text.Trim();
             }
@@ -1101,12 +1111,31 @@ namespace DexManager.Forms
                 : text;
         }
 
-        private string GetSelectedAppName()
+        private string GetSelectedAppName(string packageName)
         {
             var app = _startAppBox.SelectedItem as ScrcpyAppInfo;
             if (app != null && !string.IsNullOrWhiteSpace(app.PackageName))
                 return app.Name ?? app.PackageName;
-            return GetSelectedAppPackage();
+
+            if (_selectedMode == 0)
+            {
+                return string.Equals(
+                    _settings.Scrcpy.StartAppPackage,
+                    packageName,
+                    StringComparison.OrdinalIgnoreCase) &&
+                    !string.IsNullOrWhiteSpace(_settings.Scrcpy.StartAppName)
+                    ? _settings.Scrcpy.StartAppName
+                    : packageName;
+            }
+
+            var slot = GetSingleWindowSettings(_selectedMode);
+            return string.Equals(
+                slot.StartAppPackage,
+                packageName,
+                StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(slot.StartAppName)
+                ? slot.StartAppName
+                : packageName;
         }
 
         private int GetSelectedMaxFps()
@@ -1116,7 +1145,9 @@ namespace DexManager.Forms
                 : 60;
         }
 
-        private void SetSelectedAppPackage(string packageName)
+        private void SetSelectedAppPackage(
+            string packageName,
+            string appName)
         {
             packageName = packageName ?? string.Empty;
             foreach (var item in _startAppBox.Items)
@@ -1131,14 +1162,58 @@ namespace DexManager.Forms
                     continue;
                 }
 
+                if (!string.IsNullOrWhiteSpace(appName) &&
+                    string.Equals(
+                        app.Name,
+                        app.PackageName,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    app.Name = appName;
+                }
                 _startAppBox.SelectedItem = item;
                 return;
             }
 
-            _startAppBox.SelectedIndex = -1;
-            _startAppBox.Text = string.IsNullOrWhiteSpace(packageName)
-                ? NoStartAppText
-                : packageName;
+            if (string.IsNullOrWhiteSpace(packageName))
+            {
+                _startAppBox.SelectedIndex = 0;
+                return;
+            }
+
+            var placeholder = new ScrcpyAppInfo
+            {
+                Name = string.IsNullOrWhiteSpace(appName)
+                    ? packageName
+                    : appName,
+                PackageName = packageName
+            };
+            _startAppBox.Items.Add(placeholder);
+            _startAppBox.SelectedItem = placeholder;
+        }
+
+        private void StartAppBox_SelectionChangeCommitted(
+            object sender,
+            EventArgs e)
+        {
+            SaveSelectedAppIdentity();
+        }
+
+        private void SaveSelectedAppIdentity()
+        {
+            var packageName = GetSelectedAppPackage();
+            var appName = GetSelectedAppName(packageName);
+            if (_selectedMode == 0)
+            {
+                _settings.Scrcpy.StartAppPackage = packageName;
+                _settings.Scrcpy.StartAppName = appName;
+            }
+            else
+            {
+                var slot = GetSingleWindowSettings(_selectedMode);
+                slot.StartAppPackage = packageName;
+                slot.StartAppName = appName;
+            }
+            _settingsService.Save(_settings);
         }
 
         private void AddNoStartAppItem()

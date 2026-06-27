@@ -22,7 +22,7 @@ namespace DexManager.Models
         {
             return new AppSettings
             {
-                SchemaVersion = 10,
+                SchemaVersion = 11,
                 Paths = new PathSettings
                 {
                     AdbPath = string.Empty,
@@ -54,6 +54,7 @@ namespace DexManager.Models
                     UseHidMouse = true,
                     ForceStopStartApp = false,
                     StartAppPackage = string.Empty,
+                    StartAppName = string.Empty,
                     AdditionalArguments = string.Empty,
                     StayAwake = true
                 },
@@ -179,6 +180,20 @@ namespace DexManager.Models
                     if (slot == null) continue;
                     slot.CustomWidth = slot.Width;
                     slot.CustomHeight = slot.Height;
+                }
+                SchemaVersion = defaults.SchemaVersion;
+            }
+            if (oldSchemaVersion < 11)
+            {
+                if (string.IsNullOrWhiteSpace(Scrcpy.StartAppName))
+                    Scrcpy.StartAppName = Scrcpy.StartAppPackage;
+                foreach (var slot in SingleWindowSlots)
+                {
+                    if (slot != null &&
+                        string.IsNullOrWhiteSpace(slot.StartAppName))
+                    {
+                        slot.StartAppName = slot.StartAppPackage;
+                    }
                 }
                 SchemaVersion = defaults.SchemaVersion;
             }
@@ -314,6 +329,7 @@ namespace DexManager.Models
         [DataMember(Order = 8)] public string StartAppPackage { get; set; }
         [DataMember(Order = 9)] public string AdditionalArguments { get; set; }
         [DataMember(Order = 10)] public bool StayAwake { get; set; }
+        [DataMember(Order = 11)] public string StartAppName { get; set; }
     }
 
     [DataContract]
