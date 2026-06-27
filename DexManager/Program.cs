@@ -69,6 +69,9 @@ namespace DexManager
                 var singleWindowService = new SingleWindowService(
                     scrcpyPath,
                     logService);
+                var screenOffService = new ScreenOffService(
+                    scrcpyPath,
+                    logService);
                 var virtualDisplayService = new VirtualDisplayService(
                     adbService,
                     logService);
@@ -123,6 +126,7 @@ namespace DexManager
                     adbService,
                     scrcpyService,
                     singleWindowService,
+                    screenOffService,
                     deviceMonitor,
                     orchestrator,
                     captureCoordinator,

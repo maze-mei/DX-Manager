@@ -17,6 +17,7 @@ namespace DexManager.Forms
         private readonly AdbService _adbService;
         private readonly ScrcpyService _scrcpyService;
         private readonly SingleWindowService _singleWindowService;
+        private readonly ScreenOffService _screenOffService;
         private readonly DeviceMonitorService _deviceMonitor;
         private readonly DexOrchestrator _orchestrator;
         private readonly CaptureCoordinator _captureCoordinator;
@@ -81,6 +82,7 @@ namespace DexManager.Forms
             AdbService adbService,
             ScrcpyService scrcpyService,
             SingleWindowService singleWindowService,
+            ScreenOffService screenOffService,
             DeviceMonitorService deviceMonitor,
             DexOrchestrator orchestrator,
             CaptureCoordinator captureCoordinator,
@@ -95,6 +97,7 @@ namespace DexManager.Forms
             _adbService = adbService;
             _scrcpyService = scrcpyService;
             _singleWindowService = singleWindowService;
+            _screenOffService = screenOffService;
             _deviceMonitor = deviceMonitor;
             _orchestrator = orchestrator;
             _captureCoordinator = captureCoordinator;
@@ -460,9 +463,15 @@ namespace DexManager.Forms
                     ? "연결된 Android 장치  ·  " + e.Current.Serial
                     : "휴대폰 USB 연결을 기다립니다.";
                 if (e.Current.Status == AdbDeviceStatus.Device)
+                {
                     UpdateDeviceStayAwakeState();
+                    UpdateScreenOffController();
+                }
                 else
+                {
                     _lastAppliedStayAwakeState = null;
+                    _screenOffService.Stop();
+                }
                 if (!IsSelectedModeRunning())
                     UpdateIndicatorForDevice(e.Current);
             });
@@ -476,6 +485,7 @@ namespace DexManager.Forms
 
         private void DeviceMonitor_DeviceDisconnected(object sender, DeviceStateChangedEventArgs e)
         {
+            _screenOffService.Stop();
             if (_orchestrator.IsRunning)
                 RunOnUi(async delegate { await StopDexAsync(); });
             if (IsAnySingleWindowRunning())
@@ -496,7 +506,44 @@ namespace DexManager.Forms
         {
             UpdateRunningState();
             UpdateDeviceStayAwakeState();
+            UpdateScreenOffController();
             UpdatePhoneScreenWakeSchedule();
+        }
+
+        private void UpdateScreenOffController()
+        {
+            var deviceConnected = _lastDeviceState != null &&
+                _lastDeviceState.Status == AdbDeviceStatus.Device;
+            if (!deviceConnected)
+            {
+                _screenOffService.Stop();
+                return;
+            }
+
+            var requested = _scrcpyService.IsScreenOffRequested ||
+                _singleWindowService.IsScreenOffRequested;
+            if (requested)
+            {
+                try
+                {
+                    _screenOffService.Start();
+                }
+                catch (Exception ex)
+                {
+                    _logService.Error(
+                        "휴대폰 화면 끄기 보조 세션을 시작하지 못했습니다.",
+                        ex);
+                }
+                return;
+            }
+
+            if (System.Threading.Interlocked.CompareExchange(
+                ref _phoneScreenWakeSuppression,
+                0,
+                0) == 0)
+            {
+                _screenOffService.Stop();
+            }
         }
 
         private void UpdateDeviceStayAwakeState()
@@ -612,6 +659,7 @@ namespace DexManager.Forms
                     ref _phoneScreenWakeSuppression,
                     0);
             }
+            UpdateScreenOffController();
             UpdatePhoneScreenWakeSchedule();
         }
         private void CaptureCoordinator_ExitHotkeyPressed(object sender, EventArgs e) { RunOnUi(ExitApplication); }
@@ -624,6 +672,7 @@ namespace DexManager.Forms
             _autoHideService.Dispose();
             _keyMappingService.Dispose();
             _phoneScreenWakeTimer.Dispose();
+            _screenOffService.Dispose();
             _singleWindowService.Dispose();
             _scrcpyService.Dispose();
             _trayService.Dispose();
@@ -1720,6 +1769,7 @@ namespace DexManager.Forms
             _deviceMonitor.Stop();
             await Task.Run(delegate { _singleWindowService.StopAll(); });
             await _orchestrator.ShutdownAsync();
+            await Task.Run((Action)_screenOffService.Stop);
             if (_adbService.IsAuthorizedDeviceConnected())
                 await Task.Run((Action)WakePhoneScreen);
             _allowExit = true;

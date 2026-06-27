@@ -16,6 +16,8 @@ namespace DexManager.Services
             new Dictionary<int, Process>();
         private readonly Dictionary<int, bool> _stayAwakeRequests =
             new Dictionary<int, bool>();
+        private readonly Dictionary<int, bool> _screenOffRequests =
+            new Dictionary<int, bool>();
 
         public SingleWindowService(string scrcpyPath, LogService logService)
         {
@@ -40,6 +42,7 @@ namespace DexManager.Services
                 if (IsProcessRunning(process)) return true;
                 _processes.Remove(slot);
                 _stayAwakeRequests.Remove(slot);
+                _screenOffRequests.Remove(slot);
                 process.Dispose();
                 return false;
             }
@@ -56,6 +59,29 @@ namespace DexManager.Services
                         bool requested;
                         if (IsProcessRunning(item.Value) &&
                             _stayAwakeRequests.TryGetValue(
+                                item.Key,
+                                out requested) &&
+                            requested)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            }
+        }
+
+        public bool IsScreenOffRequested
+        {
+            get
+            {
+                lock (_syncRoot)
+                {
+                    foreach (var item in _processes)
+                    {
+                        bool requested;
+                        if (IsProcessRunning(item.Value) &&
+                            _screenOffRequests.TryGetValue(
                                 item.Key,
                                 out requested) &&
                             requested)
@@ -137,6 +163,7 @@ namespace DexManager.Services
                 process.BeginErrorReadLine();
                 _processes[slot] = process;
                 _stayAwakeRequests[slot] = settings.StayAwake;
+                _screenOffRequests[slot] = settings.TurnScreenOff;
                 _logService.Info(
                     "단일창 " + slot + " Scrcpy 실행: " + arguments);
             }
@@ -158,6 +185,7 @@ namespace DexManager.Services
                 if (!_processes.TryGetValue(slot, out process)) return;
                 _processes.Remove(slot);
                 _stayAwakeRequests.Remove(slot);
+                _screenOffRequests.Remove(slot);
             }
 
             StopProcess(process);
@@ -173,6 +201,7 @@ namespace DexManager.Services
                 processes = new List<KeyValuePair<int, Process>>(_processes);
                 _processes.Clear();
                 _stayAwakeRequests.Clear();
+                _screenOffRequests.Clear();
             }
 
             foreach (var item in processes)
@@ -220,13 +249,7 @@ namespace DexManager.Services
             }
             if (settings.UseHidKeyboard) arguments.Add("-K");
             if (settings.UseHidMouse) arguments.Add("-M");
-            if (settings.TurnScreenOff)
-            {
-                arguments.Add("-S");
-                arguments.Add("--no-power-on");
-                arguments.Add("--no-cleanup");
-            }
-            if (settings.StayAwake) arguments.Add("-w");
+            if (settings.TurnScreenOff) arguments.Add("--no-power-on");
             if (!string.IsNullOrWhiteSpace(settings.AdditionalArguments))
                 arguments.Add(settings.AdditionalArguments.Trim());
 
@@ -267,6 +290,7 @@ namespace DexManager.Services
                 {
                     _processes.Remove(slot);
                     _stayAwakeRequests.Remove(slot);
+                    _screenOffRequests.Remove(slot);
                 }
             }
 

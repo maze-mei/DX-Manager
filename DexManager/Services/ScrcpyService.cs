@@ -20,6 +20,7 @@ namespace DexManager.Services
         private readonly LogService _logService;
         private Process _process;
         private bool _stayAwakeRequested;
+        private bool _turnScreenOffRequested;
 
         public ScrcpyService(
             string scrcpyPath,
@@ -74,6 +75,18 @@ namespace DexManager.Services
                 {
                     return IsProcessRunning(_process) &&
                         _stayAwakeRequested;
+                }
+            }
+        }
+
+        public bool IsScreenOffRequested
+        {
+            get
+            {
+                lock (_syncRoot)
+                {
+                    return IsProcessRunning(_process) &&
+                        _turnScreenOffRequested;
                 }
             }
         }
@@ -147,13 +160,7 @@ namespace DexManager.Services
 
             if (settings.UseHidKeyboard) arguments.Add("-K");
             if (settings.UseHidMouse) arguments.Add("-M");
-            if (settings.TurnScreenOff)
-            {
-                arguments.Add("-S");
-                arguments.Add("--no-power-on");
-                arguments.Add("--no-cleanup");
-            }
-            if (settings.StayAwake) arguments.Add("-w");
+            if (settings.TurnScreenOff) arguments.Add("--no-power-on");
 
             if (!string.IsNullOrWhiteSpace(settings.StartAppPackage))
             {
@@ -223,6 +230,7 @@ namespace DexManager.Services
                 process.BeginErrorReadLine();
                 _process = process;
                 _stayAwakeRequested = settings.StayAwake;
+                _turnScreenOffRequested = settings.TurnScreenOff;
 
                 _logService.Info("Scrcpy 실행: " + arguments);
             }
@@ -238,6 +246,7 @@ namespace DexManager.Services
                 process = _process;
                 _process = null;
                 _stayAwakeRequested = false;
+                _turnScreenOffRequested = false;
             }
 
             if (process == null) return;
@@ -318,6 +327,7 @@ namespace DexManager.Services
                 {
                     _process = null;
                     _stayAwakeRequested = false;
+                    _turnScreenOffRequested = false;
                 }
             }
 
