@@ -85,6 +85,7 @@
     <Compile Include="Services\HotkeyService.cs" />
     <Compile Include="Services\KeyMappingService.cs" />
     <Compile Include="Services\ScrcpyService.cs" />
+    <Compile Include="Services\SingleWindowService.cs" />
     <Compile Include="Services\SettingsService.cs" />
     <Compile Include="Services\TrayService.cs" />
     <Compile Include="Services\VirtualDisplayService.cs" />

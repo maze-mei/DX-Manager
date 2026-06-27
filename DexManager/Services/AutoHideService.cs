@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using DexManager.Utils;
@@ -8,6 +9,7 @@ namespace DexManager.Services
     public sealed class AutoHideService : IDisposable
     {
         private readonly ScrcpyService _scrcpyService;
+        private readonly SingleWindowService _singleWindowService;
         private readonly LogService _logService;
         private readonly int _idleSeconds;
         private readonly Timer _timer;
@@ -16,10 +18,12 @@ namespace DexManager.Services
 
         public AutoHideService(
             ScrcpyService scrcpyService,
+            SingleWindowService singleWindowService,
             LogService logService,
             int idleSeconds)
         {
             _scrcpyService = scrcpyService;
+            _singleWindowService = singleWindowService;
             _logService = logService;
             _idleSeconds = Math.Max(idleSeconds, 1);
             _timer = new Timer { Interval = 1000 };
@@ -56,8 +60,8 @@ namespace DexManager.Services
 
         private void Timer_Tick(object sender, EventArgs e)
         {
-            var handle = _scrcpyService.MainWindowHandle;
-            if (handle == IntPtr.Zero)
+            var handles = GetScrcpyWindowHandles();
+            if (handles.Count == 0)
             {
                 _minimizedByService = false;
                 return;
@@ -66,11 +70,18 @@ namespace DexManager.Services
             var idleMilliseconds = GetIdleMilliseconds();
             if (idleMilliseconds >= _idleSeconds * 1000L)
             {
-                if (!NativeMethods.IsIconic(handle))
+                var minimized = false;
+                foreach (var handle in handles)
                 {
+                    if (NativeMethods.IsIconic(handle)) continue;
                     NativeMethods.ShowWindow(handle, NativeMethods.SwMinimize);
+                    minimized = true;
+                }
+                if (minimized)
+                {
                     _minimizedByService = true;
-                    _logService.Info("사용자 입력이 없어 Scrcpy 창을 최소화했습니다.");
+                    _logService.Info(
+                        "사용자 입력이 없어 실행 중인 Scrcpy 창을 최소화했습니다.");
                 }
 
                 if (!_hideRequested)
@@ -80,11 +91,30 @@ namespace DexManager.Services
                     RaiseIdleHideRequested();
                 }
             }
-            else if (_minimizedByService && !NativeMethods.IsIconic(handle))
+            else if (_minimizedByService && HasRestoredWindow(handles))
             {
                 // The user restored the window explicitly. Never restore it automatically.
                 _minimizedByService = false;
             }
+        }
+
+        private IList<IntPtr> GetScrcpyWindowHandles()
+        {
+            var handles = new List<IntPtr>();
+            var dexHandle = _scrcpyService.MainWindowHandle;
+            if (dexHandle != IntPtr.Zero) handles.Add(dexHandle);
+            foreach (var handle in _singleWindowService.GetWindowHandles())
+                handles.Add(handle);
+            return handles;
+        }
+
+        private static bool HasRestoredWindow(IList<IntPtr> handles)
+        {
+            foreach (var handle in handles)
+            {
+                if (!NativeMethods.IsIconic(handle)) return true;
+            }
+            return false;
         }
 
         private void RaiseIdleHideRequested()

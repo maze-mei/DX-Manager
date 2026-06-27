@@ -1,5 +1,5 @@
 {
-  "SchemaVersion": 8,
+  "SchemaVersion": 9,
   "Paths": {
     "AdbPath": "",
     "AdbSelectionMode": 0,
@@ -70,5 +70,55 @@
     "ScrcpyArguments": "",
     "DisplayId": 0,
     "SavedAtUtc": ""
-  }
+  },
+  "SingleWindowSlots": [
+    {
+      "Slot": 1,
+      "Width": 1600,
+      "Height": 900,
+      "Dpi": 150,
+      "BitRate": "20M",
+      "MaxFps": 60,
+      "TurnScreenOff": true,
+      "StayAwake": true,
+      "UseHidKeyboard": true,
+      "UseHidMouse": true,
+      "ForceStopStartApp": false,
+      "StartAppPackage": "",
+      "StartAppName": "",
+      "AdditionalArguments": ""
+    },
+    {
+      "Slot": 2,
+      "Width": 1600,
+      "Height": 900,
+      "Dpi": 150,
+      "BitRate": "20M",
+      "MaxFps": 60,
+      "TurnScreenOff": true,
+      "StayAwake": true,
+      "UseHidKeyboard": true,
+      "UseHidMouse": true,
+      "ForceStopStartApp": false,
+      "StartAppPackage": "",
+      "StartAppName": "",
+      "AdditionalArguments": ""
+    },
+    {
+      "Slot": 3,
+      "Width": 1600,
+      "Height": 900,
+      "Dpi": 150,
+      "BitRate": "20M",
+      "MaxFps": 60,
+      "TurnScreenOff": true,
+      "StayAwake": true,
+      "UseHidKeyboard": true,
+      "UseHidMouse": true,
+      "ForceStopStartApp": false,
+      "StartAppPackage": "",
+      "StartAppName": "",
+      "AdditionalArguments": ""
+    }
+  ]
 }

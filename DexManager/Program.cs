@@ -66,6 +66,9 @@ namespace DexManager
                     settings.Timing.ProcessTimeoutMs,
                     processRunner,
                     logService);
+                var singleWindowService = new SingleWindowService(
+                    scrcpyPath,
+                    logService);
                 var virtualDisplayService = new VirtualDisplayService(
                     adbService,
                     logService);
@@ -92,10 +95,12 @@ namespace DexManager
                     hotkeyService,
                     captureService,
                     scrcpyService,
+                    singleWindowService,
                     settings,
                     logService);
                 var autoHideService = new AutoHideService(
                     scrcpyService,
+                    singleWindowService,
                     logService,
                     settings.Timing.AutoHideIdleSeconds);
                 var environmentCheckService = new EnvironmentCheckService(
@@ -105,6 +110,7 @@ namespace DexManager
                     logService);
                 var keyMappingService = new KeyMappingService(
                     scrcpyService,
+                    singleWindowService,
                     adbService,
                     settings,
                     settings.KeyMappings,
@@ -116,6 +122,7 @@ namespace DexManager
                     logService,
                     adbService,
                     scrcpyService,
+                    singleWindowService,
                     deviceMonitor,
                     orchestrator,
                     captureCoordinator,

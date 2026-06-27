@@ -11,6 +11,7 @@ namespace DexManager.Services
     public sealed class KeyMappingService : IDisposable
     {
         private readonly ScrcpyService _scrcpyService;
+        private readonly SingleWindowService _singleWindowService;
         private readonly AdbService _adbService;
         private readonly AppSettings _appSettings;
         private readonly KeyMappingSettings _settings;
@@ -24,12 +25,14 @@ namespace DexManager.Services
 
         public KeyMappingService(
             ScrcpyService scrcpyService,
+            SingleWindowService singleWindowService,
             AdbService adbService,
             AppSettings appSettings,
             KeyMappingSettings settings,
             LogService logService)
         {
             _scrcpyService = scrcpyService;
+            _singleWindowService = singleWindowService;
             _adbService = adbService;
             _appSettings = appSettings;
             _settings = settings;
@@ -211,9 +214,11 @@ namespace DexManager.Services
 
         private bool IsScrcpyForeground()
         {
+            var foreground = NativeMethods.GetForegroundWindow();
             var scrcpyHandle = _scrcpyService.MainWindowHandle;
-            return scrcpyHandle != IntPtr.Zero &&
-                NativeMethods.GetForegroundWindow() == scrcpyHandle;
+            return foreground != IntPtr.Zero &&
+                (foreground == scrcpyHandle ||
+                    _singleWindowService.ContainsWindowHandle(foreground));
         }
 
         private static bool IsKeyDown(int virtualKey)

@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 
@@ -15,12 +16,13 @@ namespace DexManager.Models
         [DataMember(Order = 6)] public FeatureSettings Features { get; set; }
         [DataMember(Order = 7)] public KeyMappingSettings KeyMappings { get; set; }
         [DataMember(Order = 8)] public LastSuccessSettings LastSuccess { get; set; }
+        [DataMember(Order = 9)] public List<SingleWindowSlotSettings> SingleWindowSlots { get; set; }
 
         public static AppSettings CreateDefault()
         {
             return new AppSettings
             {
-                SchemaVersion = 8,
+                SchemaVersion = 9,
                 Paths = new PathSettings
                 {
                     AdbPath = string.Empty,
@@ -88,7 +90,8 @@ namespace DexManager.Models
                     EnterInputMode = KeyInputMode.SendInputScanCode,
                     IgnoreShiftSpace = true
                 },
-                LastSuccess = new LastSuccessSettings()
+                LastSuccess = new LastSuccessSettings(),
+                SingleWindowSlots = CreateDefaultSingleWindowSlots()
             };
         }
 
@@ -103,6 +106,13 @@ namespace DexManager.Models
             if (Features == null) Features = defaults.Features;
             if (KeyMappings == null) KeyMappings = defaults.KeyMappings;
             if (LastSuccess == null) LastSuccess = defaults.LastSuccess;
+            if (SingleWindowSlots == null)
+                SingleWindowSlots = new List<SingleWindowSlotSettings>();
+            while (SingleWindowSlots.Count < 3)
+            {
+                SingleWindowSlots.Add(CreateDefaultSingleWindowSlot(
+                    SingleWindowSlots.Count + 1));
+            }
             var oldSchemaVersion = SchemaVersion;
             if (SchemaVersion <= 0) SchemaVersion = defaults.SchemaVersion;
 
@@ -154,6 +164,10 @@ namespace DexManager.Models
                 Scrcpy.ForceStopStartApp = defaults.Scrcpy.ForceStopStartApp;
                 SchemaVersion = defaults.SchemaVersion;
             }
+            if (oldSchemaVersion < 9)
+            {
+                SchemaVersion = defaults.SchemaVersion;
+            }
             if (string.IsNullOrWhiteSpace(Paths.Win7AdbPath))
                 Paths.Win7AdbPath = defaults.Paths.Win7AdbPath;
             if (string.IsNullOrWhiteSpace(Paths.ModernAdbPath))
@@ -185,6 +199,38 @@ namespace DexManager.Models
                 @"(?<!\S)(?:-w|--stay-awake)(?!\S)",
                 string.Empty,
                 RegexOptions.IgnoreCase).Trim();
+        }
+
+        private static List<SingleWindowSlotSettings> CreateDefaultSingleWindowSlots()
+        {
+            return new List<SingleWindowSlotSettings>
+            {
+                CreateDefaultSingleWindowSlot(1),
+                CreateDefaultSingleWindowSlot(2),
+                CreateDefaultSingleWindowSlot(3)
+            };
+        }
+
+        private static SingleWindowSlotSettings CreateDefaultSingleWindowSlot(
+            int slot)
+        {
+            return new SingleWindowSlotSettings
+            {
+                Slot = slot,
+                Width = 1600,
+                Height = 900,
+                Dpi = 150,
+                BitRate = "20M",
+                MaxFps = 60,
+                TurnScreenOff = true,
+                StayAwake = true,
+                UseHidKeyboard = true,
+                UseHidMouse = true,
+                ForceStopStartApp = false,
+                StartAppPackage = string.Empty,
+                StartAppName = string.Empty,
+                AdditionalArguments = string.Empty
+            };
         }
     }
 
@@ -233,6 +279,26 @@ namespace DexManager.Models
         [DataMember(Order = 8)] public string StartAppPackage { get; set; }
         [DataMember(Order = 9)] public string AdditionalArguments { get; set; }
         [DataMember(Order = 10)] public bool StayAwake { get; set; }
+    }
+
+    [DataContract]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public sealed class SingleWindowSlotSettings
+    {
+        [DataMember(Order = 1)] public int Slot { get; set; }
+        [DataMember(Order = 2)] public int Width { get; set; }
+        [DataMember(Order = 3)] public int Height { get; set; }
+        [DataMember(Order = 4)] public int Dpi { get; set; }
+        [DataMember(Order = 5)] public string BitRate { get; set; }
+        [DataMember(Order = 6)] public int MaxFps { get; set; }
+        [DataMember(Order = 7)] public bool TurnScreenOff { get; set; }
+        [DataMember(Order = 8)] public bool StayAwake { get; set; }
+        [DataMember(Order = 9)] public bool UseHidKeyboard { get; set; }
+        [DataMember(Order = 10)] public bool UseHidMouse { get; set; }
+        [DataMember(Order = 11)] public bool ForceStopStartApp { get; set; }
+        [DataMember(Order = 12)] public string StartAppPackage { get; set; }
+        [DataMember(Order = 13)] public string StartAppName { get; set; }
+        [DataMember(Order = 14)] public string AdditionalArguments { get; set; }
     }
 
     [DataContract]

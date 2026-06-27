@@ -14,6 +14,7 @@ namespace DexManager.Services
         private readonly HotkeyService _hotkeyService;
         private readonly CaptureService _captureService;
         private readonly ScrcpyService _scrcpyService;
+        private readonly SingleWindowService _singleWindowService;
         private readonly AppSettings _settings;
         private readonly LogService _logService;
         private readonly Timer _pollTimer;
@@ -23,17 +24,20 @@ namespace DexManager.Services
         private bool _leftButtonWasDown;
         private Point _mouseDownPoint;
         private bool _mouseDragCandidate;
+        private IntPtr _captureWindowHandle;
 
         public CaptureCoordinator(
             HotkeyService hotkeyService,
             CaptureService captureService,
             ScrcpyService scrcpyService,
+            SingleWindowService singleWindowService,
             AppSettings settings,
             LogService logService)
         {
             _hotkeyService = hotkeyService;
             _captureService = captureService;
             _scrcpyService = scrcpyService;
+            _singleWindowService = singleWindowService;
             _settings = settings;
             _logService = logService;
 
@@ -83,7 +87,7 @@ namespace DexManager.Services
             RunCaptureAsync(delegate
             {
                 return _captureService.CaptureWindow(
-                    _scrcpyService.MainWindowHandle);
+                    _captureWindowHandle);
             });
         }
 
@@ -127,16 +131,34 @@ namespace DexManager.Services
 
         private void BringScrcpyToFront()
         {
-            var handle = _scrcpyService.MainWindowHandle;
+            var handle = GetPreferredScrcpyWindow();
             if (handle == IntPtr.Zero)
             {
                 _logService.Warning("Scrcpy 창을 찾지 못해 캡처 모드를 시작할 수 없습니다.");
                 return;
             }
 
+            _captureWindowHandle = handle;
             if (NativeMethods.IsIconic(handle))
                 NativeMethods.ShowWindow(handle, NativeMethods.SwRestore);
             NativeMethods.SetForegroundWindow(handle);
+        }
+
+        private IntPtr GetPreferredScrcpyWindow()
+        {
+            var foreground = NativeMethods.GetForegroundWindow();
+            var dexHandle = _scrcpyService.MainWindowHandle;
+            if (foreground != IntPtr.Zero &&
+                (foreground == dexHandle ||
+                    _singleWindowService.ContainsWindowHandle(foreground)))
+            {
+                return foreground;
+            }
+
+            if (dexHandle != IntPtr.Zero) return dexHandle;
+            foreach (var handle in _singleWindowService.GetWindowHandles())
+                return handle;
+            return IntPtr.Zero;
         }
 
         private void PollTimer_Tick(object sender, EventArgs e)

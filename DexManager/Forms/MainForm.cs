@@ -16,6 +16,7 @@ namespace DexManager.Forms
         private readonly LogService _logService;
         private readonly AdbService _adbService;
         private readonly ScrcpyService _scrcpyService;
+        private readonly SingleWindowService _singleWindowService;
         private readonly DeviceMonitorService _deviceMonitor;
         private readonly DexOrchestrator _orchestrator;
         private readonly CaptureCoordinator _captureCoordinator;
@@ -53,10 +54,12 @@ namespace DexManager.Forms
         private readonly ComboBox _startAppBox;
         private readonly Button _loadAppsButton;
         private readonly Label _modeHintLabel;
+        private readonly Label _displaySettingsTitle;
         private ThemedButton _dexModeButton;
         private ThemedButton _singleModeButton1;
         private ThemedButton _singleModeButton2;
         private ThemedButton _singleModeButton3;
+        private int _selectedMode;
         private DeviceState _lastDeviceState;
         private string _connectionError;
         private bool _allowExit;
@@ -71,6 +74,7 @@ namespace DexManager.Forms
             LogService logService,
             AdbService adbService,
             ScrcpyService scrcpyService,
+            SingleWindowService singleWindowService,
             DeviceMonitorService deviceMonitor,
             DexOrchestrator orchestrator,
             CaptureCoordinator captureCoordinator,
@@ -84,6 +88,7 @@ namespace DexManager.Forms
             _logService = logService;
             _adbService = adbService;
             _scrcpyService = scrcpyService;
+            _singleWindowService = singleWindowService;
             _deviceMonitor = deviceMonitor;
             _orchestrator = orchestrator;
             _captureCoordinator = captureCoordinator;
@@ -92,6 +97,7 @@ namespace DexManager.Forms
             _keyMappingService = keyMappingService;
             _isAutoRun = isAutoRun;
             _lastDeviceState = DeviceState.Disconnected();
+            _selectedMode = 0;
 
             Text = "DeX Manager";
             StartPosition = FormStartPosition.CenterScreen;
@@ -155,7 +161,10 @@ namespace DexManager.Forms
             _deviceStatusValue = new Label { Visible = false };
             AddDivider(204);
 
-            AddSectionTitle("DeX 화면 설정", 32, 226);
+            _displaySettingsTitle = AddSectionTitle(
+                "DeX 화면 설정",
+                32,
+                226);
             _resolutionBox = CreateStyledCombo(105, 263, 160, true);
             _resolutionBox.Items.Add(new ResolutionPreset("1600 x 900", 1600, 900));
             _resolutionBox.Items.Add(new ResolutionPreset("1920 x 1080", 1920, 1080));
@@ -256,6 +265,8 @@ namespace DexManager.Forms
             _deviceMonitor.DeviceConnected += DeviceMonitor_DeviceConnected;
             _deviceMonitor.DeviceDisconnected += DeviceMonitor_DeviceDisconnected;
             _scrcpyService.RunningChanged += ScrcpyService_RunningChanged;
+            _singleWindowService.RunningChanged +=
+                SingleWindowService_RunningChanged;
             _captureCoordinator.ExitHotkeyPressed += CaptureCoordinator_ExitHotkeyPressed;
             _autoHideService.IdleHideRequested += AutoHideService_IdleHideRequested;
             _trayService = new TrayService(
@@ -328,12 +339,28 @@ namespace DexManager.Forms
             finally { _deviceMonitor.Start(); }
         }
 
-        private async void StartButton_Click(object sender, EventArgs e) { await StartDexAsync(); }
-        private async void StopButton_Click(object sender, EventArgs e) { await StopDexAsync(); }
+        private async void StartButton_Click(object sender, EventArgs e)
+        {
+            if (_selectedMode == 0)
+                await StartDexAsync();
+            else
+                await StartSingleWindowAsync(_selectedMode);
+        }
+
+        private async void StopButton_Click(object sender, EventArgs e)
+        {
+            if (_selectedMode == 0)
+                await StopDexAsync();
+            else
+                await StopSingleWindowAsync(_selectedMode);
+        }
 
         private async Task StartDexAsync()
         {
-            try { ApplyRunSettings(false); }
+            try
+            {
+                if (_selectedMode == 0) ApplyRunSettings(false);
+            }
             catch (Exception ex) { ShowError("실행 설정을 적용하지 못했습니다.", ex); return; }
 
             _connectionError = null;
@@ -354,6 +381,64 @@ namespace DexManager.Forms
             finally { UpdateRunningState(); }
         }
 
+        private async Task StartSingleWindowAsync(int slot)
+        {
+            try { ApplyRunSettings(false); }
+            catch (Exception ex)
+            {
+                ShowError("단일창 실행 설정을 적용하지 못했습니다.", ex);
+                return;
+            }
+
+            _connectionError = null;
+            SetOperationState(true, "시작 중");
+            SetConnectionIndicator(
+                Color.DarkOrange,
+                "단일창 " + slot + " 시작 중",
+                "Scrcpy 새 가상화면과 선택한 앱을 준비합니다.");
+            try
+            {
+                var settings = GetSingleWindowSettings(slot);
+                await Task.Run(delegate
+                {
+                    _singleWindowService.Start(slot, settings);
+                });
+            }
+            catch (Exception ex)
+            {
+                ShowError("단일창 " + slot + "을 시작하지 못했습니다.", ex);
+            }
+            finally
+            {
+                UpdateRunningState();
+            }
+        }
+
+        private async Task StopSingleWindowAsync(int slot)
+        {
+            _connectionError = null;
+            SetOperationState(true, "중지 중");
+            SetConnectionIndicator(
+                Color.DarkOrange,
+                "단일창 " + slot + " 중지 중",
+                "Scrcpy 새 가상화면을 정리합니다.");
+            try
+            {
+                await Task.Run(delegate
+                {
+                    _singleWindowService.Stop(slot);
+                });
+            }
+            catch (Exception ex)
+            {
+                ShowError("단일창 " + slot + "을 중지하지 못했습니다.", ex);
+            }
+            finally
+            {
+                UpdateRunningState();
+            }
+        }
+
         private void DeviceMonitor_StateChanged(object sender, DeviceStateChangedEventArgs e)
         {
             RunOnUi(delegate
@@ -364,7 +449,7 @@ namespace DexManager.Forms
                 _deviceInfoLabel.Text = e.Current.Status == AdbDeviceStatus.Device
                     ? "연결된 Android 장치  ·  " + e.Current.Serial
                     : "휴대폰 USB 연결을 기다립니다.";
-                if (!_scrcpyService.IsRunning)
+                if (!IsSelectedModeRunning())
                     UpdateIndicatorForDevice(e.Current);
             });
         }
@@ -379,9 +464,12 @@ namespace DexManager.Forms
         {
             if (_orchestrator.IsRunning)
                 RunOnUi(async delegate { await StopDexAsync(); });
+            if (IsAnySingleWindowRunning())
+                Task.Run(delegate { _singleWindowService.StopAll(); });
         }
 
         private void ScrcpyService_RunningChanged(object sender, EventArgs e) { RunOnUi(UpdateRunningState); }
+        private void SingleWindowService_RunningChanged(object sender, EventArgs e) { RunOnUi(UpdateRunningState); }
         private void CaptureCoordinator_ExitHotkeyPressed(object sender, EventArgs e) { RunOnUi(ExitApplication); }
         private void AutoHideService_IdleHideRequested(object sender, EventArgs e) { RunOnUi(HideApplicationForIdle); }
 
@@ -391,6 +479,7 @@ namespace DexManager.Forms
             _captureCoordinator.Dispose();
             _autoHideService.Dispose();
             _keyMappingService.Dispose();
+            _singleWindowService.Dispose();
             _scrcpyService.Dispose();
             _trayService.Dispose();
             if (_logForm != null) _logForm.Dispose();
@@ -407,7 +496,7 @@ namespace DexManager.Forms
 
         private void UpdateRunningState()
         {
-            var running = _scrcpyService.IsRunning;
+            var running = IsSelectedModeRunning();
             _scrcpyStatusValue.Text = running ? "실행 중" : "중지";
             _dexStatusValue.Text = running ? "실행 중" : "대기";
             _startButton.Enabled = !running;
@@ -419,15 +508,22 @@ namespace DexManager.Forms
                 SetConnectionIndicator(Color.Firebrick, "오류", _connectionError);
                 return;
             }
-            if (running)
+            if (running && _selectedMode == 0)
                 SetConnectionIndicator(Color.ForestGreen, "DeX 실행 중", "Scrcpy 가상화면이 정상 실행 중입니다.");
+            else if (running)
+                SetConnectionIndicator(
+                    Color.ForestGreen,
+                    "단일창 " + _selectedMode + " 실행 중",
+                    GetSingleWindowStatusDetail(_selectedMode));
+            else if (_selectedMode > 0)
+                UpdateSingleWindowIndicator(_selectedMode);
             else
                 UpdateIndicatorForDevice(_lastDeviceState);
         }
 
         private void SetOperationState(bool operationRunning, string status)
         {
-            var running = _scrcpyService.IsRunning;
+            var running = IsSelectedModeRunning();
             _startButton.Visible = !running;
             _stopButton.Visible = running;
             _startButton.Enabled = !operationRunning && !running;
@@ -496,24 +592,68 @@ namespace DexManager.Forms
 
         private void LoadRunSettings()
         {
-            _widthBox.Value = Clamp(_settings.VirtualDisplay.Width, _widthBox);
-            _heightBox.Value = Clamp(_settings.VirtualDisplay.Height, _heightBox);
-            _dpiBox.Value = Clamp(_settings.VirtualDisplay.Dpi, _dpiBox);
-            _bitRateBox.Text = _settings.Scrcpy.BitRate;
-            _maxFpsBox.SelectedItem = _settings.Scrcpy.MaxFps == 30 ? 30 : 60;
-            _turnScreenOffBox.Checked = _settings.Scrcpy.TurnScreenOff;
-            _stayAwakeBox.Checked = _settings.Scrcpy.StayAwake;
-            _useHidKeyboardBox.Checked = _settings.Scrcpy.UseHidKeyboard;
-            _useHidMouseBox.Checked = _settings.Scrcpy.UseHidMouse;
-            _forceStopAppBox.Checked = _settings.Scrcpy.ForceStopStartApp;
-            _reuseDisplayBox.Checked = _settings.VirtualDisplay.ReuseExistingDisplay;
-            _additionalArgumentsBox.Text = _settings.Scrcpy.AdditionalArguments;
-            _startAppBox.Text = string.IsNullOrWhiteSpace(_settings.Scrcpy.StartAppPackage)
-                ? NoStartAppText
-                : _settings.Scrcpy.StartAppPackage;
+            int width;
+            int height;
+            int dpi;
+            string bitRate;
+            int maxFps;
+            bool turnScreenOff;
+            bool stayAwake;
+            bool useHidKeyboard;
+            bool useHidMouse;
+            bool forceStopStartApp;
+            string startAppPackage;
+            string additionalArguments;
+
+            if (_selectedMode == 0)
+            {
+                width = _settings.VirtualDisplay.Width;
+                height = _settings.VirtualDisplay.Height;
+                dpi = _settings.VirtualDisplay.Dpi;
+                bitRate = _settings.Scrcpy.BitRate;
+                maxFps = _settings.Scrcpy.MaxFps;
+                turnScreenOff = _settings.Scrcpy.TurnScreenOff;
+                stayAwake = _settings.Scrcpy.StayAwake;
+                useHidKeyboard = _settings.Scrcpy.UseHidKeyboard;
+                useHidMouse = _settings.Scrcpy.UseHidMouse;
+                forceStopStartApp = _settings.Scrcpy.ForceStopStartApp;
+                startAppPackage = _settings.Scrcpy.StartAppPackage;
+                additionalArguments = _settings.Scrcpy.AdditionalArguments;
+                _reuseDisplayBox.Checked =
+                    _settings.VirtualDisplay.ReuseExistingDisplay;
+            }
+            else
+            {
+                var slot = GetSingleWindowSettings(_selectedMode);
+                width = slot.Width;
+                height = slot.Height;
+                dpi = slot.Dpi;
+                bitRate = slot.BitRate;
+                maxFps = slot.MaxFps;
+                turnScreenOff = slot.TurnScreenOff;
+                stayAwake = slot.StayAwake;
+                useHidKeyboard = slot.UseHidKeyboard;
+                useHidMouse = slot.UseHidMouse;
+                forceStopStartApp = slot.ForceStopStartApp;
+                startAppPackage = slot.StartAppPackage;
+                additionalArguments = slot.AdditionalArguments;
+            }
+
+            _widthBox.Value = Clamp(width, _widthBox);
+            _heightBox.Value = Clamp(height, _heightBox);
+            _dpiBox.Value = Clamp(dpi, _dpiBox);
+            _bitRateBox.Text = bitRate;
+            _maxFpsBox.SelectedItem = maxFps == 30 ? 30 : 60;
+            _turnScreenOffBox.Checked = turnScreenOff;
+            _stayAwakeBox.Checked = stayAwake;
+            _useHidKeyboardBox.Checked = useHidKeyboard;
+            _useHidMouseBox.Checked = useHidMouse;
+            _forceStopAppBox.Checked = forceStopStartApp;
+            _additionalArgumentsBox.Text = additionalArguments;
+            SetSelectedAppPackage(startAppPackage);
             _resolutionBox.SelectedIndex = FindResolutionPresetIndex(
-                _settings.VirtualDisplay.Width,
-                _settings.VirtualDisplay.Height);
+                width,
+                height);
         }
 
         private int FindResolutionPresetIndex(int width, int height)
@@ -533,6 +673,11 @@ namespace DexManager.Forms
             try
             {
                 ApplyRunSettings(false);
+                if (_selectedMode > 0)
+                {
+                    await ApplySingleWindowSettingsAsync(_selectedMode);
+                    return;
+                }
                 if (!_adbService.IsAuthorizedDeviceConnected())
                 {
                     _logService.Info(
@@ -589,6 +734,50 @@ namespace DexManager.Forms
             {
                 UpdateRunningState();
             }
+        }
+
+        private async Task ApplySingleWindowSettingsAsync(int slot)
+        {
+            if (!_adbService.IsAuthorizedDeviceConnected())
+            {
+                MessageBox.Show(
+                    this,
+                    "단일창 " + slot + " 설정을 저장했습니다.\r\n" +
+                    "연결된 휴대폰이 없어 다음 실행 때 적용됩니다.",
+                    "DeX Manager",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                return;
+            }
+
+            if (!_singleWindowService.IsRunning(slot))
+            {
+                MessageBox.Show(
+                    this,
+                    "단일창 " + slot + " 설정을 저장했습니다.",
+                    "DeX Manager",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                return;
+            }
+
+            SetOperationState(true, "설정 적용 중");
+            SetConnectionIndicator(
+                Color.DarkOrange,
+                "단일창 " + slot + " 설정 적용 중",
+                "현재 창을 닫고 새 설정으로 다시 시작합니다.");
+            var settings = GetSingleWindowSettings(slot);
+            await Task.Run(delegate
+            {
+                _singleWindowService.Restart(slot, settings);
+            });
+            UpdateRunningState();
+            MessageBox.Show(
+                this,
+                "단일창 " + slot + "을 새 설정으로 다시 시작했습니다.",
+                "DeX Manager",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
         }
 
         private async void LoadAppsButton_Click(object sender, EventArgs e)
@@ -658,21 +847,47 @@ namespace DexManager.Forms
             if (string.IsNullOrWhiteSpace(bitRate))
                 throw new InvalidOperationException("비트레이트를 입력하세요. 예: 20M");
 
-            _settings.VirtualDisplay.Width = (int)_widthBox.Value;
-            _settings.VirtualDisplay.Height = (int)_heightBox.Value;
-            _settings.VirtualDisplay.Dpi = (int)_dpiBox.Value;
-            _settings.VirtualDisplay.ReuseExistingDisplay = _reuseDisplayBox.Checked;
-            _settings.Scrcpy.BitRate = bitRate;
-            _settings.Scrcpy.MaxFps = (int)_maxFpsBox.SelectedItem;
-            _settings.Scrcpy.TurnScreenOff = _turnScreenOffBox.Checked;
-            _settings.Scrcpy.StayAwake = _stayAwakeBox.Checked;
-            _settings.Scrcpy.UseHidKeyboard = _useHidKeyboardBox.Checked;
-            _settings.Scrcpy.UseHidMouse = _useHidMouseBox.Checked;
-            _settings.Scrcpy.ForceStopStartApp = _forceStopAppBox.Checked;
-            _settings.Scrcpy.StartAppPackage = GetSelectedAppPackage();
-            _settings.Scrcpy.AdditionalArguments = _additionalArgumentsBox.Text.Trim();
+            if (_selectedMode == 0)
+            {
+                _settings.VirtualDisplay.Width = (int)_widthBox.Value;
+                _settings.VirtualDisplay.Height = (int)_heightBox.Value;
+                _settings.VirtualDisplay.Dpi = (int)_dpiBox.Value;
+                _settings.VirtualDisplay.ReuseExistingDisplay =
+                    _reuseDisplayBox.Checked;
+                _settings.Scrcpy.BitRate = bitRate;
+                _settings.Scrcpy.MaxFps = GetSelectedMaxFps();
+                _settings.Scrcpy.TurnScreenOff = _turnScreenOffBox.Checked;
+                _settings.Scrcpy.StayAwake = _stayAwakeBox.Checked;
+                _settings.Scrcpy.UseHidKeyboard = _useHidKeyboardBox.Checked;
+                _settings.Scrcpy.UseHidMouse = _useHidMouseBox.Checked;
+                _settings.Scrcpy.ForceStopStartApp = _forceStopAppBox.Checked;
+                _settings.Scrcpy.StartAppPackage = GetSelectedAppPackage();
+                _settings.Scrcpy.AdditionalArguments =
+                    _additionalArgumentsBox.Text.Trim();
+            }
+            else
+            {
+                var slot = GetSingleWindowSettings(_selectedMode);
+                slot.Width = (int)_widthBox.Value;
+                slot.Height = (int)_heightBox.Value;
+                slot.Dpi = (int)_dpiBox.Value;
+                slot.BitRate = bitRate;
+                slot.MaxFps = GetSelectedMaxFps();
+                slot.TurnScreenOff = _turnScreenOffBox.Checked;
+                slot.StayAwake = _stayAwakeBox.Checked;
+                slot.UseHidKeyboard = _useHidKeyboardBox.Checked;
+                slot.UseHidMouse = _useHidMouseBox.Checked;
+                slot.ForceStopStartApp = _forceStopAppBox.Checked;
+                slot.StartAppPackage = GetSelectedAppPackage();
+                slot.StartAppName = GetSelectedAppName();
+                slot.AdditionalArguments =
+                    _additionalArgumentsBox.Text.Trim();
+            }
             _settingsService.Save(_settings);
-            _logService.Info("메인 화면의 DeX/Scrcpy 실행 설정을 저장했습니다.");
+            _logService.Info(
+                _selectedMode == 0
+                    ? "메인 화면의 DeX/Scrcpy 실행 설정을 저장했습니다."
+                    : "단일창 " + _selectedMode + " 실행 설정을 저장했습니다.");
             if (showMessage)
             {
                 MessageBox.Show(this, "실행 설정을 저장했습니다. DeX 실행 중이면 다음 시작부터 적용됩니다.", "DEX Manager", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -688,6 +903,46 @@ namespace DexManager.Forms
             return string.Equals(text, NoStartAppText, StringComparison.OrdinalIgnoreCase)
                 ? string.Empty
                 : text;
+        }
+
+        private string GetSelectedAppName()
+        {
+            var app = _startAppBox.SelectedItem as ScrcpyAppInfo;
+            if (app != null && !string.IsNullOrWhiteSpace(app.PackageName))
+                return app.Name ?? app.PackageName;
+            return GetSelectedAppPackage();
+        }
+
+        private int GetSelectedMaxFps()
+        {
+            return _maxFpsBox.SelectedItem is int
+                ? (int)_maxFpsBox.SelectedItem
+                : 60;
+        }
+
+        private void SetSelectedAppPackage(string packageName)
+        {
+            packageName = packageName ?? string.Empty;
+            foreach (var item in _startAppBox.Items)
+            {
+                var app = item as ScrcpyAppInfo;
+                if (app == null ||
+                    !string.Equals(
+                        app.PackageName ?? string.Empty,
+                        packageName,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                _startAppBox.SelectedItem = item;
+                return;
+            }
+
+            _startAppBox.SelectedIndex = -1;
+            _startAppBox.Text = string.IsNullOrWhiteSpace(packageName)
+                ? NoStartAppText
+                : packageName;
         }
 
         private void AddNoStartAppItem()
@@ -838,7 +1093,7 @@ namespace DexManager.Forms
                 ForeColor = Color.FromArgb(107, 114, 128),
                 Location = new Point(16, 250),
                 Size = new Size(80, 80),
-                Text = "단일창은 UI 미리보기 단계입니다."
+                Text = "각 슬롯은 서로 다른 앱과 설정을 기억합니다."
             });
 
             Controls.Add(sidebar);
@@ -858,28 +1113,103 @@ namespace DexManager.Forms
 
         private void SelectDexMode()
         {
+            SaveCurrentModeBeforeSwitch();
+            _selectedMode = 0;
             SetSelectedModeButton(0);
             _modeHintLabel.Text = "DeX 모드";
+            _displaySettingsTitle.Text = "DeX 화면 설정";
             _startButton.Text = "DeX 시작";
             _stopButton.Text = "DeX 중지";
+            _reuseDisplayBox.Visible = true;
             _reuseDisplayBox.Enabled = true;
+            LoadRunSettings();
             UpdateRunningState();
-            UpdateIndicatorForDevice(_lastDeviceState);
         }
 
         private void SelectSingleWindowPreview(int slot)
         {
+            SaveCurrentModeBeforeSwitch();
+            _selectedMode = slot;
             SetSelectedModeButton(slot);
-            _modeHintLabel.Text = "단일창 " + slot + " 모드 UI 미리보기";
+            _modeHintLabel.Text = "단일창 " + slot + " · Scrcpy 새 가상화면";
+            _displaySettingsTitle.Text = "단일창 " + slot + " 화면 설정";
             _startButton.Text = "단일창 시작";
             _stopButton.Text = "단일창 중지";
-            _startButton.Enabled = false;
-            _stopButton.Enabled = false;
+            _reuseDisplayBox.Visible = false;
             _reuseDisplayBox.Enabled = false;
+            LoadRunSettings();
+            UpdateRunningState();
+        }
+
+        private void SaveCurrentModeBeforeSwitch()
+        {
+            try
+            {
+                ApplyRunSettings(false);
+            }
+            catch (Exception ex)
+            {
+                _logService.Warning(
+                    "모드 전환 중 현재 실행 설정을 저장하지 못했습니다: " +
+                    ex.Message);
+            }
+        }
+
+        private SingleWindowSlotSettings GetSingleWindowSettings(int slot)
+        {
+            if (slot < 1 || slot > _settings.SingleWindowSlots.Count)
+                throw new ArgumentOutOfRangeException("slot");
+            return _settings.SingleWindowSlots[slot - 1];
+        }
+
+        private bool IsSelectedModeRunning()
+        {
+            return _selectedMode == 0
+                ? _scrcpyService.IsRunning
+                : _singleWindowService.IsRunning(_selectedMode);
+        }
+
+        private bool IsAnySingleWindowRunning()
+        {
+            for (var slot = 1; slot <= 3; slot++)
+            {
+                if (_singleWindowService.IsRunning(slot)) return true;
+            }
+            return false;
+        }
+
+        private string GetSingleWindowStatusDetail(int slot)
+        {
+            var settings = GetSingleWindowSettings(slot);
+            var app = string.IsNullOrWhiteSpace(settings.StartAppName)
+                ? settings.StartAppPackage
+                : settings.StartAppName;
+            return string.IsNullOrWhiteSpace(app)
+                ? "Scrcpy 새 가상화면이 실행 중입니다."
+                : app + " 앱이 실행 중입니다.";
+        }
+
+        private void UpdateSingleWindowIndicator(int slot)
+        {
+            if (!string.IsNullOrWhiteSpace(_connectionError))
+            {
+                SetConnectionIndicator(Color.Firebrick, "오류", _connectionError);
+                return;
+            }
+            if (_lastDeviceState == null ||
+                _lastDeviceState.Status != AdbDeviceStatus.Device)
+            {
+                UpdateIndicatorForDevice(_lastDeviceState);
+                return;
+            }
+
+            var settings = GetSingleWindowSettings(slot);
             SetConnectionIndicator(
                 Color.FromArgb(37, 99, 235),
-                "단일창 " + slot + " 준비 중",
-                "아직 실행 로직은 연결하지 않았습니다. 화면 구성 미리보기입니다.");
+                "단일창 " + slot + " 준비",
+                string.IsNullOrWhiteSpace(settings.StartAppPackage)
+                    ? "실행할 앱을 선택하세요."
+                    : "시작 버튼을 누르면 선택한 앱을 새 가상화면에서 실행합니다.");
         }
 
         private void SetSelectedModeButton(int slot)
@@ -911,16 +1241,18 @@ namespace DexManager.Forms
             Controls.Add(menu);
         }
 
-        private void AddSectionTitle(string text, int x, int y)
+        private Label AddSectionTitle(string text, int x, int y)
         {
-            Controls.Add(new Label
+            var label = new Label
             {
                 AutoSize = true,
                 Font = new Font("Segoe UI", 13F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(17, 24, 39),
                 Location = new Point(x, y),
                 Text = text
-            });
+            };
+            Controls.Add(label);
+            return label;
         }
 
         private Label AddFieldLabel(string text, int x, int y)
@@ -1072,6 +1404,7 @@ namespace DexManager.Forms
             _dexStatusValue.Text = "종료 정리 중";
             Enabled = false;
             _deviceMonitor.Stop();
+            await Task.Run(delegate { _singleWindowService.StopAll(); });
             await _orchestrator.ShutdownAsync();
             _allowExit = true;
             Close();
