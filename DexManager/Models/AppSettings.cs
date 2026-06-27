@@ -22,7 +22,7 @@ namespace DexManager.Models
         {
             return new AppSettings
             {
-                SchemaVersion = 9,
+                SchemaVersion = 10,
                 Paths = new PathSettings
                 {
                     AdbPath = string.Empty,
@@ -40,7 +40,9 @@ namespace DexManager.Models
                     Height = 900,
                     Dpi = 150,
                     Suffix = "hdmi",
-                    ReuseExistingDisplay = true
+                    ReuseExistingDisplay = true,
+                    CustomWidth = 1600,
+                    CustomHeight = 900
                 },
                 Scrcpy = new ScrcpySettings
                 {
@@ -168,6 +170,35 @@ namespace DexManager.Models
             {
                 SchemaVersion = defaults.SchemaVersion;
             }
+            if (oldSchemaVersion < 10)
+            {
+                VirtualDisplay.CustomWidth = VirtualDisplay.Width;
+                VirtualDisplay.CustomHeight = VirtualDisplay.Height;
+                foreach (var slot in SingleWindowSlots)
+                {
+                    if (slot == null) continue;
+                    slot.CustomWidth = slot.Width;
+                    slot.CustomHeight = slot.Height;
+                }
+                SchemaVersion = defaults.SchemaVersion;
+            }
+            if (VirtualDisplay.CustomWidth <= 0)
+                VirtualDisplay.CustomWidth = VirtualDisplay.Width;
+            if (VirtualDisplay.CustomHeight <= 0)
+                VirtualDisplay.CustomHeight = VirtualDisplay.Height;
+            for (var slotIndex = 0;
+                slotIndex < SingleWindowSlots.Count;
+                slotIndex++)
+            {
+                var slot = SingleWindowSlots[slotIndex];
+                if (slot == null)
+                {
+                    slot = CreateDefaultSingleWindowSlot(slotIndex + 1);
+                    SingleWindowSlots[slotIndex] = slot;
+                }
+                if (slot.CustomWidth <= 0) slot.CustomWidth = slot.Width;
+                if (slot.CustomHeight <= 0) slot.CustomHeight = slot.Height;
+            }
             if (string.IsNullOrWhiteSpace(Paths.Win7AdbPath))
                 Paths.Win7AdbPath = defaults.Paths.Win7AdbPath;
             if (string.IsNullOrWhiteSpace(Paths.ModernAdbPath))
@@ -229,7 +260,9 @@ namespace DexManager.Models
                 ForceStopStartApp = false,
                 StartAppPackage = string.Empty,
                 StartAppName = string.Empty,
-                AdditionalArguments = string.Empty
+                AdditionalArguments = string.Empty,
+                CustomWidth = 1600,
+                CustomHeight = 900
             };
         }
     }
@@ -263,6 +296,8 @@ namespace DexManager.Models
         [DataMember(Order = 3)] public int Dpi { get; set; }
         [DataMember(Order = 4)] public string Suffix { get; set; }
         [DataMember(Order = 5)] public bool ReuseExistingDisplay { get; set; }
+        [DataMember(Order = 6)] public int CustomWidth { get; set; }
+        [DataMember(Order = 7)] public int CustomHeight { get; set; }
     }
 
     [DataContract]
@@ -299,6 +334,8 @@ namespace DexManager.Models
         [DataMember(Order = 12)] public string StartAppPackage { get; set; }
         [DataMember(Order = 13)] public string StartAppName { get; set; }
         [DataMember(Order = 14)] public string AdditionalArguments { get; set; }
+        [DataMember(Order = 15)] public int CustomWidth { get; set; }
+        [DataMember(Order = 16)] public int CustomHeight { get; set; }
     }
 
     [DataContract]

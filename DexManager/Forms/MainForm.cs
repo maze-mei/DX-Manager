@@ -62,6 +62,9 @@ namespace DexManager.Forms
         private ThemedButton _singleModeButton3;
         private int _selectedMode;
         private int _phoneScreenWakeSuppression;
+        private bool _loadingRunSettings;
+        private bool _resolutionSelectionInitialized;
+        private bool _resolutionWasCustom;
         private DeviceState _lastDeviceState;
         private string _connectionError;
         private bool _allowExit;
@@ -660,6 +663,16 @@ namespace DexManager.Forms
 
         private void ResolutionBox_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (_loadingRunSettings) return;
+
+            if (_resolutionSelectionInitialized && _resolutionWasCustom)
+                StoreCurrentCustomResolution();
+
+            ApplyResolutionSelection();
+        }
+
+        private void ApplyResolutionSelection()
+        {
             var preset = _resolutionBox.SelectedItem as ResolutionPreset;
             var custom = preset == null || preset.Width == 0;
             _widthBox.Enabled = custom;
@@ -668,11 +681,23 @@ namespace DexManager.Forms
             _heightBox.Visible = custom;
             _widthLabel.Visible = custom;
             _heightLabel.Visible = custom;
-            if (!custom)
+            if (custom)
+            {
+                _widthBox.Value = Clamp(
+                    GetCurrentCustomWidth(),
+                    _widthBox);
+                _heightBox.Value = Clamp(
+                    GetCurrentCustomHeight(),
+                    _heightBox);
+            }
+            else
             {
                 _widthBox.Value = preset.Width;
                 _heightBox.Value = preset.Height;
             }
+
+            _resolutionWasCustom = custom;
+            _resolutionSelectionInitialized = true;
         }
 
         private void LoadRunSettings()
@@ -690,6 +715,8 @@ namespace DexManager.Forms
             string startAppPackage;
             string additionalArguments;
 
+            _loadingRunSettings = true;
+            _resolutionSelectionInitialized = false;
             if (_selectedMode == 0)
             {
                 width = _settings.VirtualDisplay.Width;
@@ -739,6 +766,8 @@ namespace DexManager.Forms
             _resolutionBox.SelectedIndex = FindResolutionPresetIndex(
                 width,
                 height);
+            _loadingRunSettings = false;
+            ApplyResolutionSelection();
         }
 
         private int FindResolutionPresetIndex(int width, int height)
@@ -953,6 +982,13 @@ namespace DexManager.Forms
             {
                 _settings.VirtualDisplay.Width = (int)_widthBox.Value;
                 _settings.VirtualDisplay.Height = (int)_heightBox.Value;
+                if (IsCustomResolutionSelected())
+                {
+                    _settings.VirtualDisplay.CustomWidth =
+                        (int)_widthBox.Value;
+                    _settings.VirtualDisplay.CustomHeight =
+                        (int)_heightBox.Value;
+                }
                 _settings.VirtualDisplay.Dpi = (int)_dpiBox.Value;
                 _settings.VirtualDisplay.ReuseExistingDisplay =
                     _reuseDisplayBox.Checked;
@@ -972,6 +1008,11 @@ namespace DexManager.Forms
                 var slot = GetSingleWindowSettings(_selectedMode);
                 slot.Width = (int)_widthBox.Value;
                 slot.Height = (int)_heightBox.Value;
+                if (IsCustomResolutionSelected())
+                {
+                    slot.CustomWidth = (int)_widthBox.Value;
+                    slot.CustomHeight = (int)_heightBox.Value;
+                }
                 slot.Dpi = (int)_dpiBox.Value;
                 slot.BitRate = bitRate;
                 slot.MaxFps = GetSelectedMaxFps();
@@ -1262,6 +1303,42 @@ namespace DexManager.Forms
             if (slot < 1 || slot > _settings.SingleWindowSlots.Count)
                 throw new ArgumentOutOfRangeException("slot");
             return _settings.SingleWindowSlots[slot - 1];
+        }
+
+        private bool IsCustomResolutionSelected()
+        {
+            var preset = _resolutionBox.SelectedItem as ResolutionPreset;
+            return preset == null || preset.Width == 0;
+        }
+
+        private int GetCurrentCustomWidth()
+        {
+            return _selectedMode == 0
+                ? _settings.VirtualDisplay.CustomWidth
+                : GetSingleWindowSettings(_selectedMode).CustomWidth;
+        }
+
+        private int GetCurrentCustomHeight()
+        {
+            return _selectedMode == 0
+                ? _settings.VirtualDisplay.CustomHeight
+                : GetSingleWindowSettings(_selectedMode).CustomHeight;
+        }
+
+        private void StoreCurrentCustomResolution()
+        {
+            var width = (int)_widthBox.Value;
+            var height = (int)_heightBox.Value;
+            if (_selectedMode == 0)
+            {
+                _settings.VirtualDisplay.CustomWidth = width;
+                _settings.VirtualDisplay.CustomHeight = height;
+                return;
+            }
+
+            var slot = GetSingleWindowSettings(_selectedMode);
+            slot.CustomWidth = width;
+            slot.CustomHeight = height;
         }
 
         private bool IsSelectedModeRunning()
