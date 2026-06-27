@@ -526,6 +526,11 @@ namespace DexManager.Forms
         {
             try
             {
+                if (_settings.Features.DisableStayAwakeOnStop)
+                {
+                    _adbService.Shell(
+                        "settings put global stay_on_while_plugged_in 0");
+                }
                 var result = _adbService.Shell("input keyevent 224");
                 if (result.IsSuccess)
                     _logService.Info(

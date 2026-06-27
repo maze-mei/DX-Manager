@@ -137,7 +137,8 @@ namespace DexManager.Services
             if (settings.TurnScreenOff)
             {
                 arguments.Add("-S");
-                arguments.Add("--power-off-on-close");
+                arguments.Add("--no-power-on");
+                arguments.Add("--no-cleanup");
             }
             if (settings.StayAwake) arguments.Add("-w");
 
