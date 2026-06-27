@@ -65,6 +65,7 @@ namespace DexManager.Forms
         private bool _loadingRunSettings;
         private bool _resolutionSelectionInitialized;
         private bool _resolutionWasCustom;
+        private bool? _lastAppliedStayAwakeState;
         private DeviceState _lastDeviceState;
         private string _connectionError;
         private bool _allowExit;
@@ -456,6 +457,10 @@ namespace DexManager.Forms
                 _deviceInfoLabel.Text = e.Current.Status == AdbDeviceStatus.Device
                     ? "연결된 Android 장치  ·  " + e.Current.Serial
                     : "휴대폰 USB 연결을 기다립니다.";
+                if (e.Current.Status == AdbDeviceStatus.Device)
+                    UpdateDeviceStayAwakeState();
+                else
+                    _lastAppliedStayAwakeState = null;
                 if (!IsSelectedModeRunning())
                     UpdateIndicatorForDevice(e.Current);
             });
@@ -488,7 +493,50 @@ namespace DexManager.Forms
         private void HandleScrcpyRunningChanged()
         {
             UpdateRunningState();
+            UpdateDeviceStayAwakeState();
             UpdatePhoneScreenWakeSchedule();
+        }
+
+        private void UpdateDeviceStayAwakeState()
+        {
+            if (_lastDeviceState == null ||
+                _lastDeviceState.Status != AdbDeviceStatus.Device)
+            {
+                _lastAppliedStayAwakeState = null;
+                return;
+            }
+
+            var requested = _scrcpyService.IsStayAwakeRequested ||
+                _singleWindowService.IsStayAwakeRequested;
+            if (_lastAppliedStayAwakeState.HasValue &&
+                _lastAppliedStayAwakeState.Value == requested)
+            {
+                return;
+            }
+
+            try
+            {
+                var result = _adbService.Shell(
+                    "settings put global stay_on_while_plugged_in " +
+                    (requested ? "7" : "0"));
+                if (!result.IsSuccess)
+                {
+                    _logService.Warning(
+                        "잠자기 방지 설정 변경에 실패했습니다: " +
+                        result.StandardError);
+                    return;
+                }
+
+                _lastAppliedStayAwakeState = requested;
+                _logService.Info(
+                    requested
+                        ? "실행 중인 Scrcpy 세션에 맞춰 잠자기 방지를 켰습니다."
+                        : "실행 중인 Scrcpy 세션이 없어 잠자기 방지를 껐습니다.");
+            }
+            catch (Exception ex)
+            {
+                _logService.Error("잠자기 방지 설정을 변경하지 못했습니다.", ex);
+            }
         }
 
         private void UpdatePhoneScreenWakeSchedule()

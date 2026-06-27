@@ -19,6 +19,7 @@ namespace DexManager.Services
         private readonly ProcessRunner _processRunner;
         private readonly LogService _logService;
         private Process _process;
+        private bool _stayAwakeRequested;
 
         public ScrcpyService(
             string scrcpyPath,
@@ -61,6 +62,18 @@ namespace DexManager.Services
                 lock (_syncRoot)
                 {
                     return IsProcessRunning(_process) ? _process.Id : 0;
+                }
+            }
+        }
+
+        public bool IsStayAwakeRequested
+        {
+            get
+            {
+                lock (_syncRoot)
+                {
+                    return IsProcessRunning(_process) &&
+                        _stayAwakeRequested;
                 }
             }
         }
@@ -209,6 +222,7 @@ namespace DexManager.Services
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
                 _process = process;
+                _stayAwakeRequested = settings.StayAwake;
 
                 _logService.Info("Scrcpy 실행: " + arguments);
             }
@@ -223,6 +237,7 @@ namespace DexManager.Services
             {
                 process = _process;
                 _process = null;
+                _stayAwakeRequested = false;
             }
 
             if (process == null) return;
@@ -299,7 +314,11 @@ namespace DexManager.Services
         {
             lock (_syncRoot)
             {
-                if (ReferenceEquals(_process, sender)) _process = null;
+                if (ReferenceEquals(_process, sender))
+                {
+                    _process = null;
+                    _stayAwakeRequested = false;
+                }
             }
 
             _logService.Info("Scrcpy 프로세스가 종료되었습니다.");

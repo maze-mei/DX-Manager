@@ -14,6 +14,8 @@ namespace DexManager.Services
         private readonly LogService _logService;
         private readonly Dictionary<int, Process> _processes =
             new Dictionary<int, Process>();
+        private readonly Dictionary<int, bool> _stayAwakeRequests =
+            new Dictionary<int, bool>();
 
         public SingleWindowService(string scrcpyPath, LogService logService)
         {
@@ -37,8 +39,32 @@ namespace DexManager.Services
                 if (!_processes.TryGetValue(slot, out process)) return false;
                 if (IsProcessRunning(process)) return true;
                 _processes.Remove(slot);
+                _stayAwakeRequests.Remove(slot);
                 process.Dispose();
                 return false;
+            }
+        }
+
+        public bool IsStayAwakeRequested
+        {
+            get
+            {
+                lock (_syncRoot)
+                {
+                    foreach (var item in _processes)
+                    {
+                        bool requested;
+                        if (IsProcessRunning(item.Value) &&
+                            _stayAwakeRequests.TryGetValue(
+                                item.Key,
+                                out requested) &&
+                            requested)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
             }
         }
 
@@ -110,6 +136,7 @@ namespace DexManager.Services
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
                 _processes[slot] = process;
+                _stayAwakeRequests[slot] = settings.StayAwake;
                 _logService.Info(
                     "단일창 " + slot + " Scrcpy 실행: " + arguments);
             }
@@ -130,6 +157,7 @@ namespace DexManager.Services
             {
                 if (!_processes.TryGetValue(slot, out process)) return;
                 _processes.Remove(slot);
+                _stayAwakeRequests.Remove(slot);
             }
 
             StopProcess(process);
@@ -144,6 +172,7 @@ namespace DexManager.Services
             {
                 processes = new List<KeyValuePair<int, Process>>(_processes);
                 _processes.Clear();
+                _stayAwakeRequests.Clear();
             }
 
             foreach (var item in processes)
@@ -234,7 +263,11 @@ namespace DexManager.Services
                     slot = item.Key;
                     break;
                 }
-                if (slot > 0) _processes.Remove(slot);
+                if (slot > 0)
+                {
+                    _processes.Remove(slot);
+                    _stayAwakeRequests.Remove(slot);
+                }
             }
 
             if (slot > 0)
