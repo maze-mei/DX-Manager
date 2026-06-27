@@ -134,7 +134,11 @@ namespace DexManager.Services
 
             if (settings.UseHidKeyboard) arguments.Add("-K");
             if (settings.UseHidMouse) arguments.Add("-M");
-            if (settings.TurnScreenOff) arguments.Add("-S");
+            if (settings.TurnScreenOff)
+            {
+                arguments.Add("-S");
+                arguments.Add("--power-off-on-close");
+            }
             if (settings.StayAwake) arguments.Add("-w");
 
             if (!string.IsNullOrWhiteSpace(settings.StartAppPackage))

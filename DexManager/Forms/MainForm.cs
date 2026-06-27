@@ -55,11 +55,13 @@ namespace DexManager.Forms
         private readonly Button _loadAppsButton;
         private readonly Label _modeHintLabel;
         private readonly Label _displaySettingsTitle;
+        private readonly Timer _phoneScreenWakeTimer;
         private ThemedButton _dexModeButton;
         private ThemedButton _singleModeButton1;
         private ThemedButton _singleModeButton2;
         private ThemedButton _singleModeButton3;
         private int _selectedMode;
+        private int _phoneScreenWakeSuppression;
         private DeviceState _lastDeviceState;
         private string _connectionError;
         private bool _allowExit;
@@ -181,7 +183,7 @@ namespace DexManager.Forms
             AddFieldLabel("해상도", 32, 269);
             _widthLabel = AddFieldLabel("가로", 270, 269);
             _heightLabel = AddFieldLabel("세로", 370, 269);
-            _dpiLabel = AddFieldLabel("DPI", 425, 269);
+            _dpiLabel = AddFieldLabel("DPI", 470, 269);
             AddFieldLabel("비트레이트", 32, 304);
             AddFieldLabel("최대 FPS", 425, 304);
 
@@ -254,6 +256,8 @@ namespace DexManager.Forms
                 Text = "DeX 모드"
             };
             Controls.Add(_modeHintLabel);
+            _phoneScreenWakeTimer = new Timer { Interval = 600 };
+            _phoneScreenWakeTimer.Tick += PhoneScreenWakeTimer_Tick;
             OffsetMainContent(112);
             AddModeSidebar();
             LoadRunSettings();
@@ -468,8 +472,90 @@ namespace DexManager.Forms
                 Task.Run(delegate { _singleWindowService.StopAll(); });
         }
 
-        private void ScrcpyService_RunningChanged(object sender, EventArgs e) { RunOnUi(UpdateRunningState); }
-        private void SingleWindowService_RunningChanged(object sender, EventArgs e) { RunOnUi(UpdateRunningState); }
+        private void ScrcpyService_RunningChanged(object sender, EventArgs e)
+        {
+            RunOnUi(HandleScrcpyRunningChanged);
+        }
+
+        private void SingleWindowService_RunningChanged(object sender, EventArgs e)
+        {
+            RunOnUi(HandleScrcpyRunningChanged);
+        }
+
+        private void HandleScrcpyRunningChanged()
+        {
+            UpdateRunningState();
+            UpdatePhoneScreenWakeSchedule();
+        }
+
+        private void UpdatePhoneScreenWakeSchedule()
+        {
+            _phoneScreenWakeTimer.Stop();
+            if (IsAnyScrcpyRunning() ||
+                System.Threading.Interlocked.CompareExchange(
+                    ref _phoneScreenWakeSuppression,
+                    0,
+                    0) > 0)
+            {
+                return;
+            }
+
+            _phoneScreenWakeTimer.Start();
+        }
+
+        private void PhoneScreenWakeTimer_Tick(object sender, EventArgs e)
+        {
+            _phoneScreenWakeTimer.Stop();
+            if (IsAnyScrcpyRunning() ||
+                System.Threading.Interlocked.CompareExchange(
+                    ref _phoneScreenWakeSuppression,
+                    0,
+                    0) > 0 ||
+                !_adbService.IsAuthorizedDeviceConnected())
+            {
+                return;
+            }
+
+            Task.Run((Action)WakePhoneScreen);
+        }
+
+        private void WakePhoneScreen()
+        {
+            try
+            {
+                var result = _adbService.Shell("input keyevent 224");
+                if (result.IsSuccess)
+                    _logService.Info(
+                        "모든 Scrcpy 창이 종료되어 휴대폰 화면을 켰습니다.");
+                else
+                    _logService.Warning(
+                        "휴대폰 화면 켜기 명령이 실패했습니다: " +
+                        result.StandardError);
+            }
+            catch (Exception ex)
+            {
+                _logService.Error("휴대폰 화면을 켜지 못했습니다.", ex);
+            }
+        }
+
+        private void BeginPhoneScreenWakeSuppression()
+        {
+            System.Threading.Interlocked.Increment(
+                ref _phoneScreenWakeSuppression);
+            _phoneScreenWakeTimer.Stop();
+        }
+
+        private void EndPhoneScreenWakeSuppression()
+        {
+            if (System.Threading.Interlocked.Decrement(
+                ref _phoneScreenWakeSuppression) < 0)
+            {
+                System.Threading.Interlocked.Exchange(
+                    ref _phoneScreenWakeSuppression,
+                    0);
+            }
+            UpdatePhoneScreenWakeSchedule();
+        }
         private void CaptureCoordinator_ExitHotkeyPressed(object sender, EventArgs e) { RunOnUi(ExitApplication); }
         private void AutoHideService_IdleHideRequested(object sender, EventArgs e) { RunOnUi(HideApplicationForIdle); }
 
@@ -479,6 +565,7 @@ namespace DexManager.Forms
             _captureCoordinator.Dispose();
             _autoHideService.Dispose();
             _keyMappingService.Dispose();
+            _phoneScreenWakeTimer.Dispose();
             _singleWindowService.Dispose();
             _scrcpyService.Dispose();
             _trayService.Dispose();
@@ -581,8 +668,6 @@ namespace DexManager.Forms
             _heightBox.Visible = custom;
             _widthLabel.Visible = custom;
             _heightLabel.Visible = custom;
-            _dpiBox.Location = new Point(495, 263);
-            _dpiLabel.Location = new Point(425, 269);
             if (!custom)
             {
                 _widthBox.Value = preset.Width;
@@ -698,7 +783,16 @@ namespace DexManager.Forms
                     "설정 적용 중",
                     "기존 가상화면을 제거하고 새 설정으로 다시 시작합니다.");
 
-                var applied = await _orchestrator.ApplyRuntimeSettingsAsync();
+                bool applied;
+                BeginPhoneScreenWakeSuppression();
+                try
+                {
+                    applied = await _orchestrator.ApplyRuntimeSettingsAsync();
+                }
+                finally
+                {
+                    EndPhoneScreenWakeSuppression();
+                }
                 if (!applied)
                 {
                     MessageBox.Show(
@@ -767,10 +861,18 @@ namespace DexManager.Forms
                 "단일창 " + slot + " 설정 적용 중",
                 "현재 창을 닫고 새 설정으로 다시 시작합니다.");
             var settings = GetSingleWindowSettings(slot);
-            await Task.Run(delegate
+            BeginPhoneScreenWakeSuppression();
+            try
             {
-                _singleWindowService.Restart(slot, settings);
-            });
+                await Task.Run(delegate
+                {
+                    _singleWindowService.Restart(slot, settings);
+                });
+            }
+            finally
+            {
+                EndPhoneScreenWakeSuppression();
+            }
             UpdateRunningState();
             MessageBox.Show(
                 this,
@@ -1178,6 +1280,12 @@ namespace DexManager.Forms
             return false;
         }
 
+        private bool IsAnyScrcpyRunning()
+        {
+            return _scrcpyService.IsRunning ||
+                IsAnySingleWindowRunning();
+        }
+
         private string GetSingleWindowStatusDetail(int slot)
         {
             var settings = GetSingleWindowSettings(slot);
@@ -1401,11 +1509,14 @@ namespace DexManager.Forms
             if (InvokeRequired) { BeginInvoke((Action)ExitApplication); return; }
             if (_exitInProgress) return;
             _exitInProgress = true;
+            BeginPhoneScreenWakeSuppression();
             _dexStatusValue.Text = "종료 정리 중";
             Enabled = false;
             _deviceMonitor.Stop();
             await Task.Run(delegate { _singleWindowService.StopAll(); });
             await _orchestrator.ShutdownAsync();
+            if (_adbService.IsAuthorizedDeviceConnected())
+                await Task.Run((Action)WakePhoneScreen);
             _allowExit = true;
             Close();
         }
