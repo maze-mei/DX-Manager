@@ -84,6 +84,7 @@
     <Compile Include="Services\PathService.cs" />
     <Compile Include="Services\HotkeyService.cs" />
     <Compile Include="Services\KeyMappingService.cs" />
+    <Compile Include="Services\ScrcpyLaunchCoordinator.cs" />
     <Compile Include="Services\ScrcpyService.cs" />
     <Compile Include="Services\ScreenOffService.cs" />
     <Compile Include="Services\SingleWindowService.cs" />

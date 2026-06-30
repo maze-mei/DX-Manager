@@ -63,6 +63,8 @@ namespace DexManager.Forms
         private ThemedButton _singleModeButton3;
         private int _selectedMode;
         private int _phoneScreenWakeSuppression;
+        private int _lastManagedScrcpyCount;
+        private int _screenOffReapplyGeneration;
         private bool _loadingRunSettings;
         private bool _resolutionSelectionInitialized;
         private bool _resolutionWasCustom;
@@ -463,14 +465,12 @@ namespace DexManager.Forms
                     ? "연결된 Android 장치  ·  " + e.Current.Serial
                     : "휴대폰 USB 연결을 기다립니다.";
                 if (e.Current.Status == AdbDeviceStatus.Device)
-                {
                     UpdateDeviceStayAwakeState();
-                    UpdateScreenOffController();
-                }
                 else
                 {
                     _lastAppliedStayAwakeState = null;
-                    _screenOffService.Stop();
+                    System.Threading.Interlocked.Increment(
+                        ref _screenOffReapplyGeneration);
                 }
                 if (!IsSelectedModeRunning())
                     UpdateIndicatorForDevice(e.Current);
@@ -485,7 +485,8 @@ namespace DexManager.Forms
 
         private void DeviceMonitor_DeviceDisconnected(object sender, DeviceStateChangedEventArgs e)
         {
-            _screenOffService.Stop();
+            System.Threading.Interlocked.Increment(
+                ref _screenOffReapplyGeneration);
             if (_orchestrator.IsRunning)
                 RunOnUi(async delegate { await StopDexAsync(); });
             if (IsAnySingleWindowRunning())
@@ -504,46 +505,71 @@ namespace DexManager.Forms
 
         private void HandleScrcpyRunningChanged()
         {
+            var previousCount = _lastManagedScrcpyCount;
+            var currentCount = GetManagedScrcpyCount();
+            _lastManagedScrcpyCount = currentCount;
+            var generation = System.Threading.Interlocked.Increment(
+                ref _screenOffReapplyGeneration);
+
             UpdateRunningState();
             UpdateDeviceStayAwakeState();
-            UpdateScreenOffController();
             UpdatePhoneScreenWakeSchedule();
+            if (currentCount < previousCount &&
+                ShouldReapplyScreenOff(generation))
+            {
+                ScheduleScreenOffReapply(generation);
+            }
         }
 
-        private void UpdateScreenOffController()
+        private int GetManagedScrcpyCount()
         {
-            var deviceConnected = _lastDeviceState != null &&
-                _lastDeviceState.Status == AdbDeviceStatus.Device;
-            if (!deviceConnected)
-            {
-                _screenOffService.Stop();
-                return;
-            }
+            return (_scrcpyService.IsRunning ? 1 : 0) +
+                _singleWindowService.RunningCount;
+        }
 
-            var requested = _scrcpyService.IsScreenOffRequested ||
+        private bool IsScreenOffRequested()
+        {
+            return _scrcpyService.IsScreenOffRequested ||
                 _singleWindowService.IsScreenOffRequested;
-            if (requested)
+        }
+
+        private bool ShouldReapplyScreenOff(int generation)
+        {
+            return generation == System.Threading.Interlocked.CompareExchange(
+                    ref _screenOffReapplyGeneration,
+                    0,
+                    0) &&
+                System.Threading.Interlocked.CompareExchange(
+                    ref _phoneScreenWakeSuppression,
+                    0,
+                    0) == 0 &&
+                GetManagedScrcpyCount() > 0 &&
+                IsScreenOffRequested() &&
+                _adbService.IsAuthorizedDeviceConnected();
+        }
+
+        private void ScheduleScreenOffReapply(int generation)
+        {
+            Task.Run(delegate
             {
+                System.Threading.Thread.Sleep(750);
+                if (!ShouldReapplyScreenOff(generation)) return;
+
                 try
                 {
-                    _screenOffService.Start();
+                    _screenOffService.Reapply(
+                        delegate
+                        {
+                            return ShouldReapplyScreenOff(generation);
+                        });
                 }
                 catch (Exception ex)
                 {
                     _logService.Error(
-                        "휴대폰 화면 끄기 보조 세션을 시작하지 못했습니다.",
+                        "휴대폰 화면 OFF 재적용에 실패했습니다.",
                         ex);
                 }
-                return;
-            }
-
-            if (System.Threading.Interlocked.CompareExchange(
-                ref _phoneScreenWakeSuppression,
-                0,
-                0) == 0)
-            {
-                _screenOffService.Stop();
-            }
+            });
         }
 
         private void UpdateDeviceStayAwakeState()
@@ -647,6 +673,8 @@ namespace DexManager.Forms
         {
             System.Threading.Interlocked.Increment(
                 ref _phoneScreenWakeSuppression);
+            System.Threading.Interlocked.Increment(
+                ref _screenOffReapplyGeneration);
             _phoneScreenWakeTimer.Stop();
         }
 
@@ -659,7 +687,10 @@ namespace DexManager.Forms
                     ref _phoneScreenWakeSuppression,
                     0);
             }
-            UpdateScreenOffController();
+            var generation = System.Threading.Interlocked.Increment(
+                ref _screenOffReapplyGeneration);
+            if (ShouldReapplyScreenOff(generation))
+                ScheduleScreenOffReapply(generation);
             UpdatePhoneScreenWakeSchedule();
         }
         private void CaptureCoordinator_ExitHotkeyPressed(object sender, EventArgs e) { RunOnUi(ExitApplication); }
@@ -1769,7 +1800,6 @@ namespace DexManager.Forms
             _deviceMonitor.Stop();
             await Task.Run(delegate { _singleWindowService.StopAll(); });
             await _orchestrator.ShutdownAsync();
-            await Task.Run((Action)_screenOffService.Stop);
             if (_adbService.IsAuthorizedDeviceConnected())
                 await Task.Run((Action)WakePhoneScreen);
             _allowExit = true;

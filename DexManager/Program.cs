@@ -61,16 +61,23 @@ namespace DexManager
                     processRunner,
                     logService);
                 var scrcpyPath = settingsService.ResolvePath(settings.Paths.ScrcpyPath);
+                var scrcpyLaunchCoordinator =
+                    new ScrcpyLaunchCoordinator();
                 var scrcpyService = new ScrcpyService(
                     scrcpyPath,
                     settings.Timing.ProcessTimeoutMs,
                     processRunner,
+                    scrcpyLaunchCoordinator,
                     logService);
                 var singleWindowService = new SingleWindowService(
                     scrcpyPath,
+                    settings.Timing.ProcessTimeoutMs,
+                    scrcpyLaunchCoordinator,
                     logService);
                 var screenOffService = new ScreenOffService(
                     scrcpyPath,
+                    settings.Timing.ProcessTimeoutMs,
+                    scrcpyLaunchCoordinator,
                     logService);
                 var virtualDisplayService = new VirtualDisplayService(
                     adbService,

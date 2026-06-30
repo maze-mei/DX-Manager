@@ -17,6 +17,7 @@ namespace DexManager.Services
         private readonly string _scrcpyPath;
         private readonly int _processTimeoutMs;
         private readonly ProcessRunner _processRunner;
+        private readonly ScrcpyLaunchCoordinator _launchCoordinator;
         private readonly LogService _logService;
         private Process _process;
         private bool _stayAwakeRequested;
@@ -26,6 +27,7 @@ namespace DexManager.Services
             string scrcpyPath,
             int processTimeoutMs,
             ProcessRunner processRunner,
+            ScrcpyLaunchCoordinator launchCoordinator,
             LogService logService)
         {
             if (string.IsNullOrWhiteSpace(scrcpyPath))
@@ -35,6 +37,8 @@ namespace DexManager.Services
             _processTimeoutMs = Math.Max(processTimeoutMs, 1000);
             _processRunner = processRunner ??
                 throw new ArgumentNullException("processRunner");
+            _launchCoordinator = launchCoordinator ??
+                throw new ArgumentNullException("launchCoordinator");
             _logService = logService;
         }
 
@@ -160,7 +164,11 @@ namespace DexManager.Services
 
             if (settings.UseHidKeyboard) arguments.Add("-K");
             if (settings.UseHidMouse) arguments.Add("-M");
-            if (settings.TurnScreenOff) arguments.Add("--no-power-on");
+            if (settings.TurnScreenOff)
+            {
+                arguments.Add("-S");
+                arguments.Add("--no-power-on");
+            }
 
             if (!string.IsNullOrWhiteSpace(settings.StartAppPackage))
             {
@@ -183,11 +191,14 @@ namespace DexManager.Services
             if (!File.Exists(_scrcpyPath))
                 throw new FileNotFoundException("scrcpy.exe를 찾을 수 없습니다.", _scrcpyPath);
 
-            var result = _processRunner.Run(
-                _scrcpyPath,
-                "--list-apps",
-                Path.GetDirectoryName(_scrcpyPath),
-                _processTimeoutMs);
+            var result = _launchCoordinator.RunExclusive(delegate
+            {
+                return _processRunner.Run(
+                    _scrcpyPath,
+                    "--list-apps",
+                    Path.GetDirectoryName(_scrcpyPath),
+                    _processTimeoutMs);
+            });
             if (!result.IsSuccess)
             {
                 throw new InvalidOperationException(
@@ -208,66 +219,99 @@ namespace DexManager.Services
 
         public void Start(ScrcpySettings settings, int displayId)
         {
-            lock (_syncRoot)
+            var started = false;
+            _launchCoordinator.RunExclusive(delegate
             {
-                if (IsProcessRunning(_process))
+                Process process;
+                lock (_syncRoot)
                 {
-                    _logService.Warning("Scrcpy가 이미 실행 중이므로 중복 실행을 건너뜁니다.");
-                    return;
+                    if (IsProcessRunning(_process))
+                    {
+                        _logService.Warning(
+                            "Scrcpy가 이미 실행 중이므로 중복 실행을 건너뜁니다.");
+                        return;
+                    }
+
+                    if (!File.Exists(_scrcpyPath))
+                        throw new FileNotFoundException(
+                            "scrcpy.exe를 찾을 수 없습니다.",
+                            _scrcpyPath);
+
+                    var arguments = BuildArguments(settings, displayId);
+                    process = CreateProcess(arguments, true);
+                    process.EnableRaisingEvents = true;
+                    process.Exited += Process_Exited;
+                    process.OutputDataReceived += Process_OutputDataReceived;
+                    process.ErrorDataReceived += Process_ErrorDataReceived;
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    _process = process;
+                    _stayAwakeRequested = settings.StayAwake;
+                    _turnScreenOffRequested = settings.TurnScreenOff;
+                    started = true;
+
+                    _logService.Info("Scrcpy 실행: " + arguments);
                 }
 
-                if (!File.Exists(_scrcpyPath))
-                    throw new FileNotFoundException("scrcpy.exe를 찾을 수 없습니다.", _scrcpyPath);
+                try
+                {
+                    WaitForMainWindow(process);
+                }
+                catch
+                {
+                    AbortStart(process);
+                    throw;
+                }
+            });
 
-                var arguments = BuildArguments(settings, displayId);
-                var process = CreateProcess(arguments, true);
-                process.EnableRaisingEvents = true;
-                process.Exited += Process_Exited;
-                process.OutputDataReceived += Process_OutputDataReceived;
-                process.ErrorDataReceived += Process_ErrorDataReceived;
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                _process = process;
-                _stayAwakeRequested = settings.StayAwake;
-                _turnScreenOffRequested = settings.TurnScreenOff;
-
-                _logService.Info("Scrcpy 실행: " + arguments);
-            }
-
-            RaiseRunningChanged();
+            if (started) RaiseRunningChanged();
         }
 
         public void Stop()
         {
-            Process process;
-            lock (_syncRoot)
+            var stopped = false;
+            _launchCoordinator.RunExclusive(delegate
             {
-                process = _process;
-                _process = null;
-                _stayAwakeRequested = false;
-                _turnScreenOffRequested = false;
-            }
-
-            if (process == null) return;
-
-            try
-            {
-                if (!process.HasExited)
+                Process process;
+                lock (_syncRoot)
                 {
-                    process.CloseMainWindow();
-                    if (!process.WaitForExit(2000)) process.Kill();
+                    process = _process;
+                    _process = null;
+                    _stayAwakeRequested = false;
+                    _turnScreenOffRequested = false;
                 }
-            }
-            finally
-            {
-                process.Dispose();
-                _logService.Info("Scrcpy를 중지했습니다.");
-                RaiseRunningChanged();
-            }
+
+                if (process == null) return;
+
+                try
+                {
+                    if (!process.HasExited)
+                    {
+                        process.CloseMainWindow();
+                        if (!process.WaitForExit(2000)) process.Kill();
+                    }
+                }
+                finally
+                {
+                    process.Dispose();
+                    stopped = true;
+                    _logService.Info("Scrcpy를 중지했습니다.");
+                }
+            });
+
+            if (stopped) RaiseRunningChanged();
         }
 
         public bool RunWakeUp(int delayMs)
+        {
+            return _launchCoordinator.RunExclusive(delegate
+            {
+                return RunWakeUpCore(delayMs);
+            });
+        }
+
+        private bool RunWakeUpCore(int delayMs)
         {
             if (!File.Exists(_scrcpyPath))
             {
@@ -321,6 +365,7 @@ namespace DexManager.Services
 
         private void Process_Exited(object sender, EventArgs e)
         {
+            var ownedProcess = false;
             lock (_syncRoot)
             {
                 if (ReferenceEquals(_process, sender))
@@ -328,11 +373,62 @@ namespace DexManager.Services
                     _process = null;
                     _stayAwakeRequested = false;
                     _turnScreenOffRequested = false;
+                    ownedProcess = true;
                 }
             }
 
+            if (!ownedProcess) return;
             _logService.Info("Scrcpy 프로세스가 종료되었습니다.");
             RaiseRunningChanged();
+        }
+
+        private void WaitForMainWindow(Process process)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            while (stopwatch.ElapsedMilliseconds < _processTimeoutMs)
+            {
+                if (!IsProcessRunning(process))
+                    throw new InvalidOperationException(
+                        "Scrcpy가 창을 준비하기 전에 종료되었습니다.");
+
+                process.Refresh();
+                if (process.MainWindowHandle != IntPtr.Zero)
+                {
+                    _logService.Info(
+                        "Scrcpy 창 준비 완료: PID=" + process.Id);
+                    return;
+                }
+                Thread.Sleep(50);
+            }
+
+            throw new TimeoutException(
+                "Scrcpy 창 준비 시간이 초과되었습니다.");
+        }
+
+        private void AbortStart(Process process)
+        {
+            lock (_syncRoot)
+            {
+                if (ReferenceEquals(_process, process))
+                {
+                    _process = null;
+                    _stayAwakeRequested = false;
+                    _turnScreenOffRequested = false;
+                }
+            }
+
+            try
+            {
+                if (IsProcessRunning(process))
+                {
+                    process.Kill();
+                    process.WaitForExit(2000);
+                }
+            }
+            finally
+            {
+                process.Dispose();
+            }
         }
 
         private void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)

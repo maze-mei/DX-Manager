@@ -1,17 +1,23 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 
 namespace DexManager.Services
 {
     public sealed class ScreenOffService : IDisposable
     {
-        private readonly object _syncRoot = new object();
+        private const string ConfirmationText = "Device display turned off";
         private readonly string _scrcpyPath;
+        private readonly int _processTimeoutMs;
+        private readonly ScrcpyLaunchCoordinator _launchCoordinator;
         private readonly LogService _logService;
-        private Process _process;
 
-        public ScreenOffService(string scrcpyPath, LogService logService)
+        public ScreenOffService(
+            string scrcpyPath,
+            int processTimeoutMs,
+            ScrcpyLaunchCoordinator launchCoordinator,
+            LogService logService)
         {
             if (string.IsNullOrWhiteSpace(scrcpyPath))
                 throw new ArgumentException(
@@ -19,136 +25,139 @@ namespace DexManager.Services
                     "scrcpyPath");
 
             _scrcpyPath = Path.GetFullPath(scrcpyPath);
+            _processTimeoutMs = Math.Min(
+                Math.Max(processTimeoutMs, 1000),
+                5000);
+            _launchCoordinator = launchCoordinator ??
+                throw new ArgumentNullException("launchCoordinator");
             _logService = logService ??
                 throw new ArgumentNullException("logService");
         }
 
-        public bool IsRunning
+        public bool Reapply(Func<bool> shouldRun)
         {
-            get
+            if (shouldRun == null)
+                throw new ArgumentNullException("shouldRun");
+
+            return _launchCoordinator.RunExclusive(delegate
             {
-                lock (_syncRoot)
+                if (!shouldRun())
                 {
-                    return IsProcessRunning(_process);
+                    _logService.Info(
+                        "화면 OFF 재적용 조건이 사라져 실행을 취소했습니다.");
+                    return false;
                 }
-            }
-        }
-
-        public void Start()
-        {
-            lock (_syncRoot)
-            {
-                if (IsProcessRunning(_process)) return;
-                if (_process != null)
-                {
-                    _process.Dispose();
-                    _process = null;
-                }
-                if (!File.Exists(_scrcpyPath))
-                    throw new FileNotFoundException(
-                        "scrcpy.exe를 찾을 수 없습니다.",
-                        _scrcpyPath);
-
-                var process = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = _scrcpyPath,
-                        Arguments =
-                            "--no-video --no-audio --no-window " +
-                            "-S --no-power-on",
-                        WorkingDirectory = Path.GetDirectoryName(_scrcpyPath),
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        WindowStyle = ProcessWindowStyle.Hidden,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    }
-                };
-                process.EnableRaisingEvents = true;
-                process.Exited += Process_Exited;
-                process.OutputDataReceived += Process_OutputDataReceived;
-                process.ErrorDataReceived += Process_ErrorDataReceived;
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                _process = process;
-                _logService.Info(
-                    "휴대폰 화면 끄기 보조 Scrcpy 세션을 시작했습니다.");
-            }
-        }
-
-        public void Stop()
-        {
-            Process process;
-            lock (_syncRoot)
-            {
-                process = _process;
-                _process = null;
-            }
-            if (process == null) return;
-
-            try
-            {
-                if (!process.HasExited)
-                {
-                    process.Kill();
-                    process.WaitForExit(2000);
-                }
-            }
-            finally
-            {
-                process.Dispose();
-                _logService.Info(
-                    "휴대폰 화면 끄기 보조 Scrcpy 세션을 종료했습니다.");
-            }
+                return RunOnce();
+            });
         }
 
         public void Dispose()
         {
-            Stop();
         }
 
-        private void Process_Exited(object sender, EventArgs e)
+        private bool RunOnce()
         {
-            var process = sender as Process;
-            lock (_syncRoot)
+            if (!File.Exists(_scrcpyPath))
+                throw new FileNotFoundException(
+                    "scrcpy.exe를 찾을 수 없습니다.",
+                    _scrcpyPath);
+
+            const string arguments =
+                "--no-video --no-audio --no-window -S --no-power-on " +
+                "--no-cleanup";
+            using (var confirmation = new ManualResetEventSlim(false))
+            using (var process = CreateProcess(arguments))
             {
-                if (!ReferenceEquals(_process, sender)) return;
-                _process = null;
+                var started = false;
+                DataReceivedEventHandler outputHandler = delegate(
+                    object sender,
+                    DataReceivedEventArgs e)
+                {
+                    HandleOutput(e.Data, false, confirmation);
+                };
+                DataReceivedEventHandler errorHandler = delegate(
+                    object sender,
+                    DataReceivedEventArgs e)
+                {
+                    HandleOutput(e.Data, true, confirmation);
+                };
+                process.OutputDataReceived += outputHandler;
+                process.ErrorDataReceived += errorHandler;
+
+                try
+                {
+                    _logService.Info(
+                        "휴대폰 화면 OFF 재적용 Scrcpy를 순차 실행합니다.");
+                    process.Start();
+                    started = true;
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+
+                    var stopwatch = Stopwatch.StartNew();
+                    while (stopwatch.ElapsedMilliseconds < _processTimeoutMs)
+                    {
+                        if (confirmation.Wait(50))
+                        {
+                            _logService.Info(
+                                "휴대폰 화면 OFF 재적용을 확인했습니다.");
+                            return true;
+                        }
+                        if (process.HasExited) break;
+                    }
+
+                    _logService.Warning(
+                        "휴대폰 화면 OFF 재적용 확인에 실패했습니다.");
+                    return false;
+                }
+                finally
+                {
+                    if (started && !process.HasExited)
+                    {
+                        process.Kill();
+                        process.WaitForExit(2000);
+                    }
+                    process.OutputDataReceived -= outputHandler;
+                    process.ErrorDataReceived -= errorHandler;
+                }
             }
-            if (process != null) process.Dispose();
-            _logService.Info(
-                "휴대폰 화면 끄기 보조 Scrcpy 세션이 종료되었습니다.");
         }
 
-        private void Process_OutputDataReceived(
-            object sender,
-            DataReceivedEventArgs e)
+        private void HandleOutput(
+            string data,
+            bool warning,
+            ManualResetEventSlim confirmation)
         {
-            if (!string.IsNullOrWhiteSpace(e.Data))
-                _logService.Info("[screen-off scrcpy] " + e.Data);
-        }
+            if (string.IsNullOrWhiteSpace(data)) return;
 
-        private void Process_ErrorDataReceived(
-            object sender,
-            DataReceivedEventArgs e)
-        {
-            if (!string.IsNullOrWhiteSpace(e.Data))
-                _logService.Warning("[screen-off scrcpy] " + e.Data);
-        }
+            if (warning)
+                _logService.Warning("[screen-off scrcpy] " + data);
+            else
+                _logService.Info("[screen-off scrcpy] " + data);
 
-        private static bool IsProcessRunning(Process process)
-        {
-            if (process == null) return false;
-            try
+            if (data.IndexOf(
+                ConfirmationText,
+                StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                return !process.HasExited;
+                confirmation.Set();
             }
-            catch (InvalidOperationException)
+        }
+
+        private Process CreateProcess(string arguments)
+        {
+            return new Process
             {
-                return false;
-            }
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = _scrcpyPath,
+                    Arguments = arguments,
+                    WorkingDirectory = Path.GetDirectoryName(_scrcpyPath),
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                }
+            };
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Threading;
 using DexManager.Models;
 
 namespace DexManager.Services
@@ -11,6 +12,8 @@ namespace DexManager.Services
     {
         private readonly object _syncRoot = new object();
         private readonly string _scrcpyPath;
+        private readonly int _processTimeoutMs;
+        private readonly ScrcpyLaunchCoordinator _launchCoordinator;
         private readonly LogService _logService;
         private readonly Dictionary<int, Process> _processes =
             new Dictionary<int, Process>();
@@ -19,7 +22,11 @@ namespace DexManager.Services
         private readonly Dictionary<int, bool> _screenOffRequests =
             new Dictionary<int, bool>();
 
-        public SingleWindowService(string scrcpyPath, LogService logService)
+        public SingleWindowService(
+            string scrcpyPath,
+            int processTimeoutMs,
+            ScrcpyLaunchCoordinator launchCoordinator,
+            LogService logService)
         {
             if (string.IsNullOrWhiteSpace(scrcpyPath))
                 throw new ArgumentException(
@@ -27,6 +34,9 @@ namespace DexManager.Services
                     "scrcpyPath");
 
             _scrcpyPath = Path.GetFullPath(scrcpyPath);
+            _processTimeoutMs = Math.Max(processTimeoutMs, 1000);
+            _launchCoordinator = launchCoordinator ??
+                throw new ArgumentNullException("launchCoordinator");
             _logService = logService ??
                 throw new ArgumentNullException("logService");
         }
@@ -45,6 +55,22 @@ namespace DexManager.Services
                 _screenOffRequests.Remove(slot);
                 process.Dispose();
                 return false;
+            }
+        }
+
+        public int RunningCount
+        {
+            get
+            {
+                lock (_syncRoot)
+                {
+                    var count = 0;
+                    foreach (var process in _processes.Values)
+                    {
+                        if (IsProcessRunning(process)) count++;
+                    }
+                    return count;
+                }
             }
         }
 
@@ -143,75 +169,106 @@ namespace DexManager.Services
                 throw new InvalidOperationException(
                     "단일창에서 실행할 앱을 선택하세요.");
 
-            lock (_syncRoot)
+            var started = false;
+            _launchCoordinator.RunExclusive(delegate
             {
-                if (IsRunning(slot))
+                Process process;
+                lock (_syncRoot)
                 {
-                    _logService.Warning(
-                        "단일창 " + slot + "이 이미 실행 중입니다.");
-                    return;
+                    if (IsRunning(slot))
+                    {
+                        _logService.Warning(
+                            "단일창 " + slot + "이 이미 실행 중입니다.");
+                        return;
+                    }
+
+                    var arguments = BuildArguments(slot, settings);
+                    process = CreateProcess(arguments);
+                    process.EnableRaisingEvents = true;
+                    process.Exited += Process_Exited;
+                    process.OutputDataReceived += Process_OutputDataReceived;
+                    process.ErrorDataReceived += Process_ErrorDataReceived;
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    _processes[slot] = process;
+                    _stayAwakeRequests[slot] = settings.StayAwake;
+                    _screenOffRequests[slot] = settings.TurnScreenOff;
+                    started = true;
+                    _logService.Info(
+                        "단일창 " + slot + " Scrcpy 실행: " + arguments);
                 }
 
-                var arguments = BuildArguments(slot, settings);
-                var process = CreateProcess(arguments);
-                process.EnableRaisingEvents = true;
-                process.Exited += Process_Exited;
-                process.OutputDataReceived += Process_OutputDataReceived;
-                process.ErrorDataReceived += Process_ErrorDataReceived;
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                _processes[slot] = process;
-                _stayAwakeRequests[slot] = settings.StayAwake;
-                _screenOffRequests[slot] = settings.TurnScreenOff;
-                _logService.Info(
-                    "단일창 " + slot + " Scrcpy 실행: " + arguments);
-            }
+                try
+                {
+                    WaitForMainWindow(process, slot);
+                }
+                catch
+                {
+                    AbortStart(process, slot);
+                    throw;
+                }
+            });
 
-            RaiseRunningChanged();
+            if (started) RaiseRunningChanged();
         }
 
         public void Restart(int slot, SingleWindowSlotSettings settings)
         {
-            Stop(slot);
-            Start(slot, settings);
+            _launchCoordinator.RunExclusive(delegate
+            {
+                Stop(slot);
+                Start(slot, settings);
+            });
         }
 
         public void Stop(int slot)
         {
-            Process process;
-            lock (_syncRoot)
+            var stopped = false;
+            _launchCoordinator.RunExclusive(delegate
             {
-                if (!_processes.TryGetValue(slot, out process)) return;
-                _processes.Remove(slot);
-                _stayAwakeRequests.Remove(slot);
-                _screenOffRequests.Remove(slot);
-            }
+                Process process;
+                lock (_syncRoot)
+                {
+                    if (!_processes.TryGetValue(slot, out process)) return;
+                    _processes.Remove(slot);
+                    _stayAwakeRequests.Remove(slot);
+                    _screenOffRequests.Remove(slot);
+                }
 
-            StopProcess(process);
-            _logService.Info("단일창 " + slot + "을 중지했습니다.");
-            RaiseRunningChanged();
+                StopProcess(process);
+                stopped = true;
+                _logService.Info("단일창 " + slot + "을 중지했습니다.");
+            });
+
+            if (stopped) RaiseRunningChanged();
         }
 
         public void StopAll()
         {
-            List<KeyValuePair<int, Process>> processes;
-            lock (_syncRoot)
+            var stoppedCount = 0;
+            _launchCoordinator.RunExclusive(delegate
             {
-                processes = new List<KeyValuePair<int, Process>>(_processes);
-                _processes.Clear();
-                _stayAwakeRequests.Clear();
-                _screenOffRequests.Clear();
-            }
+                List<KeyValuePair<int, Process>> processes;
+                lock (_syncRoot)
+                {
+                    processes =
+                        new List<KeyValuePair<int, Process>>(_processes);
+                    _processes.Clear();
+                    _stayAwakeRequests.Clear();
+                    _screenOffRequests.Clear();
+                }
 
-            foreach (var item in processes)
-            {
-                StopProcess(item.Value);
-                _logService.Info(
-                    "단일창 " + item.Key + "을 중지했습니다.");
-            }
+                foreach (var item in processes)
+                {
+                    StopProcess(item.Value);
+                    stoppedCount++;
+                    _logService.Info(
+                        "단일창 " + item.Key + "을 중지했습니다.");
+                }
+            });
 
-            if (processes.Count > 0) RaiseRunningChanged();
+            if (stoppedCount > 0) RaiseRunningChanged();
         }
 
         public void Dispose()
@@ -249,7 +306,11 @@ namespace DexManager.Services
             }
             if (settings.UseHidKeyboard) arguments.Add("-K");
             if (settings.UseHidMouse) arguments.Add("-M");
-            if (settings.TurnScreenOff) arguments.Add("--no-power-on");
+            if (settings.TurnScreenOff)
+            {
+                arguments.Add("-S");
+                arguments.Add("--no-power-on");
+            }
             if (!string.IsNullOrWhiteSpace(settings.AdditionalArguments))
                 arguments.Add(settings.AdditionalArguments.Trim());
 
@@ -371,6 +432,48 @@ namespace DexManager.Services
             {
                 return false;
             }
+        }
+
+        private void WaitForMainWindow(Process process, int slot)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            while (stopwatch.ElapsedMilliseconds < _processTimeoutMs)
+            {
+                if (!IsProcessRunning(process))
+                    throw new InvalidOperationException(
+                        "단일창 " + slot +
+                        " Scrcpy가 창을 준비하기 전에 종료되었습니다.");
+
+                process.Refresh();
+                if (process.MainWindowHandle != IntPtr.Zero)
+                {
+                    _logService.Info(
+                        "단일창 " + slot +
+                        " Scrcpy 창 준비 완료: PID=" + process.Id);
+                    return;
+                }
+                Thread.Sleep(50);
+            }
+
+            throw new TimeoutException(
+                "단일창 " + slot + " Scrcpy 창 준비 시간이 초과되었습니다.");
+        }
+
+        private void AbortStart(Process process, int slot)
+        {
+            lock (_syncRoot)
+            {
+                Process current;
+                if (_processes.TryGetValue(slot, out current) &&
+                    ReferenceEquals(current, process))
+                {
+                    _processes.Remove(slot);
+                    _stayAwakeRequests.Remove(slot);
+                    _screenOffRequests.Remove(slot);
+                }
+            }
+
+            StopProcess(process);
         }
 
         private static IntPtr GetMainWindowHandle(Process process)
