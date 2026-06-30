@@ -51,6 +51,7 @@ namespace DexManager.Forms
         private readonly CheckBox _useHidMouseBox;
         private readonly CheckBox _forceStopAppBox;
         private readonly CheckBox _reuseDisplayBox;
+        private readonly CheckBox _flexDisplayBox;
         private readonly TextBox _additionalArgumentsBox;
         private readonly ComboBox _startAppBox;
         private readonly Button _loadAppsButton;
@@ -203,7 +204,15 @@ namespace DexManager.Forms
             _useHidMouseBox = CreateOption("HID 마우스 (-M)", 32, 463);
             _forceStopAppBox = CreateOption("선택 앱 강제 종료", 392, 395);
             _reuseDisplayBox = CreateOption("기존 가상화면 재사용", 392, 429);
-            _stayAwakeBox = CreateOption("잠자기 방지 (-w)", 392, 463);
+            _flexDisplayBox = CreateOption(
+                "동적 창 크기 (--flex-display)",
+                392,
+                429);
+            _flexDisplayBox.Visible = false;
+            _stayAwakeBox = CreateOption(
+                "잠자기 방지 (--keep-active)",
+                392,
+                463);
 
             _startAppBox = CreateStyledCombo(132, 502, 313);
             _startAppBox.DropDownStyle = ComboBoxStyle.DropDown;
@@ -251,6 +260,7 @@ namespace DexManager.Forms
             Controls.Add(_useHidMouseBox);
             Controls.Add(_forceStopAppBox);
             Controls.Add(_reuseDisplayBox);
+            Controls.Add(_flexDisplayBox);
             Controls.Add(_stayAwakeBox);
             Controls.Add(_startAppBox);
             Controls.Add(_loadAppsButton);
@@ -847,6 +857,7 @@ namespace DexManager.Forms
             bool useHidKeyboard;
             bool useHidMouse;
             bool forceStopStartApp;
+            bool flexDisplay;
             string startAppPackage;
             string startAppName;
             string additionalArguments;
@@ -865,6 +876,7 @@ namespace DexManager.Forms
                 useHidKeyboard = _settings.Scrcpy.UseHidKeyboard;
                 useHidMouse = _settings.Scrcpy.UseHidMouse;
                 forceStopStartApp = _settings.Scrcpy.ForceStopStartApp;
+                flexDisplay = false;
                 startAppPackage = _settings.Scrcpy.StartAppPackage;
                 startAppName = _settings.Scrcpy.StartAppName;
                 additionalArguments = _settings.Scrcpy.AdditionalArguments;
@@ -884,6 +896,7 @@ namespace DexManager.Forms
                 useHidKeyboard = slot.UseHidKeyboard;
                 useHidMouse = slot.UseHidMouse;
                 forceStopStartApp = slot.ForceStopStartApp;
+                flexDisplay = slot.FlexDisplay;
                 startAppPackage = slot.StartAppPackage;
                 startAppName = slot.StartAppName;
                 additionalArguments = slot.AdditionalArguments;
@@ -899,6 +912,7 @@ namespace DexManager.Forms
             _useHidKeyboardBox.Checked = useHidKeyboard;
             _useHidMouseBox.Checked = useHidMouse;
             _forceStopAppBox.Checked = forceStopStartApp;
+            _flexDisplayBox.Checked = flexDisplay;
             _additionalArgumentsBox.Text = additionalArguments;
             SetSelectedAppPackage(startAppPackage, startAppName);
             _resolutionBox.SelectedIndex = FindResolutionPresetIndex(
@@ -1162,6 +1176,7 @@ namespace DexManager.Forms
                 slot.UseHidKeyboard = _useHidKeyboardBox.Checked;
                 slot.UseHidMouse = _useHidMouseBox.Checked;
                 slot.ForceStopStartApp = _forceStopAppBox.Checked;
+                slot.FlexDisplay = _flexDisplayBox.Checked;
                 var selectedPackage = GetSelectedAppPackage();
                 var selectedName = GetSelectedAppName(selectedPackage);
                 slot.StartAppPackage = selectedPackage;
@@ -1473,6 +1488,8 @@ namespace DexManager.Forms
             _stopButton.Text = "DeX 중지";
             _reuseDisplayBox.Visible = true;
             _reuseDisplayBox.Enabled = true;
+            _flexDisplayBox.Visible = false;
+            _flexDisplayBox.Enabled = false;
             LoadRunSettings();
             UpdateRunningState();
         }
@@ -1488,6 +1505,8 @@ namespace DexManager.Forms
             _stopButton.Text = "단일창 중지";
             _reuseDisplayBox.Visible = false;
             _reuseDisplayBox.Enabled = false;
+            _flexDisplayBox.Visible = true;
+            _flexDisplayBox.Enabled = true;
             LoadRunSettings();
             UpdateRunningState();
         }

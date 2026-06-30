@@ -306,6 +306,8 @@ namespace DexManager.Services
             }
             if (settings.UseHidKeyboard) arguments.Add("-K");
             if (settings.UseHidMouse) arguments.Add("-M");
+            if (settings.StayAwake) arguments.Add("--keep-active");
+            if (settings.FlexDisplay) arguments.Add("--flex-display");
             if (settings.TurnScreenOff)
             {
                 arguments.Add("-S");

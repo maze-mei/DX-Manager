@@ -22,7 +22,7 @@ namespace DexManager.Models
         {
             return new AppSettings
             {
-                SchemaVersion = 11,
+                SchemaVersion = 12,
                 Paths = new PathSettings
                 {
                     AdbPath = string.Empty,
@@ -197,6 +197,26 @@ namespace DexManager.Models
                 }
                 SchemaVersion = defaults.SchemaVersion;
             }
+            if (oldSchemaVersion < 12)
+            {
+                Scrcpy.StayAwake = HasStayAwakeArgument(
+                    Scrcpy.AdditionalArguments) || Scrcpy.StayAwake;
+                Scrcpy.AdditionalArguments = RemoveStayAwakeArgument(
+                    Scrcpy.AdditionalArguments);
+                foreach (var slot in SingleWindowSlots)
+                {
+                    if (slot == null) continue;
+                    slot.StayAwake = HasStayAwakeArgument(
+                        slot.AdditionalArguments) || slot.StayAwake;
+                    slot.FlexDisplay = HasFlexDisplayArgument(
+                        slot.AdditionalArguments);
+                    slot.AdditionalArguments = RemoveStayAwakeArgument(
+                        slot.AdditionalArguments);
+                    slot.AdditionalArguments = RemoveFlexDisplayArgument(
+                        slot.AdditionalArguments);
+                }
+                SchemaVersion = defaults.SchemaVersion;
+            }
             if (VirtualDisplay.CustomWidth <= 0)
                 VirtualDisplay.CustomWidth = VirtualDisplay.Width;
             if (VirtualDisplay.CustomHeight <= 0)
@@ -234,7 +254,7 @@ namespace DexManager.Models
         {
             return Regex.IsMatch(
                 value ?? string.Empty,
-                @"(?<!\S)(?:-w|--stay-awake)(?!\S)",
+                @"(?<!\S)(?:-w|--stay-awake|--keep-active)(?!\S)",
                 RegexOptions.IgnoreCase);
         }
 
@@ -242,7 +262,24 @@ namespace DexManager.Models
         {
             return Regex.Replace(
                 value ?? string.Empty,
-                @"(?<!\S)(?:-w|--stay-awake)(?!\S)",
+                @"(?<!\S)(?:-w|--stay-awake|--keep-active)(?!\S)",
+                string.Empty,
+                RegexOptions.IgnoreCase).Trim();
+        }
+
+        private static bool HasFlexDisplayArgument(string value)
+        {
+            return Regex.IsMatch(
+                value ?? string.Empty,
+                @"(?<!\S)(?:-x|--flex-display)(?!\S)",
+                RegexOptions.IgnoreCase);
+        }
+
+        private static string RemoveFlexDisplayArgument(string value)
+        {
+            return Regex.Replace(
+                value ?? string.Empty,
+                @"(?<!\S)(?:-x|--flex-display)(?!\S)",
                 string.Empty,
                 RegexOptions.IgnoreCase).Trim();
         }
@@ -277,7 +314,8 @@ namespace DexManager.Models
                 StartAppName = string.Empty,
                 AdditionalArguments = string.Empty,
                 CustomWidth = 1600,
-                CustomHeight = 900
+                CustomHeight = 900,
+                FlexDisplay = false
             };
         }
     }
@@ -352,6 +390,7 @@ namespace DexManager.Models
         [DataMember(Order = 14)] public string AdditionalArguments { get; set; }
         [DataMember(Order = 15)] public int CustomWidth { get; set; }
         [DataMember(Order = 16)] public int CustomHeight { get; set; }
+        [DataMember(Order = 17)] public bool FlexDisplay { get; set; }
     }
 
     [DataContract]

@@ -55,6 +55,13 @@ namespace DexManager
                 var adbPath = pathService.SelectAdbPath(
                     settings,
                     settings.Timing.ProcessTimeoutMs);
+                Environment.SetEnvironmentVariable(
+                    "ADB",
+                    adbPath,
+                    EnvironmentVariableTarget.Process);
+                logService.Info(
+                    "Scrcpy가 사용할 ADB 경로를 지정했습니다: " +
+                    adbPath);
                 var adbService = new AdbService(
                     adbPath,
                     settings.Timing.ProcessTimeoutMs,
