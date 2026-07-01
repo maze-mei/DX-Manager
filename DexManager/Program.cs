@@ -67,6 +67,12 @@ namespace DexManager
                     settings.Timing.ProcessTimeoutMs,
                     processRunner,
                     logService);
+                var wirelessAdbService = new WirelessAdbService(
+                    adbService,
+                    settingsService,
+                    settings,
+                    logService);
+                wirelessAdbService.InitializeTarget();
                 var scrcpyPath = settingsService.ResolvePath(settings.Paths.ScrcpyPath);
                 var scrcpyLaunchCoordinator =
                     new ScrcpyLaunchCoordinator();
@@ -74,16 +80,19 @@ namespace DexManager
                     scrcpyPath,
                     settings.Timing.ProcessTimeoutMs,
                     processRunner,
+                    adbService,
                     scrcpyLaunchCoordinator,
                     logService);
                 var singleWindowService = new SingleWindowService(
                     scrcpyPath,
                     settings.Timing.ProcessTimeoutMs,
+                    adbService,
                     scrcpyLaunchCoordinator,
                     logService);
                 var screenOffService = new ScreenOffService(
                     scrcpyPath,
                     settings.Timing.ProcessTimeoutMs,
+                    adbService,
                     scrcpyLaunchCoordinator,
                     logService);
                 var virtualDisplayService = new VirtualDisplayService(
@@ -98,6 +107,7 @@ namespace DexManager
                     settings);
                 var deviceMonitor = new DeviceMonitorService(
                     adbService,
+                    wirelessAdbService,
                     logService,
                     settings.Timing.DeviceMonitorIntervalMs);
                 var hotkeyService = new HotkeyService(
@@ -138,6 +148,7 @@ namespace DexManager
                     settings,
                     logService,
                     adbService,
+                    wirelessAdbService,
                     scrcpyService,
                     singleWindowService,
                     screenOffService,

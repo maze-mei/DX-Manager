@@ -15,6 +15,7 @@ namespace DexManager.Forms
         private readonly AppSettings _settings;
         private readonly LogService _logService;
         private readonly AdbService _adbService;
+        private readonly WirelessAdbService _wirelessAdbService;
         private readonly ScrcpyService _scrcpyService;
         private readonly SingleWindowService _singleWindowService;
         private readonly ScreenOffService _screenOffService;
@@ -83,6 +84,7 @@ namespace DexManager.Forms
             AppSettings settings,
             LogService logService,
             AdbService adbService,
+            WirelessAdbService wirelessAdbService,
             ScrcpyService scrcpyService,
             SingleWindowService singleWindowService,
             ScreenOffService screenOffService,
@@ -98,6 +100,7 @@ namespace DexManager.Forms
             _settings = settings;
             _logService = logService;
             _adbService = adbService;
+            _wirelessAdbService = wirelessAdbService;
             _scrcpyService = scrcpyService;
             _singleWindowService = singleWindowService;
             _screenOffService = screenOffService;
@@ -159,7 +162,7 @@ namespace DexManager.Forms
                 ForeColor = Color.FromArgb(75, 85, 99),
                 Location = new Point(35, 157),
                 Size = new Size(570, 22),
-                Text = "휴대폰 USB 연결을 기다립니다."
+                Text = "휴대폰 연결을 기다립니다."
             };
             Controls.Add(_indicatorDot);
             Controls.Add(_indicatorStatus);
@@ -336,14 +339,20 @@ namespace DexManager.Forms
                 await Task.Run(delegate
                 {
                     _adbService.LogStartupDiagnostics();
+                    _adbService.StartServer();
+                    if (_wirelessAdbService.IsWirelessMode)
+                    {
+                        _wirelessAdbService.TryReconnect(true);
+                        return;
+                    }
+                    var devices = _adbService.GetDevices();
+                    _wirelessAdbService.SelectPreferredDevice(devices);
                     if (_settings.Features.ScrcpyWakeUpMode == ScrcpyWakeUpMode.AlwaysOnStartup)
                     {
                         _adbService.WakeUp(delegate { return _scrcpyService.RunWakeUp(_settings.Timing.AdbWakeUpDelayMs); });
                     }
                     else
                     {
-                        _adbService.StartServer();
-                        _adbService.GetDevices();
                         if (_settings.Features.ScrcpyWakeUpMode == ScrcpyWakeUpMode.OnAdbFailure && !_adbService.IsAuthorizedDeviceConnected())
                         {
                             _adbService.WakeUp(delegate { return _scrcpyService.RunWakeUp(_settings.Timing.AdbWakeUpDelayMs); });
@@ -472,8 +481,12 @@ namespace DexManager.Forms
                 _adbStatusValue.Text = e.Current.Status == AdbDeviceStatus.Unknown ? "대기" : "응답";
                 _deviceStatusValue.Text = GetDeviceStatusText(e.Current);
                 _deviceInfoLabel.Text = e.Current.Status == AdbDeviceStatus.Device
-                    ? "연결된 Android 장치  ·  " + e.Current.Serial
-                    : "휴대폰 USB 연결을 기다립니다.";
+                    ? "연결된 Android 장치  ·  " +
+                        (AdbService.IsTcpIpSerial(e.Current.Serial)
+                            ? "무선  ·  "
+                            : "USB  ·  ") +
+                        e.Current.Serial
+                    : "휴대폰 연결을 기다립니다.";
                 if (e.Current.Status == AdbDeviceStatus.Device)
                     UpdateDeviceStayAwakeState();
                 else
@@ -780,15 +793,15 @@ namespace DexManager.Forms
             }
             if (state != null && state.Status == AdbDeviceStatus.Unauthorized)
             {
-                SetConnectionIndicator(Color.DarkOrange, "승인 필요", "휴대폰에서 USB 디버깅 RSA 승인을 확인하세요.");
+                SetConnectionIndicator(Color.DarkOrange, "승인 필요", "휴대폰에서 ADB 디버깅 승인을 확인하세요.");
                 return;
             }
             if (state != null && state.Status == AdbDeviceStatus.Offline)
             {
-                SetConnectionIndicator(Color.Firebrick, "장치 오프라인", "USB 연결 또는 ADB 상태를 확인하세요.");
+                SetConnectionIndicator(Color.Firebrick, "장치 오프라인", "휴대폰 연결 또는 ADB 상태를 확인하세요.");
                 return;
             }
-            SetConnectionIndicator(Color.DarkOrange, "연결 대기 중", "휴대폰 USB 연결을 기다립니다.");
+            SetConnectionIndicator(Color.DarkOrange, "연결 대기 중", "휴대폰 연결을 기다립니다.");
         }
 
         private void SetConnectionIndicator(Color color, string status, string detail)
@@ -1775,7 +1788,11 @@ namespace DexManager.Forms
                 _autoHideService.ResetIdleHideState();
                 if (_settingsForm == null || _settingsForm.IsDisposed)
                 {
-                    _settingsForm = new SettingsForm(_settingsService, _settings, _adbService);
+                    _settingsForm = new SettingsForm(
+                        _settingsService,
+                        _settings,
+                        _adbService,
+                        _wirelessAdbService);
                     _settingsForm.FormClosed += delegate { _settingsForm = null; };
                 }
                 _settingsForm.Show(this);

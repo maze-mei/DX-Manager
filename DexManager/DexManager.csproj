@@ -91,6 +91,7 @@
     <Compile Include="Services\SettingsService.cs" />
     <Compile Include="Services\TrayService.cs" />
     <Compile Include="Services\VirtualDisplayService.cs" />
+    <Compile Include="Services\WirelessAdbService.cs" />
     <Compile Include="Utils\ProcessRunner.cs" />
     <Compile Include="Utils\NativeMethods.cs" />
     <Compile Include="Utils\WindowsVersionHelper.cs" />
@@ -101,7 +102,7 @@
     <None Include="app.manifest" />
     <None Include="README.md" />
     <None Include="config\settings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <Content Include="tools\scrcpy\**\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

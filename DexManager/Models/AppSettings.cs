@@ -17,12 +17,13 @@ namespace DexManager.Models
         [DataMember(Order = 7)] public KeyMappingSettings KeyMappings { get; set; }
         [DataMember(Order = 8)] public LastSuccessSettings LastSuccess { get; set; }
         [DataMember(Order = 9)] public List<SingleWindowSlotSettings> SingleWindowSlots { get; set; }
+        [DataMember(Order = 10)] public ConnectionSettings Connection { get; set; }
 
         public static AppSettings CreateDefault()
         {
             return new AppSettings
             {
-                SchemaVersion = 12,
+                SchemaVersion = 13,
                 Paths = new PathSettings
                 {
                     AdbPath = string.Empty,
@@ -94,7 +95,14 @@ namespace DexManager.Models
                     IgnoreShiftSpace = true
                 },
                 LastSuccess = new LastSuccessSettings(),
-                SingleWindowSlots = CreateDefaultSingleWindowSlots()
+                SingleWindowSlots = CreateDefaultSingleWindowSlots(),
+                Connection = new ConnectionSettings
+                {
+                    Mode = AdbConnectionMode.Usb,
+                    WirelessHost = string.Empty,
+                    WirelessPort = 5555,
+                    AutoReconnect = true
+                }
             };
         }
 
@@ -109,6 +117,7 @@ namespace DexManager.Models
             if (Features == null) Features = defaults.Features;
             if (KeyMappings == null) KeyMappings = defaults.KeyMappings;
             if (LastSuccess == null) LastSuccess = defaults.LastSuccess;
+            if (Connection == null) Connection = defaults.Connection;
             if (SingleWindowSlots == null)
                 SingleWindowSlots = new List<SingleWindowSlotSettings>();
             while (SingleWindowSlots.Count < 3)
@@ -217,6 +226,11 @@ namespace DexManager.Models
                 }
                 SchemaVersion = defaults.SchemaVersion;
             }
+            if (oldSchemaVersion < 13)
+            {
+                Connection = defaults.Connection;
+                SchemaVersion = defaults.SchemaVersion;
+            }
             if (VirtualDisplay.CustomWidth <= 0)
                 VirtualDisplay.CustomWidth = VirtualDisplay.Width;
             if (VirtualDisplay.CustomHeight <= 0)
@@ -243,6 +257,17 @@ namespace DexManager.Models
                 Paths.AdbSelectionMode))
             {
                 Paths.AdbSelectionMode = AdbSelectionMode.Auto;
+            }
+            if (!System.Enum.IsDefined(
+                typeof(AdbConnectionMode),
+                Connection.Mode))
+            {
+                Connection.Mode = AdbConnectionMode.Usb;
+            }
+            if (Connection.WirelessPort < 1 ||
+                Connection.WirelessPort > 65535)
+            {
+                Connection.WirelessPort = 5555;
             }
             if (!System.Enum.IsDefined(typeof(KeyInputMode), KeyMappings.KoreanEnglishInputMode))
                 KeyMappings.KoreanEnglishInputMode = defaults.KeyMappings.KoreanEnglishInputMode;
@@ -338,6 +363,22 @@ namespace DexManager.Models
     {
         Auto = 0,
         Manual = 1
+    }
+
+    [DataContract]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public sealed class ConnectionSettings
+    {
+        [DataMember(Order = 1)] public AdbConnectionMode Mode { get; set; }
+        [DataMember(Order = 2)] public string WirelessHost { get; set; }
+        [DataMember(Order = 3)] public int WirelessPort { get; set; }
+        [DataMember(Order = 4)] public bool AutoReconnect { get; set; }
+    }
+
+    public enum AdbConnectionMode
+    {
+        Usb = 0,
+        Wireless = 1
     }
 
     [DataContract]

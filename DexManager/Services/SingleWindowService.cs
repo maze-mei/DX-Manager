@@ -13,6 +13,7 @@ namespace DexManager.Services
         private readonly object _syncRoot = new object();
         private readonly string _scrcpyPath;
         private readonly int _processTimeoutMs;
+        private readonly AdbService _adbService;
         private readonly ScrcpyLaunchCoordinator _launchCoordinator;
         private readonly LogService _logService;
         private readonly Dictionary<int, Process> _processes =
@@ -25,6 +26,7 @@ namespace DexManager.Services
         public SingleWindowService(
             string scrcpyPath,
             int processTimeoutMs,
+            AdbService adbService,
             ScrcpyLaunchCoordinator launchCoordinator,
             LogService logService)
         {
@@ -35,6 +37,8 @@ namespace DexManager.Services
 
             _scrcpyPath = Path.GetFullPath(scrcpyPath);
             _processTimeoutMs = Math.Max(processTimeoutMs, 1000);
+            _adbService = adbService ??
+                throw new ArgumentNullException("adbService");
             _launchCoordinator = launchCoordinator ??
                 throw new ArgumentNullException("launchCoordinator");
             _logService = logService ??
@@ -280,18 +284,23 @@ namespace DexManager.Services
             int slot,
             SingleWindowSlotSettings settings)
         {
-            var arguments = new List<string>
+            var arguments = new List<string>();
+            var serial = _adbService.TargetSerial;
+            if (!string.IsNullOrWhiteSpace(serial))
             {
+                arguments.Add("--serial");
+                arguments.Add(Quote(serial));
+            }
+            arguments.Add(
                 "--new-display=" +
-                    settings.Width.ToString(CultureInfo.InvariantCulture) +
-                    "x" +
-                    settings.Height.ToString(CultureInfo.InvariantCulture) +
-                    "/" +
-                    settings.Dpi.ToString(CultureInfo.InvariantCulture),
-                "--start-app=" + GetStartAppArgument(settings),
-                "--window-title",
-                Quote(GetWindowTitle(slot, settings))
-            };
+                settings.Width.ToString(CultureInfo.InvariantCulture) +
+                "x" +
+                settings.Height.ToString(CultureInfo.InvariantCulture) +
+                "/" +
+                settings.Dpi.ToString(CultureInfo.InvariantCulture));
+            arguments.Add("--start-app=" + GetStartAppArgument(settings));
+            arguments.Add("--window-title");
+            arguments.Add(Quote(GetWindowTitle(slot, settings)));
 
             if (!string.IsNullOrWhiteSpace(settings.BitRate))
             {

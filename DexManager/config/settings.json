@@ -1,5 +1,5 @@
 {
-  "SchemaVersion": 9,
+  "SchemaVersion": 13,
   "Paths": {
     "AdbPath": "",
     "AdbSelectionMode": 0,
@@ -15,7 +15,9 @@
     "Height": 900,
     "Dpi": 150,
     "Suffix": "hdmi",
-    "ReuseExistingDisplay": true
+    "ReuseExistingDisplay": true,
+    "CustomWidth": 1600,
+    "CustomHeight": 900
   },
   "Scrcpy": {
     "BitRate": "20M",
@@ -27,7 +29,8 @@
     "ForceStopStartApp": false,
     "StartAppPackage": "",
     "AdditionalArguments": "",
-    "StayAwake": true
+    "StayAwake": true,
+    "StartAppName": ""
   },
   "Timing": {
     "DeviceMonitorIntervalMs": 1000,
@@ -86,7 +89,10 @@
       "ForceStopStartApp": false,
       "StartAppPackage": "",
       "StartAppName": "",
-      "AdditionalArguments": ""
+      "AdditionalArguments": "",
+      "CustomWidth": 1600,
+      "CustomHeight": 900,
+      "FlexDisplay": false
     },
     {
       "Slot": 2,
@@ -102,7 +108,10 @@
       "ForceStopStartApp": false,
       "StartAppPackage": "",
       "StartAppName": "",
-      "AdditionalArguments": ""
+      "AdditionalArguments": "",
+      "CustomWidth": 1600,
+      "CustomHeight": 900,
+      "FlexDisplay": false
     },
     {
       "Slot": 3,
@@ -118,7 +127,16 @@
       "ForceStopStartApp": false,
       "StartAppPackage": "",
       "StartAppName": "",
-      "AdditionalArguments": ""
+      "AdditionalArguments": "",
+      "CustomWidth": 1600,
+      "CustomHeight": 900,
+      "FlexDisplay": false
     }
-  ]
+  ],
+  "Connection": {
+    "Mode": 0,
+    "WirelessHost": "",
+    "WirelessPort": 5555,
+    "AutoReconnect": true
+  }
 }

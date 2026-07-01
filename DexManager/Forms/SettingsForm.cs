@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using DexManager.Models;
 using DexManager.Services;
@@ -12,6 +13,7 @@ namespace DexManager.Forms
         private readonly SettingsService _settingsService;
         private readonly AppSettings _settings;
         private readonly AdbService _adbService;
+        private readonly WirelessAdbService _wirelessAdbService;
 
         private RadioButton _automaticAdbBox;
         private RadioButton _manualAdbBox;
@@ -46,15 +48,29 @@ namespace DexManager.Forms
         private CheckBox _convertEnterBox;
         private ComboBox _enterInputModeBox;
         private CheckBox _ignoreShiftSpaceBox;
+        private RadioButton _usbConnectionBox;
+        private RadioButton _wirelessConnectionBox;
+        private TextBox _wirelessHostBox;
+        private NumericUpDown _wirelessPortBox;
+        private CheckBox _wirelessAutoReconnectBox;
+        private Label _wirelessStatusLabel;
+        private NumericUpDown _pairingPortBox;
+        private TextBox _pairingCodeBox;
+        private Button _wirelessPrepareButton;
+        private Button _wirelessConnectButton;
+        private Button _wirelessDisconnectButton;
+        private Button _pairButton;
 
         public SettingsForm(
             SettingsService settingsService,
             AppSettings settings,
-            AdbService adbService)
+            AdbService adbService,
+            WirelessAdbService wirelessAdbService)
         {
             _settingsService = settingsService;
             _settings = settings;
             _adbService = adbService;
+            _wirelessAdbService = wirelessAdbService;
 
             Text = "DEX Manager 설정";
             StartPosition = FormStartPosition.CenterParent;
@@ -71,6 +87,7 @@ namespace DexManager.Forms
 
             var tabs = new TabControl { Dock = DockStyle.Fill };
             tabs.TabPages.Add(BuildGeneralTab());
+            tabs.TabPages.Add(BuildConnectionTab());
             tabs.TabPages.Add(BuildPathTab());
             tabs.TabPages.Add(BuildKeyboardTab());
             tabs.TabPages.Add(BuildTimingTab());
@@ -139,6 +156,116 @@ namespace DexManager.Forms
             _screenshotFolderBox = AddPath(table, "PC 스크린샷 폴더", false);
             _deviceScreenshotFolderBox = AddText(table, "폰 전송 폴더");
             _logFolderBox = AddPath(table, "로그 폴더", false);
+            page.Controls.Add(Wrap(table));
+            return page;
+        }
+
+        private TabPage BuildConnectionTab()
+        {
+            var page = new TabPage("연결");
+            var table = CreateTable();
+
+            _usbConnectionBox = new RadioButton
+            {
+                Text = "USB 연결 사용",
+                AutoSize = true
+            };
+            _wirelessConnectionBox = new RadioButton
+            {
+                Text = "무선 ADB 연결 사용",
+                AutoSize = true
+            };
+            _usbConnectionBox.CheckedChanged += delegate
+            {
+                UpdateWirelessControls();
+            };
+            _wirelessConnectionBox.CheckedChanged += delegate
+            {
+                UpdateWirelessControls();
+            };
+            AddRow(table, "연결 방식", _usbConnectionBox);
+            AddRow(table, string.Empty, _wirelessConnectionBox);
+
+            _wirelessHostBox = AddText(table, "휴대폰 IP 주소");
+            _wirelessPortBox = AddNumber(
+                table,
+                "연결 포트",
+                1,
+                65535);
+            _wirelessAutoReconnectBox = AddCheck(
+                table,
+                "연결이 끊기면 자동으로 다시 연결");
+
+            var connectionButtons = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false
+            };
+            _wirelessPrepareButton = new Button
+            {
+                Text = "USB로 무선 준비",
+                AutoSize = true,
+                Height = 30
+            };
+            _wirelessPrepareButton.Click +=
+                WirelessPrepareButton_Click;
+            _wirelessConnectButton = new Button
+            {
+                Text = "무선 연결",
+                AutoSize = true,
+                Height = 30
+            };
+            _wirelessConnectButton.Click +=
+                WirelessConnectButton_Click;
+            _wirelessDisconnectButton = new Button
+            {
+                Text = "연결 해제",
+                AutoSize = true,
+                Height = 30
+            };
+            _wirelessDisconnectButton.Click +=
+                WirelessDisconnectButton_Click;
+            connectionButtons.Controls.Add(_wirelessPrepareButton);
+            connectionButtons.Controls.Add(_wirelessConnectButton);
+            connectionButtons.Controls.Add(_wirelessDisconnectButton);
+            AddRow(table, "무선 연결", connectionButtons);
+
+            _wirelessStatusLabel = new Label
+            {
+                AutoSize = true,
+                MaximumSize = new Size(570, 0)
+            };
+            AddRow(table, "현재 상태", _wirelessStatusLabel);
+
+            AddRow(
+                table,
+                "Android 11+",
+                new Label
+                {
+                    AutoSize = true,
+                    MaximumSize = new Size(570, 0),
+                    Text =
+                        "케이블 없이 처음 연결할 때만 페어링 주소의 " +
+                        "포트와 6자리 코드를 입력합니다. 연결 포트는 " +
+                        "페어링 포트와 다를 수 있습니다."
+                });
+            _pairingPortBox = AddNumber(
+                table,
+                "페어링 포트",
+                1,
+                65535);
+            _pairingCodeBox = AddText(table, "페어링 코드");
+            _pairingCodeBox.UseSystemPasswordChar = true;
+            _pairButton = new Button
+            {
+                Text = "페어링",
+                AutoSize = true,
+                Height = 30
+            };
+            _pairButton.Click += PairButton_Click;
+            AddRow(table, string.Empty, _pairButton);
+
             page.Controls.Add(Wrap(table));
             return page;
         }
@@ -215,7 +342,21 @@ namespace DexManager.Forms
             _convertEnterBox.Checked = _settings.KeyMappings.ConvertEnterToShiftEnter;
             _enterInputModeBox.SelectedItem = _settings.KeyMappings.EnterInputMode;
             _ignoreShiftSpaceBox.Checked = _settings.KeyMappings.IgnoreShiftSpace;
+            _usbConnectionBox.Checked =
+                _settings.Connection.Mode == AdbConnectionMode.Usb;
+            _wirelessConnectionBox.Checked =
+                !_usbConnectionBox.Checked;
+            _wirelessHostBox.Text =
+                _settings.Connection.WirelessHost ?? string.Empty;
+            _wirelessPortBox.Value = Clamp(
+                _settings.Connection.WirelessPort,
+                _wirelessPortBox);
+            _wirelessAutoReconnectBox.Checked =
+                _settings.Connection.AutoReconnect;
+            _pairingPortBox.Value = _wirelessPortBox.Value;
+            UpdateWirelessStatus();
             UpdateManualAdbControls();
+            UpdateWirelessControls();
         }
 
         private void SaveButton_Click(object sender, EventArgs e)
@@ -275,12 +416,185 @@ namespace DexManager.Forms
             _settings.KeyMappings.ConvertEnterToShiftEnter = _convertEnterBox.Checked;
             _settings.KeyMappings.EnterInputMode = (KeyInputMode)_enterInputModeBox.SelectedItem;
             _settings.KeyMappings.IgnoreShiftSpace = _ignoreShiftSpaceBox.Checked;
+            SaveConnectionValues();
+        }
+
+        private void SaveConnectionValues()
+        {
+            if (_wirelessConnectionBox.Checked &&
+                string.IsNullOrWhiteSpace(_wirelessHostBox.Text))
+            {
+                throw new InvalidOperationException(
+                    "무선 연결을 사용할 때는 휴대폰 IP 주소를 입력하세요.");
+            }
+            _settings.Connection.Mode = _wirelessConnectionBox.Checked
+                ? AdbConnectionMode.Wireless
+                : AdbConnectionMode.Usb;
+            SaveConnectionDetails();
+        }
+
+        private void SaveConnectionDetails()
+        {
+            _settings.Connection.WirelessHost =
+                _wirelessHostBox.Text.Trim();
+            _settings.Connection.WirelessPort =
+                (int)_wirelessPortBox.Value;
+            _settings.Connection.AutoReconnect =
+                _wirelessAutoReconnectBox.Checked;
         }
 
         private void UpdateManualAdbControls()
         {
             if (_manualAdbPanel != null)
                 _manualAdbPanel.Enabled = _manualAdbBox != null && _manualAdbBox.Checked;
+        }
+
+        private void UpdateWirelessControls()
+        {
+            var enabled = _wirelessConnectionBox != null &&
+                _wirelessConnectionBox.Checked;
+            if (_wirelessHostBox != null)
+                _wirelessHostBox.Enabled = enabled;
+            if (_wirelessPortBox != null)
+                _wirelessPortBox.Enabled = enabled;
+            if (_wirelessAutoReconnectBox != null)
+                _wirelessAutoReconnectBox.Enabled = enabled;
+            if (_wirelessPrepareButton != null)
+                _wirelessPrepareButton.Enabled = enabled;
+            if (_wirelessConnectButton != null)
+                _wirelessConnectButton.Enabled = enabled;
+            if (_wirelessDisconnectButton != null)
+                _wirelessDisconnectButton.Enabled = enabled;
+            if (_pairingPortBox != null)
+                _pairingPortBox.Enabled = enabled;
+            if (_pairingCodeBox != null)
+                _pairingCodeBox.Enabled = enabled;
+            if (_pairButton != null)
+                _pairButton.Enabled = enabled;
+        }
+
+        private async void WirelessPrepareButton_Click(
+            object sender,
+            EventArgs e)
+        {
+            var host = _wirelessHostBox.Text;
+            var port = (int)_wirelessPortBox.Value;
+            await RunWirelessOperationAsync(delegate
+            {
+                return _wirelessAdbService.EnableFromUsb(
+                    host,
+                    port);
+            });
+            _wirelessHostBox.Text =
+                _settings.Connection.WirelessHost ?? string.Empty;
+        }
+
+        private async void WirelessConnectButton_Click(
+            object sender,
+            EventArgs e)
+        {
+            var host = _wirelessHostBox.Text;
+            var port = (int)_wirelessPortBox.Value;
+            await RunWirelessOperationAsync(delegate
+            {
+                return _wirelessAdbService.Connect(
+                    host,
+                    port);
+            });
+        }
+
+        private async void WirelessDisconnectButton_Click(
+            object sender,
+            EventArgs e)
+        {
+            await RunWirelessOperationAsync(delegate
+            {
+                return _wirelessAdbService.Disconnect();
+            });
+            _usbConnectionBox.Checked = true;
+        }
+
+        private async void PairButton_Click(
+            object sender,
+            EventArgs e)
+        {
+            var host = _wirelessHostBox.Text;
+            var port = (int)_pairingPortBox.Value;
+            var pairingCode = _pairingCodeBox.Text.Trim();
+            await RunWirelessOperationAsync(delegate
+            {
+                return _wirelessAdbService.Pair(
+                    host,
+                    port,
+                    pairingCode);
+            });
+            _pairingCodeBox.Clear();
+        }
+
+        private async Task RunWirelessOperationAsync(
+            Func<WirelessConnectionResult> operation)
+        {
+            SaveConnectionDetails();
+            SetWirelessButtonsEnabled(false);
+            UseWaitCursor = true;
+            try
+            {
+                var result = await Task.Run(operation);
+                if (IsDisposed) return;
+                _wirelessStatusLabel.Text = result.Message +
+                    (string.IsNullOrWhiteSpace(result.Endpoint)
+                        ? string.Empty
+                        : " (" + result.Endpoint + ")");
+                _wirelessStatusLabel.ForeColor = result.Success
+                    ? Color.DarkGreen
+                    : Color.Firebrick;
+                if (result.Success)
+                    _wirelessConnectionBox.Checked =
+                        _wirelessAdbService.IsWirelessMode;
+            }
+            catch (Exception ex)
+            {
+                if (!IsDisposed)
+                {
+                    _wirelessStatusLabel.Text =
+                        "무선 연결 작업 실패: " + ex.Message;
+                    _wirelessStatusLabel.ForeColor = Color.Firebrick;
+                }
+            }
+            finally
+            {
+                if (!IsDisposed)
+                {
+                    UseWaitCursor = false;
+                    UpdateWirelessControls();
+                }
+            }
+        }
+
+        private void SetWirelessButtonsEnabled(bool enabled)
+        {
+            _wirelessPrepareButton.Enabled = enabled;
+            _wirelessConnectButton.Enabled = enabled;
+            _wirelessDisconnectButton.Enabled = enabled;
+            _pairButton.Enabled = enabled;
+        }
+
+        private void UpdateWirelessStatus()
+        {
+            var target = _adbService.TargetSerial;
+            if (string.IsNullOrWhiteSpace(target))
+            {
+                _wirelessStatusLabel.Text =
+                    _settings.Connection.Mode == AdbConnectionMode.Wireless
+                        ? "무선 연결 대기"
+                        : "USB 장치 연결 대기";
+                return;
+            }
+            _wirelessStatusLabel.Text =
+                (AdbService.IsTcpIpSerial(target)
+                    ? "무선 대상: "
+                    : "USB 대상: ") +
+                target;
         }
 
         private string GetAdbVersionText()

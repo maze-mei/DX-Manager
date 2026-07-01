@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading;
 using DexManager.Models;
 
@@ -8,19 +7,23 @@ namespace DexManager.Services
     public sealed class DeviceMonitorService : IDisposable
     {
         private readonly AdbService _adbService;
+        private readonly WirelessAdbService _wirelessAdbService;
         private readonly LogService _logService;
         private readonly int _intervalMs;
         private readonly object _stateLock = new object();
         private Timer _timer;
         private int _polling;
+        private DateTime _wirelessMissingSinceUtc = DateTime.MinValue;
         private DeviceState _currentState = DeviceState.Disconnected();
 
         public DeviceMonitorService(
             AdbService adbService,
+            WirelessAdbService wirelessAdbService,
             LogService logService,
             int intervalMs)
         {
             _adbService = adbService;
+            _wirelessAdbService = wirelessAdbService;
             _logService = logService;
             _intervalMs = Math.Max(intervalMs, 500);
         }
@@ -67,8 +70,30 @@ namespace DexManager.Services
             try
             {
                 var devices = _adbService.GetDevices(false);
-                var preferred = devices.FirstOrDefault(device => device.IsAuthorized) ??
-                    devices.FirstOrDefault();
+                var preferred =
+                    _wirelessAdbService.SelectPreferredDevice(devices);
+                if (preferred == null &&
+                    _wirelessAdbService.TryReconnect(false))
+                {
+                    devices = _adbService.GetDevices(false);
+                    preferred =
+                        _wirelessAdbService.SelectPreferredDevice(devices);
+                }
+                if (_wirelessAdbService.IsWirelessMode &&
+                    preferred == null)
+                {
+                    if (_wirelessMissingSinceUtc == DateTime.MinValue)
+                        _wirelessMissingSinceUtc = DateTime.UtcNow;
+                    if ((DateTime.UtcNow -
+                        _wirelessMissingSinceUtc).TotalSeconds < 3)
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    _wirelessMissingSinceUtc = DateTime.MinValue;
+                }
 
                 var next = preferred == null
                     ? DeviceState.Disconnected()

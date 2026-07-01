@@ -9,6 +9,7 @@ namespace DexManager.Services
     public sealed class SettingsService
     {
         private readonly LogService _logService;
+        private readonly object _saveSync = new object();
 
         public SettingsService(LogService logService)
         {
@@ -71,23 +72,29 @@ namespace DexManager.Services
         {
             if (settings == null) throw new ArgumentNullException("settings");
 
-            settings.EnsureDefaults();
-            var directory = Path.GetDirectoryName(SettingsFilePath);
-            if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
-
-            var tempPath = SettingsFilePath + ".tmp";
-            using (var stream = File.Create(tempPath))
+            lock (_saveSync)
             {
-                CreateSerializer().WriteObject(stream, settings);
-            }
+                settings.EnsureDefaults();
+                var directory = Path.GetDirectoryName(SettingsFilePath);
+                if (!Directory.Exists(directory))
+                    Directory.CreateDirectory(directory);
 
-            if (File.Exists(SettingsFilePath))
-            {
-                File.Delete(SettingsFilePath);
-            }
+                var tempPath = SettingsFilePath + ".tmp";
+                using (var stream = File.Create(tempPath))
+                {
+                    CreateSerializer().WriteObject(stream, settings);
+                }
 
-            File.Move(tempPath, SettingsFilePath);
-            _logService.Info("설정 파일을 저장했습니다: " + SettingsFilePath);
+                if (File.Exists(SettingsFilePath))
+                {
+                    File.Delete(SettingsFilePath);
+                }
+
+                File.Move(tempPath, SettingsFilePath);
+                _logService.Info(
+                    "설정 파일을 저장했습니다: " +
+                    SettingsFilePath);
+            }
         }
 
         public string ResolvePath(string configuredPath)

@@ -10,12 +10,14 @@ namespace DexManager.Services
         private const string ConfirmationText = "Device display turned off";
         private readonly string _scrcpyPath;
         private readonly int _processTimeoutMs;
+        private readonly AdbService _adbService;
         private readonly ScrcpyLaunchCoordinator _launchCoordinator;
         private readonly LogService _logService;
 
         public ScreenOffService(
             string scrcpyPath,
             int processTimeoutMs,
+            AdbService adbService,
             ScrcpyLaunchCoordinator launchCoordinator,
             LogService logService)
         {
@@ -28,6 +30,8 @@ namespace DexManager.Services
             _processTimeoutMs = Math.Min(
                 Math.Max(processTimeoutMs, 1000),
                 5000);
+            _adbService = adbService ??
+                throw new ArgumentNullException("adbService");
             _launchCoordinator = launchCoordinator ??
                 throw new ArgumentNullException("launchCoordinator");
             _logService = logService ??
@@ -62,7 +66,11 @@ namespace DexManager.Services
                     "scrcpy.exe를 찾을 수 없습니다.",
                     _scrcpyPath);
 
-            const string arguments =
+            var serial = _adbService.TargetSerial;
+            var arguments =
+                (string.IsNullOrWhiteSpace(serial)
+                    ? string.Empty
+                    : "--serial " + Quote(serial) + " ") +
                 "--no-video --no-audio --no-window -S --no-power-on " +
                 "--no-cleanup";
             using (var confirmation = new ManualResetEventSlim(false))
@@ -158,6 +166,11 @@ namespace DexManager.Services
                     RedirectStandardError = true
                 }
             };
+        }
+
+        private static string Quote(string value)
+        {
+            return "\"" + value.Replace("\"", "\\\"") + "\"";
         }
     }
 }

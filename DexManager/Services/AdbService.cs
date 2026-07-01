@@ -13,6 +13,8 @@ namespace DexManager.Services
         private readonly int _defaultTimeoutMs;
         private readonly ProcessRunner _processRunner;
         private readonly LogService _logService;
+        private readonly object _targetSync = new object();
+        private string _targetSerial;
 
         public AdbService(
             string adbPath,
@@ -32,6 +34,44 @@ namespace DexManager.Services
         public string AdbPath
         {
             get { return _adbPath; }
+        }
+
+        public string TargetSerial
+        {
+            get
+            {
+                lock (_targetSync)
+                {
+                    return _targetSerial;
+                }
+            }
+        }
+
+        public void SetTargetSerial(string serial)
+        {
+            var normalized = string.IsNullOrWhiteSpace(serial)
+                ? string.Empty
+                : serial.Trim();
+            lock (_targetSync)
+            {
+                if (string.Equals(
+                    _targetSerial,
+                    normalized,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+                _targetSerial = normalized;
+            }
+
+            Environment.SetEnvironmentVariable(
+                "ANDROID_SERIAL",
+                normalized.Length == 0 ? null : normalized,
+                EnvironmentVariableTarget.Process);
+            _logService.Info(
+                normalized.Length == 0
+                    ? "ADB 대상 장치 선택을 해제했습니다."
+                    : "ADB 대상 장치 선택: " + normalized);
         }
 
         public ProcessResult StartServer()
@@ -59,7 +99,7 @@ namespace DexManager.Services
 
         public ProcessResult GetState()
         {
-            return Run("get-state");
+            return RunTargeted("get-state", true);
         }
 
         public ProcessResult Shell(string command)
@@ -73,7 +113,22 @@ namespace DexManager.Services
         {
             if (string.IsNullOrWhiteSpace(command))
                 throw new ArgumentException("ADB shell command is empty.", "command");
-            return Run("shell " + command, writeLog);
+            return RunTargeted("shell " + command, writeLog);
+        }
+
+        public ProcessResult ShellForSerial(
+            string serial,
+            string command,
+            bool writeLog)
+        {
+            if (string.IsNullOrWhiteSpace(serial))
+                throw new ArgumentException("ADB serial이 비어 있습니다.", "serial");
+            if (string.IsNullOrWhiteSpace(command))
+                throw new ArgumentException("ADB shell command is empty.", "command");
+            return RunForSerial(
+                serial,
+                "shell " + command,
+                writeLog);
         }
 
         public ProcessResult Push(string localPath, string remotePath)
@@ -83,7 +138,59 @@ namespace DexManager.Services
             if (string.IsNullOrWhiteSpace(remotePath))
                 throw new ArgumentException("스마트폰 대상 경로가 비어 있습니다.", "remotePath");
 
-            return Run("push " + Quote(localPath) + " " + Quote(remotePath));
+            return RunTargeted(
+                "push " + Quote(localPath) + " " + Quote(remotePath),
+                true);
+        }
+
+        public ProcessResult EnableTcpIp(string serial, int port)
+        {
+            ValidatePort(port, "port");
+            return RunForSerial(
+                serial,
+                "tcpip " + port,
+                true);
+        }
+
+        public ProcessResult Connect(string endpoint, bool writeLog)
+        {
+            if (string.IsNullOrWhiteSpace(endpoint))
+                throw new ArgumentException(
+                    "무선 ADB 주소가 비어 있습니다.",
+                    "endpoint");
+            return Run("connect " + Quote(endpoint.Trim()), writeLog);
+        }
+
+        public ProcessResult Disconnect(string endpoint)
+        {
+            if (string.IsNullOrWhiteSpace(endpoint))
+                throw new ArgumentException(
+                    "무선 ADB 주소가 비어 있습니다.",
+                    "endpoint");
+            return Run("disconnect " + Quote(endpoint.Trim()), true);
+        }
+
+        public ProcessResult Pair(
+            string endpoint,
+            string pairingCode)
+        {
+            if (string.IsNullOrWhiteSpace(endpoint))
+                throw new ArgumentException(
+                    "페어링 주소가 비어 있습니다.",
+                    "endpoint");
+            if (string.IsNullOrWhiteSpace(pairingCode))
+                throw new ArgumentException(
+                    "페어링 코드가 비어 있습니다.",
+                    "pairingCode");
+
+            _logService.Info(
+                "ADB 무선 페어링을 시도합니다: " + endpoint.Trim());
+            var result = Run(
+                "pair " + Quote(endpoint.Trim()) + " " +
+                Quote(pairingCode.Trim()),
+                false);
+            LogCommandResult("ADB pair 결과", SanitizePairResult(result));
+            return result;
         }
 
         public IList<AdbDeviceInfo> GetDevices()
@@ -117,7 +224,8 @@ namespace DexManager.Services
         public AdbWakeUpResult WakeUp(Func<bool> scrcpyWakeUp)
         {
             _logService.Info("ADB Wake-up을 시작합니다.");
-            KillServer();
+            if (!IsTcpIpSerial(TargetSerial))
+                KillServer();
             StartServer();
 
             var devicesBefore = GetDevices();
@@ -190,6 +298,65 @@ namespace DexManager.Services
                 Path.GetDirectoryName(_adbPath),
                 _defaultTimeoutMs,
                 writeLog);
+        }
+
+        private ProcessResult RunTargeted(
+            string arguments,
+            bool writeLog)
+        {
+            var serial = TargetSerial;
+            return string.IsNullOrWhiteSpace(serial)
+                ? Run(arguments, writeLog)
+                : RunForSerial(serial, arguments, writeLog);
+        }
+
+        private ProcessResult RunForSerial(
+            string serial,
+            string arguments,
+            bool writeLog)
+        {
+            if (string.IsNullOrWhiteSpace(serial))
+                throw new ArgumentException("ADB serial이 비어 있습니다.", "serial");
+            return Run(
+                "-s " + Quote(serial.Trim()) + " " + arguments,
+                writeLog);
+        }
+
+        public static bool IsTcpIpSerial(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return false;
+
+            var value = serial.Trim();
+            var separator = value.LastIndexOf(':');
+            if (separator <= 0 || separator == value.Length - 1)
+                return false;
+
+            int port;
+            return int.TryParse(value.Substring(separator + 1), out port) &&
+                port > 0 &&
+                port <= 65535;
+        }
+
+        private static void ValidatePort(int port, string parameterName)
+        {
+            if (port < 1 || port > 65535)
+                throw new ArgumentOutOfRangeException(parameterName);
+        }
+
+        private static ProcessResult SanitizePairResult(
+            ProcessResult result)
+        {
+            if (result == null) return null;
+            return new ProcessResult
+            {
+                FileName = result.FileName,
+                Arguments = "pair <address> <hidden>",
+                ExitCode = result.ExitCode,
+                StandardOutput = result.StandardOutput,
+                StandardError = result.StandardError,
+                TimedOut = result.TimedOut,
+                Duration = result.Duration
+            };
         }
 
         private static AdbDeviceStatus ParseStatus(string status)

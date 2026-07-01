@@ -17,6 +17,7 @@ namespace DexManager.Services
         private readonly string _scrcpyPath;
         private readonly int _processTimeoutMs;
         private readonly ProcessRunner _processRunner;
+        private readonly AdbService _adbService;
         private readonly ScrcpyLaunchCoordinator _launchCoordinator;
         private readonly LogService _logService;
         private Process _process;
@@ -27,6 +28,7 @@ namespace DexManager.Services
             string scrcpyPath,
             int processTimeoutMs,
             ProcessRunner processRunner,
+            AdbService adbService,
             ScrcpyLaunchCoordinator launchCoordinator,
             LogService logService)
         {
@@ -37,6 +39,8 @@ namespace DexManager.Services
             _processTimeoutMs = Math.Max(processTimeoutMs, 1000);
             _processRunner = processRunner ??
                 throw new ArgumentNullException("processRunner");
+            _adbService = adbService ??
+                throw new ArgumentNullException("adbService");
             _launchCoordinator = launchCoordinator ??
                 throw new ArgumentNullException("launchCoordinator");
             _logService = logService;
@@ -141,8 +145,10 @@ namespace DexManager.Services
 
             var arguments = new List<string>
             {
-                "--display-id", displayId.ToString(CultureInfo.InvariantCulture)
             };
+            AddSerialArgument(arguments);
+            arguments.Add("--display-id");
+            arguments.Add(displayId.ToString(CultureInfo.InvariantCulture));
 
             if (!string.IsNullOrWhiteSpace(settings.BitRate))
             {
@@ -192,11 +198,14 @@ namespace DexManager.Services
             if (!File.Exists(_scrcpyPath))
                 throw new FileNotFoundException("scrcpy.exe를 찾을 수 없습니다.", _scrcpyPath);
 
+            var arguments = new List<string>();
+            AddSerialArgument(arguments);
+            arguments.Add("--list-apps");
             var result = _launchCoordinator.RunExclusive(delegate
             {
                 return _processRunner.Run(
                     _scrcpyPath,
-                    "--list-apps",
+                    string.Join(" ", arguments),
                     Path.GetDirectoryName(_scrcpyPath),
                     _processTimeoutMs);
             });
@@ -321,8 +330,13 @@ namespace DexManager.Services
             }
 
             _logService.Info("Scrcpy Wake-up을 실행합니다.");
+            var arguments = new List<string>();
+            AddSerialArgument(arguments);
+            arguments.Add("--no-audio");
+            arguments.Add("--max-size=64");
+            arguments.Add("--max-fps=1");
             using (var process = CreateProcess(
-                "--no-audio --max-size=64 --max-fps=1",
+                string.Join(" ", arguments),
                 false))
             {
                 try
@@ -467,6 +481,14 @@ namespace DexManager.Services
         private static string Quote(string value)
         {
             return "\"" + value.Replace("\"", "\\\"") + "\"";
+        }
+
+        private void AddSerialArgument(ICollection<string> arguments)
+        {
+            var serial = _adbService.TargetSerial;
+            if (string.IsNullOrWhiteSpace(serial)) return;
+            arguments.Add("--serial");
+            arguments.Add(Quote(serial));
         }
 
         private static IList<ScrcpyAppInfo> ParseAppList(string output)
