@@ -8,7 +8,8 @@ namespace DexManager.Services
     {
         private const string RunKeyPath =
             @"Software\Microsoft\Windows\CurrentVersion\Run";
-        private const string ValueName = "DexManager";
+        private const string ValueName = "DXManager";
+        private const string LegacyValueName = "DexManager";
         private readonly LogService _logService;
 
         public AutoStartService(LogService logService)
@@ -20,7 +21,9 @@ namespace DexManager.Services
         {
             using (var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, false))
             {
-                return key != null && key.GetValue(ValueName) != null;
+                return key != null &&
+                    (key.GetValue(ValueName) != null ||
+                     key.GetValue(LegacyValueName) != null);
             }
         }
 
@@ -42,6 +45,7 @@ namespace DexManager.Services
                 if (key == null)
                     throw new InvalidOperationException("자동 실행 레지스트리를 열 수 없습니다.");
                 key.SetValue(ValueName, command, RegistryValueKind.String);
+                key.DeleteValue(LegacyValueName, false);
             }
 
             _logService.Info("Windows 자동 실행을 등록했습니다.");
@@ -51,7 +55,11 @@ namespace DexManager.Services
         {
             using (var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, true))
             {
-                if (key != null) key.DeleteValue(ValueName, false);
+                if (key != null)
+                {
+                    key.DeleteValue(ValueName, false);
+                    key.DeleteValue(LegacyValueName, false);
+                }
             }
 
             _logService.Info("Windows 자동 실행 등록을 해제했습니다.");

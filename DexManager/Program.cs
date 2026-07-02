@@ -24,8 +24,10 @@ namespace DexManager
             if (!createdNew)
             {
                 MessageBox.Show(
-                    "DEX Manager가 이미 실행 중입니다.\r\n시스템 트레이를 확인하십시오.",
-                    "DEX Manager",
+                    LocalizationService.Format(
+                        "Program.AlreadyRunning",
+                        Environment.NewLine),
+                    LocalizationService.Get("App.Name"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
                 _singleInstanceMutex.Dispose();
@@ -41,9 +43,10 @@ namespace DexManager
             {
                 var settingsService = new SettingsService(logService);
                 var settings = settingsService.Load();
+                LocalizationService.Apply(settings.Language);
                 logService.SetLogDirectory(
                     settingsService.ResolvePath(settings.Paths.LogFolder));
-                logService.Info("DEX Manager를 시작합니다.");
+                logService.Info("DX Manager를 시작합니다.");
 
                 var processRunner = new ProcessRunner(logService);
                 var pathService = new PathService(
@@ -164,8 +167,11 @@ namespace DexManager
             {
                 logService.Error("프로그램 초기화에 실패했습니다.", ex);
                 MessageBox.Show(
-                    "DEX Manager 초기화에 실패했습니다.\r\n\r\n" + ex.Message,
-                    "DEX Manager",
+                    LocalizationService.Format(
+                        "Program.InitFailed",
+                        Environment.NewLine,
+                        ex.Message),
+                    LocalizationService.Get("App.Name"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }

@@ -87,7 +87,7 @@ namespace DexManager.Services
                 if (!_hideRequested)
                 {
                     _hideRequested = true;
-                    _logService.Info("사용자 입력이 없어 DEX Manager UI를 트레이로 숨깁니다.");
+                    _logService.Info("사용자 입력이 없어 DX Manager UI를 트레이로 숨깁니다.");
                     RaiseIdleHideRequested();
                 }
             }

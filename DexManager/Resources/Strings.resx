@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="App.Name" xml:space="preserve"><value>DX Manager</value></data>
+  <data name="Language.Auto" xml:space="preserve"><value>Use Windows language</value></data>
+  <data name="Language.Korean" xml:space="preserve"><value>한국어</value></data>
+  <data name="Language.English" xml:space="preserve"><value>English</value></data>
+  <data name="Common.Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Common.Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Common.Browse" xml:space="preserve"><value>Browse</value></data>
+  <data name="Common.Error" xml:space="preserve"><value>Error</value></data>
+  <data name="Main.Mode" xml:space="preserve"><value>MODE</value></data>
+  <data name="Main.Dex" xml:space="preserve"><value>DeX</value></data>
+  <data name="Main.SingleWindow" xml:space="preserve"><value>Window {0}</value></data>
+  <data name="Main.SidebarHint" xml:space="preserve"><value>Each slot remembers a different app and its settings.</value></data>
+  <data name="Main.Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="Main.Waiting" xml:space="preserve"><value>Waiting for connection</value></data>
+  <data name="Main.PreparingAdb" xml:space="preserve"><value>Preparing the ADB server.</value></data>
+  <data name="Main.WaitingPhone" xml:space="preserve"><value>Waiting for a phone connection.</value></data>
+  <data name="Main.DisplaySettings.Dex" xml:space="preserve"><value>DeX display settings</value></data>
+  <data name="Main.DisplaySettings.Single" xml:space="preserve"><value>Window {0} display settings</value></data>
+  <data name="Main.Resolution" xml:space="preserve"><value>Resolution</value></data>
+  <data name="Main.Width" xml:space="preserve"><value>Width</value></data>
+  <data name="Main.Height" xml:space="preserve"><value>Height</value></data>
+  <data name="Main.Custom" xml:space="preserve"><value>Custom</value></data>
+  <data name="Main.Bitrate" xml:space="preserve"><value>Bitrate</value></data>
+  <data name="Main.MaxFps" xml:space="preserve"><value>Max FPS</value></data>
+  <data name="Main.Options" xml:space="preserve"><value>Launch options</value></data>
+  <data name="Main.ScreenOff" xml:space="preserve"><value>Turn phone screen off (-S)</value></data>
+  <data name="Main.HidKeyboard" xml:space="preserve"><value>HID keyboard (-K)</value></data>
+  <data name="Main.HidMouse" xml:space="preserve"><value>HID mouse (-M)</value></data>
+  <data name="Main.ForceStop" xml:space="preserve"><value>Force-stop selected app</value></data>
+  <data name="Main.ReuseDisplay" xml:space="preserve"><value>Reuse existing display</value></data>
+  <data name="Main.FlexDisplay" xml:space="preserve"><value>Dynamic window size (--flex-display)</value></data>
+  <data name="Main.StayAwake" xml:space="preserve"><value>Keep device active (--keep-active)</value></data>
+  <data name="Main.StartApp" xml:space="preserve"><value>Start app</value></data>
+  <data name="Main.NoApp" xml:space="preserve"><value>None</value></data>
+  <data name="Main.LoadApps" xml:space="preserve"><value>Load app list</value></data>
+  <data name="Main.Loading" xml:space="preserve"><value>Loading...</value></data>
+  <data name="Main.AdvancedClosed" xml:space="preserve"><value>▶  Advanced options (extra arguments)</value></data>
+  <data name="Main.AdvancedOpen" xml:space="preserve"><value>▼  Advanced options (extra arguments)</value></data>
+  <data name="Main.StartDex" xml:space="preserve"><value>Start DeX</value></data>
+  <data name="Main.StopDex" xml:space="preserve"><value>Stop DeX</value></data>
+  <data name="Main.StartSingle" xml:space="preserve"><value>Start window</value></data>
+  <data name="Main.StopSingle" xml:space="preserve"><value>Stop window</value></data>
+  <data name="Main.ApplyChanges" xml:space="preserve"><value>Apply changes</value></data>
+  <data name="Main.DexMode" xml:space="preserve"><value>DeX mode</value></data>
+  <data name="Main.SingleMode" xml:space="preserve"><value>Window {0} · Scrcpy virtual display</value></data>
+  <data name="Status.Initializing" xml:space="preserve"><value>Initializing</value></data>
+  <data name="Status.Ready" xml:space="preserve"><value>Ready</value></data>
+  <data name="Status.Error" xml:space="preserve"><value>Error</value></data>
+  <data name="Status.Starting" xml:space="preserve"><value>Starting</value></data>
+  <data name="Status.Stopping" xml:space="preserve"><value>Stopping</value></data>
+  <data name="Status.Applying" xml:space="preserve"><value>Applying settings</value></data>
+  <data name="Status.Running" xml:space="preserve"><value>Running</value></data>
+  <data name="Status.Stopped" xml:space="preserve"><value>Stopped</value></data>
+  <data name="Status.Idle" xml:space="preserve"><value>Idle</value></data>
+  <data name="Status.Responding" xml:space="preserve"><value>Responding</value></data>
+  <data name="Main.DexStarting" xml:space="preserve"><value>Starting DeX</value></data>
+  <data name="Main.DexPreparing" xml:space="preserve"><value>Preparing the virtual display and Scrcpy.</value></data>
+  <data name="Main.DexStopping" xml:space="preserve"><value>Stopping DeX</value></data>
+  <data name="Main.DexCleaning" xml:space="preserve"><value>Cleaning up the virtual display.</value></data>
+  <data name="Main.SingleStarting" xml:space="preserve"><value>Starting window {0}</value></data>
+  <data name="Main.SinglePreparing" xml:space="preserve"><value>Preparing a Scrcpy virtual display and the selected app.</value></data>
+  <data name="Main.SingleStopping" xml:space="preserve"><value>Stopping window {0}</value></data>
+  <data name="Main.SingleCleaning" xml:space="preserve"><value>Cleaning up the Scrcpy virtual display.</value></data>
+  <data name="Main.DexRunning" xml:space="preserve"><value>DeX is running</value></data>
+  <data name="Main.DexRunningDetail" xml:space="preserve"><value>The Scrcpy virtual display is running normally.</value></data>
+  <data name="Main.SingleRunning" xml:space="preserve"><value>Window {0} is running</value></data>
+  <data name="Main.SingleRunningDetail" xml:space="preserve"><value>The Scrcpy virtual display is running.</value></data>
+  <data name="Main.AppRunningDetail" xml:space="preserve"><value>{0} is running.</value></data>
+  <data name="Main.PhoneConnected" xml:space="preserve"><value>Phone connected</value></data>
+  <data name="Main.WaitingDex" xml:space="preserve"><value>Ready to start DeX.</value></data>
+  <data name="Main.AuthorizationRequired" xml:space="preserve"><value>Authorization required</value></data>
+  <data name="Main.AuthorizationDetail" xml:space="preserve"><value>Approve ADB debugging on the phone.</value></data>
+  <data name="Main.DeviceOffline" xml:space="preserve"><value>Device offline</value></data>
+  <data name="Main.DeviceOfflineDetail" xml:space="preserve"><value>Check the phone connection or ADB status.</value></data>
+  <data name="Main.ConnectedDevice" xml:space="preserve"><value>Connected Android device  ·  {0}  ·  {1}</value></data>
+  <data name="Main.SingleReady" xml:space="preserve"><value>Window {0} ready</value></data>
+  <data name="Main.SelectApp" xml:space="preserve"><value>Select an app to launch.</value></data>
+  <data name="Main.PressStart" xml:space="preserve"><value>Press Start to launch the selected app on a new display.</value></data>
+  <data name="Main.ApplyStatus" xml:space="preserve"><value>Applying settings</value></data>
+  <data name="Main.ApplyRestartDetail" xml:space="preserve"><value>Removing the current display and restarting with the new settings.</value></data>
+  <data name="Main.ApplyNoDevice" xml:space="preserve"><value>Settings were saved. They will be used the next time DeX starts because no phone is connected.</value></data>
+  <data name="Main.ApplyDeferred" xml:space="preserve"><value>Settings were saved but could not be applied now. They will be used the next time DeX starts.</value></data>
+  <data name="Main.ApplySucceeded" xml:space="preserve"><value>Settings were saved and the virtual display was restarted.</value></data>
+  <data name="Main.ApplyFailed" xml:space="preserve"><value>Settings were saved but could not be applied now.{0}They will be used the next time DeX starts.{0}{0}{1}</value></data>
+  <data name="Main.SingleSavedNoDevice" xml:space="preserve"><value>Window {0} settings were saved.{1}They will be used next time because no phone is connected.</value></data>
+  <data name="Main.SingleSaved" xml:space="preserve"><value>Window {0} settings were saved.</value></data>
+  <data name="Main.SingleApplying" xml:space="preserve"><value>Applying window {0} settings</value></data>
+  <data name="Main.SingleRestartDetail" xml:space="preserve"><value>Closing the current window and restarting with the new settings.</value></data>
+  <data name="Main.SingleApplied" xml:space="preserve"><value>Window {0} was restarted with the new settings.</value></data>
+  <data name="Main.LoadAppsFailed" xml:space="preserve"><value>Could not load the app list.{0}{0}{1}</value></data>
+  <data name="Main.BitrateRequired" xml:space="preserve"><value>Enter a bitrate, for example 20M.</value></data>
+  <data name="Main.TrayContinues" xml:space="preserve"><value>DX Manager continues running in the system tray.</value></data>
+  <data name="Main.CaptureHotkeyFailed" xml:space="preserve"><value>Could not register the F8 capture hotkey.</value></data>
+  <data name="Main.KeyMappingFailed" xml:space="preserve"><value>Could not start Scrcpy key mapping.</value></data>
+  <data name="Device.Connected" xml:space="preserve"><value>Connected ({0})</value></data>
+  <data name="Device.Unauthorized" xml:space="preserve"><value>RSA approval required</value></data>
+  <data name="Device.Offline" xml:space="preserve"><value>Offline</value></data>
+  <data name="Device.Disconnected" xml:space="preserve"><value>Not connected</value></data>
+  <data name="Error.AdbInit" xml:space="preserve"><value>ADB initialization failed: {0}</value></data>
+  <data name="Error.ApplyLaunchSettings" xml:space="preserve"><value>Could not apply launch settings.</value></data>
+  <data name="Error.StartDex" xml:space="preserve"><value>Could not start DeX.</value></data>
+  <data name="Error.StopDex" xml:space="preserve"><value>An error occurred while stopping DeX.</value></data>
+  <data name="Error.ApplySingleSettings" xml:space="preserve"><value>Could not apply window launch settings.</value></data>
+  <data name="Error.StartSingle" xml:space="preserve"><value>Could not start window {0}.</value></data>
+  <data name="Error.StopSingle" xml:space="preserve"><value>Could not stop window {0}.</value></data>
+  <data name="Status.ShuttingDown" xml:space="preserve"><value>Cleaning up before exit</value></data>
+  <data name="Capture.Hint" xml:space="preserve"><value>Press F8 again: capture the Scrcpy window&#xD;&#xA;Drag the mouse: capture a region&#xD;&#xA;ESC: cancel</value></data>
+  <data name="Capture.Saved" xml:space="preserve"><value>✓ Screenshot saved</value></data>
+  <data name="Settings.SavedInline" xml:space="preserve"><value>Settings saved. Restart to apply language or path changes.</value></data>
+  <data name="Settings.SaveFailedInline" xml:space="preserve"><value>Save failed: {0}</value></data>
+  <data name="Settings.Title" xml:space="preserve"><value>DX Manager · Settings &amp; diagnostics</value></data>
+  <data name="Settings.Description" xml:space="preserve"><value>Change display and Scrcpy launch options in the main window. Manage connections, paths and advanced behavior here.</value></data>
+  <data name="Settings.General" xml:space="preserve"><value>General</value></data>
+  <data name="Settings.Connection" xml:space="preserve"><value>Connection</value></data>
+  <data name="Settings.Paths" xml:space="preserve"><value>Paths / ADB</value></data>
+  <data name="Settings.Keyboard" xml:space="preserve"><value>Keyboard</value></data>
+  <data name="Settings.Timing" xml:space="preserve"><value>Timing / capture</value></data>
+  <data name="Settings.Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="Settings.Language" xml:space="preserve"><value>Display language</value></data>
+  <data name="Settings.LanguageRestart" xml:space="preserve"><value>Language changes are applied after restarting DX Manager.</value></data>
+  <data name="Settings.OpenLogs" xml:space="preserve"><value>Open session log</value></data>
+  <data name="Settings.OpenEnvironment" xml:space="preserve"><value>Run environment check</value></data>
+  <data name="Settings.DiagnosticsGuide" xml:space="preserve"><value>Open logs or check ADB, Scrcpy and device connectivity.</value></data>
+  <data name="Settings.StartWithWindows" xml:space="preserve"><value>Start with Windows</value></data>
+  <data name="Settings.StartMinimized" xml:space="preserve"><value>Start minimized to the tray</value></data>
+  <data name="Settings.WakeUpMode" xml:space="preserve"><value>ADB wake-up mode</value></data>
+  <data name="Settings.AutoHide" xml:space="preserve"><value>Enable automatic hiding</value></data>
+  <data name="Settings.AutoStartDex" xml:space="preserve"><value>Start DeX when a device connects</value></data>
+  <data name="Settings.ResetDisplay" xml:space="preserve"><value>Remove virtual display on stop/exit</value></data>
+  <data name="Settings.DisableStayAwake" xml:space="preserve"><value>Disable keep-active on stop/exit</value></data>
+  <data name="Settings.AdbAuto" xml:space="preserve"><value>Automatic (Windows version and Scrcpy path)</value></data>
+  <data name="Settings.AdbManual" xml:space="preserve"><value>Manual</value></data>
+  <data name="Settings.AdbMode" xml:space="preserve"><value>ADB mode</value></data>
+  <data name="Settings.CurrentOs" xml:space="preserve"><value>Current OS</value></data>
+  <data name="Settings.CurrentAdb" xml:space="preserve"><value>ADB in use</value></data>
+  <data name="Settings.AdbVersion" xml:space="preserve"><value>ADB version</value></data>
+  <data name="Settings.ManualAdbPath" xml:space="preserve"><value>Manual ADB path</value></data>
+  <data name="Settings.ScrcpyPath" xml:space="preserve"><value>Scrcpy executable</value></data>
+  <data name="Settings.ScreenshotFolder" xml:space="preserve"><value>PC screenshot folder</value></data>
+  <data name="Settings.DeviceFolder" xml:space="preserve"><value>Phone destination folder</value></data>
+  <data name="Settings.LogFolder" xml:space="preserve"><value>Log folder</value></data>
+  <data name="Settings.Usb" xml:space="preserve"><value>Use USB connection</value></data>
+  <data name="Settings.Wireless" xml:space="preserve"><value>Use wireless ADB</value></data>
+  <data name="Settings.ConnectionMode" xml:space="preserve"><value>Connection mode</value></data>
+  <data name="Settings.PhoneIp" xml:space="preserve"><value>Phone IP address</value></data>
+  <data name="Settings.ConnectPort" xml:space="preserve"><value>Connection port</value></data>
+  <data name="Settings.AutoReconnect" xml:space="preserve"><value>Reconnect automatically</value></data>
+  <data name="Settings.PrepareWireless" xml:space="preserve"><value>Prepare over USB</value></data>
+  <data name="Settings.ConnectWireless" xml:space="preserve"><value>Connect wirelessly</value></data>
+  <data name="Settings.Disconnect" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="Settings.WirelessActions" xml:space="preserve"><value>Wireless ADB</value></data>
+  <data name="Settings.CurrentStatus" xml:space="preserve"><value>Current status</value></data>
+  <data name="Settings.PairGuide" xml:space="preserve"><value>For the first connection without a cable, enter the pairing port and 6-digit code. The connection port may be different.</value></data>
+  <data name="Settings.PairingPort" xml:space="preserve"><value>Pairing port</value></data>
+  <data name="Settings.PairingCode" xml:space="preserve"><value>Pairing code</value></data>
+  <data name="Settings.Pair" xml:space="preserve"><value>Pair</value></data>
+  <data name="Settings.CaptureHotkey" xml:space="preserve"><value>Capture hotkey</value></data>
+  <data name="Settings.ExitHotkey" xml:space="preserve"><value>Exit hotkey</value></data>
+  <data name="Settings.LowLevelHotkey" xml:space="preserve"><value>Use low-level keyboard hook for hotkeys</value></data>
+  <data name="Settings.KeyDiagnostics" xml:space="preserve"><value>Write keyboard diagnostic logs</value></data>
+  <data name="Settings.HangulCorrection" xml:space="preserve"><value>Convert Korean/English key to Shift+Space</value></data>
+  <data name="Settings.HangulMode" xml:space="preserve"><value>Korean/English input method</value></data>
+  <data name="Settings.RightWindows" xml:space="preserve"><value>Correct the right Windows key</value></data>
+  <data name="Settings.EnterConversion" xml:space="preserve"><value>Toggle Enter/Shift+Enter with Scroll Lock</value></data>
+  <data name="Settings.EnterMode" xml:space="preserve"><value>Enter input method</value></data>
+  <data name="Settings.IgnoreShiftSpace" xml:space="preserve"><value>Ignore direct Shift+Space input</value></data>
+  <data name="Settings.DeviceInterval" xml:space="preserve"><value>Device polling interval (ms)</value></data>
+  <data name="Settings.DisconnectInterval" xml:space="preserve"><value>Disconnect polling interval (ms)</value></data>
+  <data name="Settings.StartDelay" xml:space="preserve"><value>Delay after connection (ms)</value></data>
+  <data name="Settings.WakeDelay" xml:space="preserve"><value>ADB wake-up delay (ms)</value></data>
+  <data name="Settings.HideDelay" xml:space="preserve"><value>Auto-hide delay (seconds)</value></data>
+  <data name="Settings.CaptureDelay" xml:space="preserve"><value>Capture selection timeout (seconds)</value></data>
+  <data name="Settings.ProcessTimeout" xml:space="preserve"><value>Process timeout (ms)</value></data>
+  <data name="Settings.PushCapture" xml:space="preserve"><value>Send captures to the phone</value></data>
+  <data name="Settings.WirelessRequiresIp" xml:space="preserve"><value>Enter the phone IP address when using wireless mode.</value></data>
+  <data name="Settings.WirelessOperationFailed" xml:space="preserve"><value>Wireless operation failed: {0}</value></data>
+  <data name="Settings.WirelessWaiting" xml:space="preserve"><value>Waiting for wireless connection</value></data>
+  <data name="Settings.UsbWaiting" xml:space="preserve"><value>Waiting for a USB device</value></data>
+  <data name="Settings.WirelessTarget" xml:space="preserve"><value>Wireless target: {0}</value></data>
+  <data name="Settings.UsbTarget" xml:space="preserve"><value>USB target: {0}</value></data>
+  <data name="Settings.CheckFailed" xml:space="preserve"><value>Check failed: {0}</value></data>
+  <data name="Settings.NoVersionOutput" xml:space="preserve"><value>No version output</value></data>
+  <data name="Settings.ExecutableFilter" xml:space="preserve"><value>Executable files (*.exe)|*.exe|All files (*.*)|*.*</value></data>
+  <data name="Wireless.ConnectFailed" xml:space="preserve"><value>Wireless ADB connection failed: {0}</value></data>
+  <data name="Wireless.Connected" xml:space="preserve"><value>Wireless connection completed.</value></data>
+  <data name="Wireless.NoUsb" xml:space="preserve"><value>No authorized USB device was found.</value></data>
+  <data name="Wireless.MultipleUsb" xml:space="preserve"><value>Multiple USB devices were found. Connect only one.</value></data>
+  <data name="Wireless.NoWifiIp" xml:space="preserve"><value>Could not detect the phone Wi-Fi address. Enter it manually.</value></data>
+  <data name="Wireless.TcpipFailed" xml:space="preserve"><value>Could not enable TCP/IP mode on the phone: {0}</value></data>
+  <data name="Wireless.InvalidPairCode" xml:space="preserve"><value>The pairing code must be the 6-digit number shown on the phone.</value></data>
+  <data name="Wireless.PairFailed" xml:space="preserve"><value>Wireless pairing failed: {0}</value></data>
+  <data name="Wireless.Paired" xml:space="preserve"><value>Paired successfully. Connect using the connection port shown on the phone's Wireless debugging screen.</value></data>
+  <data name="Wireless.Disconnected" xml:space="preserve"><value>Wireless connection was disconnected.</value></data>
+  <data name="Wireless.HostEmpty" xml:space="preserve"><value>Wireless ADB IP address is empty.</value></data>
+  <data name="Wireless.HostInvalid" xml:space="preserve"><value>The wireless ADB address is invalid.</value></data>
+  <data name="Environment.AdbFile" xml:space="preserve"><value>ADB file</value></data>
+  <data name="Environment.ScrcpyFile" xml:space="preserve"><value>Scrcpy file</value></data>
+  <data name="Environment.WindowsVersion" xml:space="preserve"><value>Windows version</value></data>
+  <data name="Environment.PathSystem" xml:space="preserve"><value>The ADB folder is registered in the system PATH.</value></data>
+  <data name="Environment.PathProcess" xml:space="preserve"><value>ADB is only in the current process PATH. System registration is optional.</value></data>
+  <data name="Environment.PathAbsolute" xml:space="preserve"><value>ADB is not in PATH, but DX Manager uses its absolute path.</value></data>
+  <data name="Environment.Admin" xml:space="preserve"><value>Administrator</value></data>
+  <data name="Environment.AdminYes" xml:space="preserve"><value>Running as administrator.</value></data>
+  <data name="Environment.AdminNo" xml:space="preserve"><value>Running with standard privileges. Administrator access is required to modify system PATH.</value></data>
+  <data name="Environment.AdbDevice" xml:space="preserve"><value>ADB device</value></data>
+  <data name="Environment.DeviceQueryFailed" xml:space="preserve"><value>Could not query ADB devices: {0}</value></data>
+  <data name="Environment.FileMissing" xml:space="preserve"><value>File not found: {0}</value></data>
+  <data name="Environment.DeviceAuthorized" xml:space="preserve"><value>Connected and authorized: {0}</value></data>
+  <data name="Environment.DeviceUnauthorized" xml:space="preserve"><value>Approve the RSA prompt on the phone: {0}</value></data>
+  <data name="Environment.DeviceOfflineMessage" xml:space="preserve"><value>The device is offline. Reconnect USB.</value></data>
+  <data name="Environment.NoDevice" xml:space="preserve"><value>No device found. Check the USB cable, Developer options, USB debugging, RSA approval, file transfer mode and Samsung USB driver.</value></data>
+  <data name="Settings.Saved" xml:space="preserve"><value>Settings were saved. Restart DX Manager to apply path or language changes.</value></data>
+  <data name="Settings.SaveFailed" xml:space="preserve"><value>Could not save settings.{0}{0}{1}</value></data>
+  <data name="Log.Title" xml:space="preserve"><value>DX Manager · Session log</value></data>
+  <data name="Log.Save" xml:space="preserve"><value>Save log</value></data>
+  <data name="Log.DialogTitle" xml:space="preserve"><value>Save session log</value></data>
+  <data name="Log.Filter" xml:space="preserve"><value>Log files (*.log)|*.log|Text files (*.txt)|*.txt</value></data>
+  <data name="Log.Saved" xml:space="preserve"><value>The current session log was saved.</value></data>
+  <data name="Log.SaveFailed" xml:space="preserve"><value>Could not save the log.{0}{0}{1}</value></data>
+  <data name="Environment.Title" xml:space="preserve"><value>DX Manager · Environment check</value></data>
+  <data name="Environment.Guide" xml:space="preserve"><value>Android security does not allow USB debugging or RSA approval to be enabled automatically.{0}Check the phone and USB driver based on the results below.</value></data>
+  <data name="Environment.Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Environment.Item" xml:space="preserve"><value>Check</value></data>
+  <data name="Environment.Result" xml:space="preserve"><value>Result</value></data>
+  <data name="Environment.CheckAgain" xml:space="preserve"><value>Check again</value></data>
+  <data name="Environment.Passed" xml:space="preserve"><value>Passed</value></data>
+  <data name="Environment.Warning" xml:space="preserve"><value>Review</value></data>
+  <data name="Environment.Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Environment.RunFailed" xml:space="preserve"><value>Environment check failed.{0}{0}{1}</value></data>
+  <data name="Tray.Open" xml:space="preserve"><value>Open DX Manager</value></data>
+  <data name="Tray.StartDex" xml:space="preserve"><value>Start DeX</value></data>
+  <data name="Tray.StopDex" xml:space="preserve"><value>Stop DeX</value></data>
+  <data name="Tray.Settings" xml:space="preserve"><value>Settings</value></data>
+  <data name="Tray.Environment" xml:space="preserve"><value>Environment check</value></data>
+  <data name="Tray.Logs" xml:space="preserve"><value>Session log</value></data>
+  <data name="Tray.Exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="Program.AlreadyRunning" xml:space="preserve"><value>DX Manager is already running.{0}Check the system tray.</value></data>
+  <data name="Program.InitFailed" xml:space="preserve"><value>DX Manager could not start.{0}{0}{1}</value></data>
+</root>

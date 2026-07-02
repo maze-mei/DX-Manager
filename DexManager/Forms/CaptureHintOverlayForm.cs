@@ -1,12 +1,15 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using DexManager.Services;
 
 namespace DexManager.Forms
 {
     public sealed class CaptureHintOverlayForm : Form
     {
         private readonly Timer _followTimer;
+        private readonly Timer _autoHideTimer;
+        private readonly Label _messageLabel;
 
         public CaptureHintOverlayForm()
         {
@@ -20,21 +23,20 @@ namespace DexManager.Forms
             AutoSize = true;
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
-            var label = new Label
+            _messageLabel = new Label
             {
                 AutoSize = true,
                 ForeColor = Color.White,
                 BackColor = Color.Transparent,
                 Font = new Font("Malgun Gothic", 9F),
-                Text =
-                    "F8 다시 누름: Scrcpy 전체 캡처\r\n" +
-                    "마우스 드래그: 선택 영역 캡처\r\n" +
-                    "ESC: 취소"
+                Text = LocalizationService.Get("Capture.Hint")
             };
-            Controls.Add(label);
+            Controls.Add(_messageLabel);
 
             _followTimer = new Timer { Interval = 80 };
             _followTimer.Tick += delegate { MoveNearCursor(); };
+            _autoHideTimer = new Timer();
+            _autoHideTimer.Tick += delegate { HideHint(); };
 
             Shown += delegate
             {
@@ -62,19 +64,38 @@ namespace DexManager.Forms
         protected override void Dispose(bool disposing)
         {
             if (disposing)
+            {
                 _followTimer.Dispose();
+                _autoHideTimer.Dispose();
+            }
             base.Dispose(disposing);
         }
 
         public void ShowHint()
         {
+            _autoHideTimer.Stop();
+            BackColor = Color.FromArgb(40, 40, 40);
+            _messageLabel.Text = LocalizationService.Get("Capture.Hint");
             MoveNearCursor();
             if (!Visible) Show();
+        }
+
+        public void ShowMessage(string message, int durationMs)
+        {
+            _autoHideTimer.Stop();
+            BackColor = Color.FromArgb(22, 101, 52);
+            _messageLabel.Text = message;
+            MoveNearCursor();
+            if (!Visible) Show();
+            _followTimer.Start();
+            _autoHideTimer.Interval = Math.Max(durationMs, 500);
+            _autoHideTimer.Start();
         }
 
         public void HideHint()
         {
             _followTimer.Stop();
+            _autoHideTimer.Stop();
             Hide();
         }
 

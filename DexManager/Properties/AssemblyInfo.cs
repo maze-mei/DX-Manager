@@ -1,11 +1,11 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("DEX Manager")]
+[assembly: AssemblyTitle("DX Manager")]
 [assembly: AssemblyDescription("Samsung DeX and Scrcpy device manager")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("DEX Manager")]
+[assembly: AssemblyProduct("DX Manager")]
 [assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

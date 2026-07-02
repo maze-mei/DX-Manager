@@ -18,12 +18,14 @@ namespace DexManager.Models
         [DataMember(Order = 8)] public LastSuccessSettings LastSuccess { get; set; }
         [DataMember(Order = 9)] public List<SingleWindowSlotSettings> SingleWindowSlots { get; set; }
         [DataMember(Order = 10)] public ConnectionSettings Connection { get; set; }
+        [DataMember(Order = 11)] public AppLanguage Language { get; set; }
 
         public static AppSettings CreateDefault()
         {
             return new AppSettings
             {
-                SchemaVersion = 13,
+                SchemaVersion = 14,
+                Language = AppLanguage.Auto,
                 Paths = new PathSettings
                 {
                     AdbPath = string.Empty,
@@ -49,7 +51,7 @@ namespace DexManager.Models
                 {
                     BitRate = "20M",
                     MaxFps = 60,
-                    WindowTitle = "DEX Manager - Scrcpy",
+                    WindowTitle = "DX Manager - Scrcpy",
                     TurnScreenOff = true,
                     UseHidKeyboard = true,
                     UseHidMouse = true,
@@ -231,6 +233,18 @@ namespace DexManager.Models
                 Connection = defaults.Connection;
                 SchemaVersion = defaults.SchemaVersion;
             }
+            if (oldSchemaVersion < 14)
+            {
+                Language = defaults.Language;
+                if (string.Equals(
+                    Scrcpy.WindowTitle,
+                    "DEX Manager - Scrcpy",
+                    System.StringComparison.OrdinalIgnoreCase))
+                {
+                    Scrcpy.WindowTitle = defaults.Scrcpy.WindowTitle;
+                }
+                SchemaVersion = defaults.SchemaVersion;
+            }
             if (VirtualDisplay.CustomWidth <= 0)
                 VirtualDisplay.CustomWidth = VirtualDisplay.Width;
             if (VirtualDisplay.CustomHeight <= 0)
@@ -264,6 +278,8 @@ namespace DexManager.Models
             {
                 Connection.Mode = AdbConnectionMode.Usb;
             }
+            if (!System.Enum.IsDefined(typeof(AppLanguage), Language))
+                Language = defaults.Language;
             if (Connection.WirelessPort < 1 ||
                 Connection.WirelessPort > 65535)
             {
@@ -379,6 +395,13 @@ namespace DexManager.Models
     {
         Usb = 0,
         Wireless = 1
+    }
+
+    public enum AppLanguage
+    {
+        Auto = 0,
+        Korean = 1,
+        English = 2
     }
 
     [DataContract]

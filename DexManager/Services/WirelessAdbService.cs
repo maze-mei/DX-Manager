@@ -133,8 +133,9 @@ namespace DexManager.Services
             if (!result.IsSuccess || !WaitForConnection(endpoint, 3000))
             {
                 return WirelessConnectionResult.Failed(
-                    "무선 ADB 연결에 실패했습니다: " +
-                    GetResultMessage(result));
+                    LocalizationService.Format(
+                        "Wireless.ConnectFailed",
+                        GetResultMessage(result)));
             }
 
             _settings.Connection.Mode = AdbConnectionMode.Wireless;
@@ -145,7 +146,7 @@ namespace DexManager.Services
             _logService.Info("무선 ADB 연결 성공: " + endpoint);
             return WirelessConnectionResult.Succeeded(
                 endpoint,
-                "무선 연결이 완료되었습니다.");
+                LocalizationService.Get("Wireless.Connected"));
         }
 
         public WirelessConnectionResult EnableFromUsb(
@@ -162,8 +163,9 @@ namespace DexManager.Services
             {
                 return WirelessConnectionResult.Failed(
                     usbDevices.Count == 0
-                        ? "승인된 USB 장치를 찾지 못했습니다."
-                        : "USB 장치가 여러 개입니다. 하나만 연결하세요.");
+                        ? LocalizationService.Get("Wireless.NoUsb")
+                        : LocalizationService.Get(
+                            "Wireless.MultipleUsb"));
             }
 
             var usbSerial = usbDevices[0].Serial;
@@ -173,8 +175,7 @@ namespace DexManager.Services
             if (string.IsNullOrWhiteSpace(normalizedHost))
             {
                 return WirelessConnectionResult.Failed(
-                    "휴대폰 Wi-Fi 주소를 자동으로 찾지 못했습니다. " +
-                    "IP 주소를 직접 입력하세요.");
+                    LocalizationService.Get("Wireless.NoWifiIp"));
             }
 
             _logService.Info(
@@ -188,8 +189,9 @@ namespace DexManager.Services
             if (!tcpipResult.IsSuccess)
             {
                 return WirelessConnectionResult.Failed(
-                    "휴대폰의 TCP/IP 모드를 켜지 못했습니다: " +
-                    GetResultMessage(tcpipResult));
+                    LocalizationService.Format(
+                        "Wireless.TcpipFailed",
+                        GetResultMessage(tcpipResult)));
             }
 
             Thread.Sleep(800);
@@ -206,7 +208,8 @@ namespace DexManager.Services
                 @"^\d{6}$"))
             {
                 return WirelessConnectionResult.Failed(
-                    "페어링 코드는 휴대폰에 표시된 6자리 숫자입니다.");
+                    LocalizationService.Get(
+                        "Wireless.InvalidPairCode"));
             }
             var endpoint = BuildEndpoint(
                 NormalizeHost(host),
@@ -220,14 +223,14 @@ namespace DexManager.Services
                     "successfully paired"))
             {
                 return WirelessConnectionResult.Failed(
-                    "무선 페어링에 실패했습니다: " +
-                    GetResultMessage(result));
+                    LocalizationService.Format(
+                        "Wireless.PairFailed",
+                        GetResultMessage(result)));
             }
 
             return WirelessConnectionResult.Succeeded(
                 endpoint,
-                "페어링되었습니다. 휴대폰의 무선 디버깅 화면에 " +
-                "표시된 연결 포트로 연결하세요.");
+                LocalizationService.Get("Wireless.Paired"));
         }
 
         public WirelessConnectionResult Disconnect()
@@ -242,7 +245,7 @@ namespace DexManager.Services
             _logService.Info("무선 ADB 연결을 해제하고 USB 모드로 전환했습니다.");
             return WirelessConnectionResult.Succeeded(
                 string.Empty,
-                "무선 연결을 해제했습니다.");
+                LocalizationService.Get("Wireless.Disconnected"));
         }
 
         public void UseUsb()
@@ -334,7 +337,7 @@ namespace DexManager.Services
         {
             if (string.IsNullOrWhiteSpace(host))
                 throw new ArgumentException(
-                    "무선 ADB IP 주소가 비어 있습니다.",
+                    LocalizationService.Get("Wireless.HostEmpty"),
                     "host");
 
             var value = host.Trim();
@@ -346,7 +349,7 @@ namespace DexManager.Services
             if (value.IndexOfAny(new[] { ' ', '\t', '\r', '\n' }) >= 0 ||
                 !Regex.IsMatch(value, @"^[A-Za-z0-9._:%-]+$"))
                 throw new ArgumentException(
-                    "무선 ADB 주소 형식이 올바르지 않습니다.",
+                    LocalizationService.Get("Wireless.HostInvalid"),
                     "host");
             return value;
         }

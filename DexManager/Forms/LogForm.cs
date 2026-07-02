@@ -15,7 +15,7 @@ namespace DexManager.Forms
         {
             _logService = logService;
 
-            Text = "DEX Manager 로그";
+            Text = LocalizationService.Get("Log.Title");
             StartPosition = FormStartPosition.CenterParent;
             ClientSize = new Size(860, 520);
             MinimumSize = new Size(640, 360);
@@ -31,7 +31,7 @@ namespace DexManager.Forms
 
             var saveButton = new Button
             {
-                Text = "로그 저장",
+                Text = LocalizationService.Get("Log.Save"),
                 AutoSize = true,
                 Margin = new Padding(6)
             };
@@ -73,11 +73,11 @@ namespace DexManager.Forms
         {
             using (var dialog = new SaveFileDialog
             {
-                Title = "로그 저장",
-                Filter = "로그 파일 (*.log)|*.log|텍스트 파일 (*.txt)|*.txt",
+                Title = LocalizationService.Get("Log.DialogTitle"),
+                Filter = LocalizationService.Get("Log.Filter"),
                 DefaultExt = "log",
                 AddExtension = true,
-                FileName = "DEX_Manager_" +
+                FileName = "DX_Manager_" +
                     DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".log"
             })
             {
@@ -88,8 +88,8 @@ namespace DexManager.Forms
                     _logService.SaveSession(dialog.FileName);
                     MessageBox.Show(
                         this,
-                        "현재 실행 로그를 저장했습니다.",
-                        "DEX Manager",
+                        LocalizationService.Get("Log.Saved"),
+                        LocalizationService.Get("App.Name"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
                 }
@@ -97,8 +97,11 @@ namespace DexManager.Forms
                 {
                     MessageBox.Show(
                         this,
-                        "로그를 저장하지 못했습니다.\r\n\r\n" + ex.Message,
-                        "DEX Manager",
+                        LocalizationService.Format(
+                            "Log.SaveFailed",
+                            Environment.NewLine,
+                            ex.Message),
+                        LocalizationService.Get("App.Name"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error);
                 }

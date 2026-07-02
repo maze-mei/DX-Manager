@@ -232,6 +232,9 @@ namespace DexManager.Services
                 }
 
                 SystemSounds.Beep.Play();
+                _hintOverlay.ShowMessage(
+                    LocalizationService.Get("Capture.Saved"),
+                    1800);
                 var handler = CaptureCompleted;
                 if (handler != null)
                     handler(this, new CaptureCompletedEventArgs(task.Result));

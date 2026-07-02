@@ -42,6 +42,18 @@ namespace DexManager.Forms
             base.OnEnabledChanged(e);
         }
 
+        protected override void OnEnter(System.EventArgs e)
+        {
+            Invalidate();
+            base.OnEnter(e);
+        }
+
+        protected override void OnLeave(System.EventArgs e)
+        {
+            Invalidate();
+            base.OnLeave(e);
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             e.Graphics.Clear(Parent == null ? BackColor : Parent.BackColor);
@@ -67,6 +79,19 @@ namespace DexManager.Forms
             {
                 e.Graphics.FillPath(brush, path);
                 e.Graphics.DrawPath(pen, path);
+            }
+
+            if (Focused)
+            {
+                var focusBounds = bounds;
+                focusBounds.Inflate(-2, -2);
+                using (var path = RoundedPath(focusBounds, 5))
+                using (var pen = new Pen(
+                    Primary ? Color.White : Color.FromArgb(37, 99, 235),
+                    1.5F))
+                {
+                    e.Graphics.DrawPath(pen, path);
+                }
             }
 
             TextRenderer.DrawText(
@@ -122,11 +147,39 @@ namespace DexManager.Forms
             base.OnMouseLeave(e);
         }
 
+        protected override void OnEnter(System.EventArgs e)
+        {
+            Invalidate();
+            base.OnEnter(e);
+        }
+
+        protected override void OnLeave(System.EventArgs e)
+        {
+            Invalidate();
+            base.OnLeave(e);
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             e.Graphics.Clear(BackColor);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            var box = new Rectangle(0, (Height - 18) / 2, 18, 18);
+            if (Focused)
+            {
+                var focusBounds = ClientRectangle;
+                focusBounds.Width--;
+                focusBounds.Height--;
+                using (var path = RoundedPath(focusBounds, 5))
+                using (var brush = new SolidBrush(
+                    Color.FromArgb(239, 246, 255)))
+                using (var pen = new Pen(
+                    Color.FromArgb(147, 197, 253)))
+                {
+                    e.Graphics.FillPath(brush, path);
+                    e.Graphics.DrawPath(pen, path);
+                }
+            }
+
+            var box = new Rectangle(4, (Height - 18) / 2, 18, 18);
             var fill = Checked ? Color.FromArgb(37, 99, 235) : Color.White;
             var border = Checked
                 ? Color.FromArgb(37, 99, 235)
@@ -166,7 +219,7 @@ namespace DexManager.Forms
                 e.Graphics,
                 Text,
                 Font,
-                new Rectangle(27, 0, Width - 27, Height),
+                new Rectangle(31, 0, Width - 31, Height),
                 Enabled ? ForeColor : Color.FromArgb(156, 163, 175),
                 TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         }

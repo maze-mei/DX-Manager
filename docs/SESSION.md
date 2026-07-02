@@ -1,12 +1,12 @@
 # Session Handoff
 
-마지막 갱신: 2026-07-01
+마지막 갱신: 2026-07-02
 
 ## Git
 
 - 저장소: `E:\vs\dex system`
-- 브랜치: `feature/wireless-adb`
-- 문서 작성 전 HEAD: `77d2689 Add wireless ADB connection support`
+- 브랜치: `feature/dx-localization-ui`
+- 작업 전 HEAD: `701538a Document project handoff and development workflow`
 - `feature/scrcpy-4-upgrade`: `d946d82`
 - `feature/single-window-mode`: `45b59ef`
 
@@ -20,11 +20,19 @@
 - Windows 7 SP1/.NET 4.6.2 유선 핵심 기능과 Scrcpy 4.0 정상
 - ASUS 5GHz 초기 연결 문제는 네트워크 상태 갱신 뒤 해소
 - USB 무선 준비 시 휴대폰 Wi-Fi IP 자동 감지
+- 제품명과 실행 파일을 `DX Manager` / `DXManager.exe`로 변경
+- Windows 언어 자동 감지와 한국어/영어 선택 확인
+- `.resx` 영어 기본/한국어 위성 리소스 빌드 확인
+- 시작/중지 버튼 단순화와 변경사항 적용 링크
+- 사이드바 설정 버튼과 설정창 진단 탭
+- 키보드 탭 포커스 표시와 입력값 전체 선택
+- 캡처 성공 커서 토스트와 설정 저장 인라인 상태
+- Release 빌드 경고 0, 오류 0
 
 ## 결론과 다음 작업
 
 기능 목표는 완료됐다. 개인 사용 기준 완성, 배포 기준 베타다.
-다음 작업은 아이콘이며 UI는 사용자가 방향을 정한 뒤 진행한다.
+다음 작업은 아이콘이며 추가 UI는 사용자가 방향을 정한 뒤 진행한다.
 
 새 채팅 시작 예:
 

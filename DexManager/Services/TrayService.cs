@@ -18,21 +18,21 @@ namespace DexManager.Services
             Action exitApplication)
         {
             var menu = new ContextMenuStrip();
-            menu.Items.Add("메인 창 열기", null, delegate { showMainWindow(); });
+            menu.Items.Add(LocalizationService.Get("Tray.Open"), null, delegate { showMainWindow(); });
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("DeX 시작", null, delegate { startDex(); });
-            menu.Items.Add("DeX 중지", null, delegate { stopDex(); });
+            menu.Items.Add(LocalizationService.Get("Tray.StartDex"), null, delegate { startDex(); });
+            menu.Items.Add(LocalizationService.Get("Tray.StopDex"), null, delegate { stopDex(); });
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("설정 열기", null, delegate { showSettings(); });
-            menu.Items.Add("환경 점검", null, delegate { showEnvironmentCheck(); });
-            menu.Items.Add("로그 보기", null, delegate { showLogs(); });
+            menu.Items.Add(LocalizationService.Get("Tray.Settings"), null, delegate { showSettings(); });
+            menu.Items.Add(LocalizationService.Get("Tray.Environment"), null, delegate { showEnvironmentCheck(); });
+            menu.Items.Add(LocalizationService.Get("Tray.Logs"), null, delegate { showLogs(); });
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("프로그램 종료", null, delegate { exitApplication(); });
+            menu.Items.Add(LocalizationService.Get("Tray.Exit"), null, delegate { exitApplication(); });
 
             _notifyIcon = new NotifyIcon
             {
                 Icon = SystemIcons.Application,
-                Text = "DEX Manager",
+                Text = LocalizationService.Get("App.Name"),
                 ContextMenuStrip = menu,
                 Visible = true
             };

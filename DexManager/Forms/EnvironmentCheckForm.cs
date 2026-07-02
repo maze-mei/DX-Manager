@@ -18,7 +18,7 @@ namespace DexManager.Forms
         {
             _checkService = checkService;
 
-            Text = "DEX Manager 환경 점검";
+            Text = LocalizationService.Get("Environment.Title");
             StartPosition = FormStartPosition.CenterParent;
             ClientSize = new Size(820, 430);
             MinimumSize = new Size(680, 360);
@@ -28,9 +28,9 @@ namespace DexManager.Forms
                 Dock = DockStyle.Top,
                 Height = 66,
                 Padding = new Padding(10),
-                Text =
-                    "Android 보안 정책상 USB 디버깅과 RSA 승인은 자동으로 켤 수 없습니다.\r\n" +
-                    "아래 점검 결과에 따라 휴대폰과 USB 드라이버 상태를 확인하십시오."
+                Text = LocalizationService.Format(
+                    "Environment.Guide",
+                    Environment.NewLine)
             };
 
             _resultList = new ListView
@@ -40,9 +40,9 @@ namespace DexManager.Forms
                 FullRowSelect = true,
                 GridLines = true
             };
-            _resultList.Columns.Add("상태", 80);
-            _resultList.Columns.Add("점검 항목", 130);
-            _resultList.Columns.Add("결과", 560);
+            _resultList.Columns.Add(LocalizationService.Get("Environment.Status"), 80);
+            _resultList.Columns.Add(LocalizationService.Get("Environment.Item"), 130);
+            _resultList.Columns.Add(LocalizationService.Get("Environment.Result"), 560);
 
             var panel = new FlowLayoutPanel
             {
@@ -53,14 +53,14 @@ namespace DexManager.Forms
             };
             _checkButton = new Button
             {
-                Text = "다시 점검",
+                Text = LocalizationService.Get("Environment.CheckAgain"),
                 Size = new Size(100, 30)
             };
             _checkButton.Click += async delegate { await RunCheckAsync(); };
 
             var closeButton = new Button
             {
-                Text = "닫기",
+                Text = LocalizationService.Get("Common.Close"),
                 Size = new Size(90, 30)
             };
             closeButton.Click += delegate { Close(); };
@@ -88,8 +88,11 @@ namespace DexManager.Forms
             {
                 MessageBox.Show(
                     this,
-                    "환경 점검 중 오류가 발생했습니다.\r\n\r\n" + ex.Message,
-                    "DEX Manager",
+                    LocalizationService.Format(
+                        "Environment.RunFailed",
+                        Environment.NewLine,
+                        ex.Message),
+                    LocalizationService.Get("App.Name"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
@@ -113,9 +116,11 @@ namespace DexManager.Forms
 
         private static string GetStatusText(EnvironmentCheckStatus status)
         {
-            if (status == EnvironmentCheckStatus.Passed) return "정상";
-            if (status == EnvironmentCheckStatus.Warning) return "확인";
-            return "실패";
+            if (status == EnvironmentCheckStatus.Passed)
+                return LocalizationService.Get("Environment.Passed");
+            if (status == EnvironmentCheckStatus.Warning)
+                return LocalizationService.Get("Environment.Warning");
+            return LocalizationService.Get("Environment.Failed");
         }
 
         private static Color GetStatusColor(EnvironmentCheckStatus status)

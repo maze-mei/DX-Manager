@@ -9,7 +9,10 @@ namespace DexManager.Forms
 {
     public sealed class MainForm : Form
     {
-        private const string NoStartAppText = "선택 안 함";
+        private static string NoStartAppText
+        {
+            get { return LocalizationService.Get("Main.NoApp"); }
+        }
 
         private readonly SettingsService _settingsService;
         private readonly AppSettings _settings;
@@ -37,6 +40,7 @@ namespace DexManager.Forms
         private readonly Label _deviceInfoLabel;
         private readonly Button _startButton;
         private readonly Button _stopButton;
+        private readonly LinkLabel _applySettingsLink;
         private readonly ComboBox _resolutionBox;
         private readonly NumericUpDown _widthBox;
         private readonly NumericUpDown _heightBox;
@@ -75,6 +79,7 @@ namespace DexManager.Forms
         private string _connectionError;
         private bool _allowExit;
         private bool _exitInProgress;
+        private readonly bool[] _modeSettingsDirty = new bool[4];
         private LogForm _logForm;
         private SettingsForm _settingsForm;
         private EnvironmentCheckForm _environmentCheckForm;
@@ -114,7 +119,7 @@ namespace DexManager.Forms
             _lastDeviceState = DeviceState.Disconnected();
             _selectedMode = 0;
 
-            Text = "DeX Manager";
+            Text = LocalizationService.Get("App.Name");
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = Color.FromArgb(248, 250, 252);
             Font = new Font("Segoe UI", 9F, FontStyle.Regular);
@@ -127,11 +132,8 @@ namespace DexManager.Forms
                 Font = new Font("Segoe UI", 24F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(17, 24, 39),
                 Location = new Point(32, 28),
-                Text = "DeX Manager"
+                Text = LocalizationService.Get("App.Name")
             });
-            AddTopMenu("로그", 454, ShowLogForm);
-            AddTopMenu("설정", 510, ShowSettingsForm);
-            AddTopMenu("환경 점검", 560, ShowEnvironmentCheck);
 
             _indicatorDot = new Label
             {
@@ -162,13 +164,16 @@ namespace DexManager.Forms
                 ForeColor = Color.FromArgb(75, 85, 99),
                 Location = new Point(35, 157),
                 Size = new Size(570, 22),
-                Text = "휴대폰 연결을 기다립니다."
+                Text = LocalizationService.Get("Main.WaitingPhone")
             };
             Controls.Add(_indicatorDot);
             Controls.Add(_indicatorStatus);
             Controls.Add(_indicatorDetail);
             Controls.Add(_deviceInfoLabel);
-            SetConnectionIndicator(Color.DarkOrange, "연결 대기 중", "ADB 초기화를 준비합니다.");
+            SetConnectionIndicator(
+                Color.DarkOrange,
+                LocalizationService.Get("Main.Waiting"),
+                LocalizationService.Get("Main.PreparingAdb"));
 
             _adbStatusValue = new Label { Visible = false };
             _scrcpyStatusValue = new Label { Visible = false };
@@ -177,43 +182,54 @@ namespace DexManager.Forms
             AddDivider(204);
 
             _displaySettingsTitle = AddSectionTitle(
-                "DeX 화면 설정",
+                LocalizationService.Get("Main.DisplaySettings.Dex"),
                 32,
                 226);
-            _resolutionBox = CreateStyledCombo(105, 263, 160, true);
+            _resolutionBox = CreateStyledCombo(105, 263, 130, true);
+            _resolutionBox.TabIndex = 0;
             _resolutionBox.Items.Add(new ResolutionPreset("1600 x 900", 1600, 900));
             _resolutionBox.Items.Add(new ResolutionPreset("1920 x 1080", 1920, 1080));
             _resolutionBox.Items.Add(new ResolutionPreset("3840 x 2160 (4K)", 3840, 2160));
-            _resolutionBox.Items.Add(new ResolutionPreset("사용자 지정", 0, 0));
+            _resolutionBox.Items.Add(new ResolutionPreset(
+                LocalizationService.Get("Main.Custom"), 0, 0));
             _resolutionBox.SelectedIndexChanged += ResolutionBox_SelectedIndexChanged;
-            _widthBox = CreateStyledNumber(320, 7680, 305, 263, 55);
-            _heightBox = CreateStyledNumber(240, 4320, 405, 263, 55);
-            _dpiBox = CreateStyledNumber(80, 640, 495, 263, 90);
+            _widthBox = CreateStyledNumber(320, 7680, 285, 263, 55);
+            _heightBox = CreateStyledNumber(240, 4320, 395, 263, 55);
+            _dpiBox = CreateStyledNumber(80, 640, 490, 263, 90);
             _bitRateBox = CreateStyledTextBox(105, 298, 130, true);
             _maxFpsBox = CreateStyledCombo(495, 298, 90, true);
+            _widthBox.TabIndex = 1;
+            _heightBox.TabIndex = 2;
+            _dpiBox.TabIndex = 3;
+            _bitRateBox.TabIndex = 4;
+            _maxFpsBox.TabIndex = 5;
+            SelectAllOnFocus(_widthBox);
+            SelectAllOnFocus(_heightBox);
+            SelectAllOnFocus(_dpiBox);
+            SelectAllOnFocus(_bitRateBox);
             _maxFpsBox.Items.Add(30);
             _maxFpsBox.Items.Add(60);
-            AddFieldLabel("해상도", 32, 269);
-            _widthLabel = AddFieldLabel("가로", 270, 269);
-            _heightLabel = AddFieldLabel("세로", 370, 269);
-            _dpiLabel = AddFieldLabel("DPI", 470, 269);
-            AddFieldLabel("비트레이트", 32, 304);
-            AddFieldLabel("최대 FPS", 425, 304);
+            AddFieldLabel(LocalizationService.Get("Main.Resolution"), 32, 269);
+            _widthLabel = AddFieldLabel(LocalizationService.Get("Main.Width"), 240, 269);
+            _heightLabel = AddFieldLabel(LocalizationService.Get("Main.Height"), 345, 269);
+            _dpiLabel = AddFieldLabel("DPI", 460, 269);
+            AddFieldLabel(LocalizationService.Get("Main.Bitrate"), 32, 304);
+            AddFieldLabel(LocalizationService.Get("Main.MaxFps"), 425, 304);
 
             AddDivider(339);
-            AddSectionTitle("실행 옵션", 32, 360);
-            _turnScreenOffBox = CreateOption("폰 화면 끄기 (-S)", 32, 395);
-            _useHidKeyboardBox = CreateOption("HID 키보드 (-K)", 32, 429);
-            _useHidMouseBox = CreateOption("HID 마우스 (-M)", 32, 463);
-            _forceStopAppBox = CreateOption("선택 앱 강제 종료", 392, 395);
-            _reuseDisplayBox = CreateOption("기존 가상화면 재사용", 392, 429);
+            AddSectionTitle(LocalizationService.Get("Main.Options"), 32, 360);
+            _turnScreenOffBox = CreateOption(LocalizationService.Get("Main.ScreenOff"), 32, 395);
+            _useHidKeyboardBox = CreateOption(LocalizationService.Get("Main.HidKeyboard"), 32, 429);
+            _useHidMouseBox = CreateOption(LocalizationService.Get("Main.HidMouse"), 32, 463);
+            _forceStopAppBox = CreateOption(LocalizationService.Get("Main.ForceStop"), 392, 395);
+            _reuseDisplayBox = CreateOption(LocalizationService.Get("Main.ReuseDisplay"), 392, 429);
             _flexDisplayBox = CreateOption(
-                "동적 창 크기 (--flex-display)",
+                LocalizationService.Get("Main.FlexDisplay"),
                 392,
                 429);
             _flexDisplayBox.Visible = false;
             _stayAwakeBox = CreateOption(
-                "잠자기 방지 (--keep-active)",
+                LocalizationService.Get("Main.StayAwake"),
                 392,
                 463);
 
@@ -222,9 +238,14 @@ namespace DexManager.Forms
             _startAppBox.SelectionChangeCommitted +=
                 StartAppBox_SelectionChangeCommitted;
             AddNoStartAppItem();
-            _loadAppsButton = CreateThemedButton("앱 목록 불러오기", false, 455, 501, 150);
+            _loadAppsButton = CreateThemedButton(
+                LocalizationService.Get("Main.LoadApps"),
+                false,
+                455,
+                501,
+                150);
             _loadAppsButton.Click += LoadAppsButton_Click;
-            AddFieldLabel("시작 앱", 32, 508);
+            AddFieldLabel(LocalizationService.Get("Main.StartApp"), 32, 508);
 
             _additionalArgumentsBox = CreateStyledTextBox(32, 577, 440);
             _additionalArgumentsBox.Visible = false;
@@ -234,24 +255,48 @@ namespace DexManager.Forms
                 LinkColor = Color.FromArgb(75, 85, 99),
                 ActiveLinkColor = Color.FromArgb(37, 99, 235),
                 Location = new Point(32, 546),
-                Text = "▶  고급 옵션 (추가 인자)"
+                Text = LocalizationService.Get("Main.AdvancedClosed")
             };
             advancedToggle.LinkClicked += delegate
             {
                 _additionalArgumentsBox.Visible = !_additionalArgumentsBox.Visible;
                 advancedToggle.Text = _additionalArgumentsBox.Visible
-                    ? "▼  고급 옵션 (추가 인자)"
-                    : "▶  고급 옵션 (추가 인자)";
+                    ? LocalizationService.Get("Main.AdvancedOpen")
+                    : LocalizationService.Get("Main.AdvancedClosed");
             };
             Controls.Add(advancedToggle);
 
-            _startButton = CreateThemedButton("DeX 시작", true, 353, 580, 120);
+            _startButton = CreateThemedButton(
+                LocalizationService.Get("Main.StartDex"),
+                true,
+                453,
+                580,
+                152);
             _startButton.Click += StartButton_Click;
-            _stopButton = CreateThemedButton("DeX 중지", true, 353, 580, 120);
+            _stopButton = CreateThemedButton(
+                LocalizationService.Get("Main.StopDex"),
+                true,
+                453,
+                580,
+                152);
             _stopButton.Click += StopButton_Click;
             _stopButton.Visible = false;
-            var applyRunSettingsButton = CreateThemedButton("실행 설정 적용", false, 485, 580, 120);
-            applyRunSettingsButton.Click += ApplyRunSettingsButton_Click;
+            _applySettingsLink = new LinkLabel
+            {
+                AutoSize = true,
+                LinkBehavior = LinkBehavior.HoverUnderline,
+                LinkColor = Color.FromArgb(37, 99, 235),
+                ActiveLinkColor = Color.FromArgb(29, 78, 216),
+                Location = new Point(338, 589),
+                Text = LocalizationService.Get("Main.ApplyChanges"),
+                Visible = false
+            };
+            _applySettingsLink.LinkClicked += delegate
+            {
+                ApplyRunSettingsButton_Click(
+                    _applySettingsLink,
+                    EventArgs.Empty);
+            };
             Controls.Add(_resolutionBox);
             Controls.Add(_widthBox);
             Controls.Add(_heightBox);
@@ -270,20 +315,21 @@ namespace DexManager.Forms
             Controls.Add(_additionalArgumentsBox);
             Controls.Add(_startButton);
             Controls.Add(_stopButton);
-            Controls.Add(applyRunSettingsButton);
+            Controls.Add(_applySettingsLink);
             _modeHintLabel = new Label
             {
                 AutoEllipsis = true,
                 ForeColor = Color.FromArgb(107, 114, 128),
                 Location = new Point(32, 614),
                 Size = new Size(360, 22),
-                Text = "DeX 모드"
+                Text = LocalizationService.Get("Main.DexMode")
             };
             Controls.Add(_modeHintLabel);
             _phoneScreenWakeTimer = new Timer { Interval = 600 };
             _phoneScreenWakeTimer.Tick += PhoneScreenWakeTimer_Tick;
             OffsetMainContent(112);
             AddModeSidebar();
+            AttachRunSettingChangeHandlers();
             LoadRunSettings();
 
             Shown += MainForm_Shown;
@@ -314,7 +360,9 @@ namespace DexManager.Forms
             catch (Exception ex)
             {
                 _logService.Error("캡처 단축키 등록에 실패했습니다.", ex);
-                _trayService.ShowBalloon("DEX Manager", "F8 캡처 단축키를 등록하지 못했습니다.");
+                _trayService.ShowBalloon(
+                    LocalizationService.Get("App.Name"),
+                    LocalizationService.Get("Main.CaptureHotkeyFailed"));
             }
 
             if (_settings.Features.AutoHideEnabled) _autoHideService.Start();
@@ -322,7 +370,9 @@ namespace DexManager.Forms
             catch (Exception ex)
             {
                 _logService.Error("키 매핑 시작에 실패했습니다.", ex);
-                _trayService.ShowBalloon("DEX Manager", "Scrcpy 키 매핑을 시작하지 못했습니다.");
+                _trayService.ShowBalloon(
+                    LocalizationService.Get("App.Name"),
+                    LocalizationService.Get("Main.KeyMappingFailed"));
             }
 
             await InitializeAdbAndMonitorAsync();
@@ -332,8 +382,12 @@ namespace DexManager.Forms
 
         private async Task InitializeAdbAndMonitorAsync()
         {
-            _adbStatusValue.Text = "초기화 중";
-            SetConnectionIndicator(Color.DarkOrange, "연결 대기 중", "ADB 서버를 준비하고 있습니다.");
+            _adbStatusValue.Text =
+                LocalizationService.Get("Status.Initializing");
+            SetConnectionIndicator(
+                Color.DarkOrange,
+                LocalizationService.Get("Main.Waiting"),
+                LocalizationService.Get("Main.PreparingAdb"));
             try
             {
                 await Task.Run(delegate
@@ -359,16 +413,26 @@ namespace DexManager.Forms
                         }
                     }
                 });
-                _adbStatusValue.Text = "준비";
+                _adbStatusValue.Text =
+                    LocalizationService.Get("Status.Ready");
                 _connectionError = null;
-                SetConnectionIndicator(Color.DarkOrange, "연결 대기 중", "휴대폰 연결을 기다립니다.");
+                SetConnectionIndicator(
+                    Color.DarkOrange,
+                    LocalizationService.Get("Main.Waiting"),
+                    LocalizationService.Get("Main.WaitingPhone"));
             }
             catch (Exception ex)
             {
-                _adbStatusValue.Text = "오류";
+                _adbStatusValue.Text =
+                    LocalizationService.Get("Status.Error");
                 _logService.Error("ADB 초기화에 실패했습니다.", ex);
-                _connectionError = "ADB 초기화 실패: " + ex.Message;
-                SetConnectionIndicator(Color.Firebrick, "오류", _connectionError);
+                _connectionError = LocalizationService.Format(
+                    "Error.AdbInit",
+                    ex.Message);
+                SetConnectionIndicator(
+                    Color.Firebrick,
+                    LocalizationService.Get("Status.Error"),
+                    _connectionError);
             }
             finally { _deviceMonitor.Start(); }
         }
@@ -395,23 +459,54 @@ namespace DexManager.Forms
             {
                 if (_selectedMode == 0) ApplyRunSettings(false);
             }
-            catch (Exception ex) { ShowError("실행 설정을 적용하지 못했습니다.", ex); return; }
+            catch (Exception ex)
+            {
+                ShowError(
+                    LocalizationService.Get(
+                        "Error.ApplyLaunchSettings"),
+                    ex);
+                return;
+            }
 
             _connectionError = null;
-            SetOperationState(true, "시작 중");
-            SetConnectionIndicator(Color.DarkOrange, "DeX 시작 중", "가상화면과 Scrcpy를 준비합니다.");
-            try { await _orchestrator.StartAsync(); }
-            catch (Exception ex) { ShowError("DeX를 시작하지 못했습니다.", ex); }
+            SetOperationState(
+                true,
+                LocalizationService.Get("Status.Starting"));
+            SetConnectionIndicator(
+                Color.DarkOrange,
+                LocalizationService.Get("Main.DexStarting"),
+                LocalizationService.Get("Main.DexPreparing"));
+            try
+            {
+                await _orchestrator.StartAsync();
+                _modeSettingsDirty[0] = false;
+            }
+            catch (Exception ex)
+            {
+                ShowError(
+                    LocalizationService.Get("Error.StartDex"),
+                    ex);
+            }
             finally { UpdateRunningState(); }
         }
 
         private async Task StopDexAsync()
         {
             _connectionError = null;
-            SetOperationState(true, "중지 중");
-            SetConnectionIndicator(Color.DarkOrange, "DeX 중지 중", "가상화면을 정리합니다.");
+            SetOperationState(
+                true,
+                LocalizationService.Get("Status.Stopping"));
+            SetConnectionIndicator(
+                Color.DarkOrange,
+                LocalizationService.Get("Main.DexStopping"),
+                LocalizationService.Get("Main.DexCleaning"));
             try { await _orchestrator.StopAsync(); }
-            catch (Exception ex) { ShowError("DeX를 중지하는 중 오류가 발생했습니다.", ex); }
+            catch (Exception ex)
+            {
+                ShowError(
+                    LocalizationService.Get("Error.StopDex"),
+                    ex);
+            }
             finally { UpdateRunningState(); }
         }
 
@@ -420,16 +515,23 @@ namespace DexManager.Forms
             try { ApplyRunSettings(false); }
             catch (Exception ex)
             {
-                ShowError("단일창 실행 설정을 적용하지 못했습니다.", ex);
+                ShowError(
+                    LocalizationService.Get(
+                        "Error.ApplySingleSettings"),
+                    ex);
                 return;
             }
 
             _connectionError = null;
-            SetOperationState(true, "시작 중");
+            SetOperationState(
+                true,
+                LocalizationService.Get("Status.Starting"));
             SetConnectionIndicator(
                 Color.DarkOrange,
-                "단일창 " + slot + " 시작 중",
-                "Scrcpy 새 가상화면과 선택한 앱을 준비합니다.");
+                LocalizationService.Format(
+                    "Main.SingleStarting",
+                    slot),
+                LocalizationService.Get("Main.SinglePreparing"));
             try
             {
                 var settings = GetSingleWindowSettings(slot);
@@ -437,10 +539,15 @@ namespace DexManager.Forms
                 {
                     _singleWindowService.Start(slot, settings);
                 });
+                _modeSettingsDirty[slot] = false;
             }
             catch (Exception ex)
             {
-                ShowError("단일창 " + slot + "을 시작하지 못했습니다.", ex);
+                ShowError(
+                    LocalizationService.Format(
+                        "Error.StartSingle",
+                        slot),
+                    ex);
             }
             finally
             {
@@ -451,11 +558,15 @@ namespace DexManager.Forms
         private async Task StopSingleWindowAsync(int slot)
         {
             _connectionError = null;
-            SetOperationState(true, "중지 중");
+            SetOperationState(
+                true,
+                LocalizationService.Get("Status.Stopping"));
             SetConnectionIndicator(
                 Color.DarkOrange,
-                "단일창 " + slot + " 중지 중",
-                "Scrcpy 새 가상화면을 정리합니다.");
+                LocalizationService.Format(
+                    "Main.SingleStopping",
+                    slot),
+                LocalizationService.Get("Main.SingleCleaning"));
             try
             {
                 await Task.Run(delegate
@@ -465,7 +576,11 @@ namespace DexManager.Forms
             }
             catch (Exception ex)
             {
-                ShowError("단일창 " + slot + "을 중지하지 못했습니다.", ex);
+                ShowError(
+                    LocalizationService.Format(
+                        "Error.StopSingle",
+                        slot),
+                    ex);
             }
             finally
             {
@@ -478,15 +593,19 @@ namespace DexManager.Forms
             RunOnUi(delegate
             {
                 _lastDeviceState = e.Current;
-                _adbStatusValue.Text = e.Current.Status == AdbDeviceStatus.Unknown ? "대기" : "응답";
+                _adbStatusValue.Text =
+                    e.Current.Status == AdbDeviceStatus.Unknown
+                        ? LocalizationService.Get("Status.Idle")
+                        : LocalizationService.Get("Status.Responding");
                 _deviceStatusValue.Text = GetDeviceStatusText(e.Current);
                 _deviceInfoLabel.Text = e.Current.Status == AdbDeviceStatus.Device
-                    ? "연결된 Android 장치  ·  " +
-                        (AdbService.IsTcpIpSerial(e.Current.Serial)
-                            ? "무선  ·  "
-                            : "USB  ·  ") +
-                        e.Current.Serial
-                    : "휴대폰 연결을 기다립니다.";
+                    ? LocalizationService.Format(
+                        "Main.ConnectedDevice",
+                        AdbService.IsTcpIpSerial(e.Current.Serial)
+                            ? "Wi-Fi"
+                            : "USB",
+                        e.Current.Serial)
+                    : LocalizationService.Get("Main.WaitingPhone");
                 if (e.Current.Status == AdbDeviceStatus.Device)
                     UpdateDeviceStayAwakeState();
                 else
@@ -745,23 +864,36 @@ namespace DexManager.Forms
         private void UpdateRunningState()
         {
             var running = IsSelectedModeRunning();
-            _scrcpyStatusValue.Text = running ? "실행 중" : "중지";
-            _dexStatusValue.Text = running ? "실행 중" : "대기";
+            _scrcpyStatusValue.Text = running
+                ? LocalizationService.Get("Status.Running")
+                : LocalizationService.Get("Status.Stopped");
+            _dexStatusValue.Text = running
+                ? LocalizationService.Get("Status.Running")
+                : LocalizationService.Get("Status.Idle");
             _startButton.Enabled = !running;
             _stopButton.Enabled = running;
             _startButton.Visible = !running;
             _stopButton.Visible = running;
+            UpdateApplySettingsLink();
             if (!string.IsNullOrWhiteSpace(_connectionError))
             {
-                SetConnectionIndicator(Color.Firebrick, "오류", _connectionError);
+                SetConnectionIndicator(
+                    Color.Firebrick,
+                    LocalizationService.Get("Status.Error"),
+                    _connectionError);
                 return;
             }
             if (running && _selectedMode == 0)
-                SetConnectionIndicator(Color.ForestGreen, "DeX 실행 중", "Scrcpy 가상화면이 정상 실행 중입니다.");
+                SetConnectionIndicator(
+                    Color.ForestGreen,
+                    LocalizationService.Get("Main.DexRunning"),
+                    LocalizationService.Get("Main.DexRunningDetail"));
             else if (running)
                 SetConnectionIndicator(
                     Color.ForestGreen,
-                    "단일창 " + _selectedMode + " 실행 중",
+                    LocalizationService.Format(
+                        "Main.SingleRunning",
+                        _selectedMode),
                     GetSingleWindowStatusDetail(_selectedMode));
             else if (_selectedMode > 0)
                 UpdateSingleWindowIndicator(_selectedMode);
@@ -776,6 +908,7 @@ namespace DexManager.Forms
             _stopButton.Visible = running;
             _startButton.Enabled = !operationRunning && !running;
             _stopButton.Enabled = !operationRunning && running;
+            _applySettingsLink.Enabled = !operationRunning;
             _dexStatusValue.Text = status;
         }
 
@@ -783,25 +916,40 @@ namespace DexManager.Forms
         {
             if (!string.IsNullOrWhiteSpace(_connectionError))
             {
-                SetConnectionIndicator(Color.Firebrick, "오류", _connectionError);
+                SetConnectionIndicator(
+                    Color.Firebrick,
+                    LocalizationService.Get("Status.Error"),
+                    _connectionError);
                 return;
             }
             if (state != null && state.Status == AdbDeviceStatus.Device)
             {
-                SetConnectionIndicator(Color.ForestGreen, "휴대폰 연결됨", "DeX 시작을 기다립니다.");
+                SetConnectionIndicator(
+                    Color.ForestGreen,
+                    LocalizationService.Get("Main.PhoneConnected"),
+                    LocalizationService.Get("Main.WaitingDex"));
                 return;
             }
             if (state != null && state.Status == AdbDeviceStatus.Unauthorized)
             {
-                SetConnectionIndicator(Color.DarkOrange, "승인 필요", "휴대폰에서 ADB 디버깅 승인을 확인하세요.");
+                SetConnectionIndicator(
+                    Color.DarkOrange,
+                    LocalizationService.Get("Main.AuthorizationRequired"),
+                    LocalizationService.Get("Main.AuthorizationDetail"));
                 return;
             }
             if (state != null && state.Status == AdbDeviceStatus.Offline)
             {
-                SetConnectionIndicator(Color.Firebrick, "장치 오프라인", "휴대폰 연결 또는 ADB 상태를 확인하세요.");
+                SetConnectionIndicator(
+                    Color.Firebrick,
+                    LocalizationService.Get("Main.DeviceOffline"),
+                    LocalizationService.Get("Main.DeviceOfflineDetail"));
                 return;
             }
-            SetConnectionIndicator(Color.DarkOrange, "연결 대기 중", "휴대폰 연결을 기다립니다.");
+            SetConnectionIndicator(
+                Color.DarkOrange,
+                LocalizationService.Get("Main.Waiting"),
+                LocalizationService.Get("Main.WaitingPhone"));
         }
 
         private void SetConnectionIndicator(Color color, string status, string detail)
@@ -815,8 +963,17 @@ namespace DexManager.Forms
         {
             _logService.Error(message, exception);
             _connectionError = message + ": " + exception.Message;
-            SetConnectionIndicator(Color.Firebrick, "오류", _connectionError);
-            MessageBox.Show(this, message + "\r\n\r\n" + exception.Message, "DEX Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            SetConnectionIndicator(
+                Color.Firebrick,
+                LocalizationService.Get("Status.Error"),
+                _connectionError);
+            MessageBox.Show(
+                this,
+                message + Environment.NewLine +
+                    Environment.NewLine + exception.Message,
+                LocalizationService.Get("App.Name"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
         }
 
         private void ResolutionBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -931,8 +1088,9 @@ namespace DexManager.Forms
             _resolutionBox.SelectedIndex = FindResolutionPresetIndex(
                 width,
                 height);
-            _loadingRunSettings = false;
             ApplyResolutionSelection();
+            _loadingRunSettings = false;
+            UpdateApplySettingsLink();
         }
 
         private int FindResolutionPresetIndex(int width, int height)
@@ -963,19 +1121,22 @@ namespace DexManager.Forms
                         "실행 설정을 저장했습니다. 연결된 ADB 장치가 없어 다음 DeX 시작 때 적용합니다.");
                     MessageBox.Show(
                         this,
-                        "실행 설정을 저장했습니다. 연결된 휴대폰이 없어 다음 DeX 시작 때 적용됩니다.",
-                        "DEX Manager",
+                        LocalizationService.Get("Main.ApplyNoDevice"),
+                        LocalizationService.Get("App.Name"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
+                    _modeSettingsDirty[0] = false;
                     return;
                 }
 
                 _connectionError = null;
-                SetOperationState(true, "설정 적용 중");
+                SetOperationState(
+                    true,
+                    LocalizationService.Get("Status.Applying"));
                 SetConnectionIndicator(
                     Color.DarkOrange,
-                    "설정 적용 중",
-                    "기존 가상화면을 제거하고 새 설정으로 다시 시작합니다.");
+                    LocalizationService.Get("Main.ApplyStatus"),
+                    LocalizationService.Get("Main.ApplyRestartDetail"));
 
                 bool applied;
                 BeginPhoneScreenWakeSuppression();
@@ -991,18 +1152,19 @@ namespace DexManager.Forms
                 {
                     MessageBox.Show(
                         this,
-                        "실행 설정은 저장했습니다. 현재 적용하지 못해 다음 DeX 시작 때 사용합니다.",
-                        "DEX Manager",
+                        LocalizationService.Get("Main.ApplyDeferred"),
+                        LocalizationService.Get("App.Name"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
                     return;
                 }
 
                 UpdateRunningState();
+                _modeSettingsDirty[0] = false;
                 MessageBox.Show(
                     this,
-                    "실행 설정을 저장하고 새 가상화면으로 다시 시작했습니다.",
-                    "DEX Manager",
+                    LocalizationService.Get("Main.ApplySucceeded"),
+                    LocalizationService.Get("App.Name"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
@@ -1010,11 +1172,17 @@ namespace DexManager.Forms
             {
                 _logService.Error("실행 설정은 저장했지만 즉시 적용하지 못했습니다.", ex);
                 _connectionError = "실행 설정 즉시 적용 실패: " + ex.Message;
-                SetConnectionIndicator(Color.Firebrick, "오류", _connectionError);
+                SetConnectionIndicator(
+                    Color.Firebrick,
+                    LocalizationService.Get("Status.Error"),
+                    _connectionError);
                 MessageBox.Show(
                     this,
-                    "실행 설정은 저장했습니다.\r\n현재 적용하지 못해 다음 DeX 시작 때 사용합니다.\r\n\r\n" + ex.Message,
-                    "DEX Manager",
+                    LocalizationService.Format(
+                        "Main.ApplyFailed",
+                        Environment.NewLine,
+                        ex.Message),
+                    LocalizationService.Get("App.Name"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
             }
@@ -1030,11 +1198,14 @@ namespace DexManager.Forms
             {
                 MessageBox.Show(
                     this,
-                    "단일창 " + slot + " 설정을 저장했습니다.\r\n" +
-                    "연결된 휴대폰이 없어 다음 실행 때 적용됩니다.",
-                    "DeX Manager",
+                    LocalizationService.Format(
+                        "Main.SingleSavedNoDevice",
+                        slot,
+                        Environment.NewLine),
+                    LocalizationService.Get("App.Name"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
+                _modeSettingsDirty[slot] = false;
                 return;
             }
 
@@ -1042,18 +1213,25 @@ namespace DexManager.Forms
             {
                 MessageBox.Show(
                     this,
-                    "단일창 " + slot + " 설정을 저장했습니다.",
-                    "DeX Manager",
+                    LocalizationService.Format(
+                        "Main.SingleSaved",
+                        slot),
+                    LocalizationService.Get("App.Name"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
+                _modeSettingsDirty[slot] = false;
                 return;
             }
 
-            SetOperationState(true, "설정 적용 중");
+            SetOperationState(
+                true,
+                LocalizationService.Get("Status.Applying"));
             SetConnectionIndicator(
                 Color.DarkOrange,
-                "단일창 " + slot + " 설정 적용 중",
-                "현재 창을 닫고 새 설정으로 다시 시작합니다.");
+                LocalizationService.Format(
+                    "Main.SingleApplying",
+                    slot),
+                LocalizationService.Get("Main.SingleRestartDetail"));
             var settings = GetSingleWindowSettings(slot);
             BeginPhoneScreenWakeSuppression();
             try
@@ -1068,10 +1246,13 @@ namespace DexManager.Forms
                 EndPhoneScreenWakeSuppression();
             }
             UpdateRunningState();
+            _modeSettingsDirty[slot] = false;
             MessageBox.Show(
                 this,
-                "단일창 " + slot + "을 새 설정으로 다시 시작했습니다.",
-                "DeX Manager",
+                LocalizationService.Format(
+                    "Main.SingleApplied",
+                    slot),
+                LocalizationService.Get("App.Name"),
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         }
@@ -1081,7 +1262,7 @@ namespace DexManager.Forms
             if (_loadAppsButton.Enabled == false) return;
 
             _loadAppsButton.Enabled = false;
-            _loadAppsButton.Text = "불러오는 중...";
+                _loadAppsButton.Text = LocalizationService.Get("Main.Loading");
             try
             {
                 var apps = await Task.Run(delegate { return _scrcpyService.ListApps(); });
@@ -1125,14 +1306,17 @@ namespace DexManager.Forms
                 _logService.Error("Scrcpy 앱 목록을 불러오지 못했습니다.", ex);
                 MessageBox.Show(
                     this,
-                    "앱 목록을 불러오지 못했습니다.\r\n\r\n" + ex.Message,
-                    "DEX Manager",
+                    LocalizationService.Format(
+                        "Main.LoadAppsFailed",
+                        Environment.NewLine,
+                        ex.Message),
+                    LocalizationService.Get("App.Name"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
             }
             finally
             {
-                _loadAppsButton.Text = "앱 목록 불러오기";
+                _loadAppsButton.Text = LocalizationService.Get("Main.LoadApps");
                 _loadAppsButton.Enabled = true;
             }
         }
@@ -1141,7 +1325,8 @@ namespace DexManager.Forms
         {
             var bitRate = _bitRateBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(bitRate))
-                throw new InvalidOperationException("비트레이트를 입력하세요. 예: 20M");
+                throw new InvalidOperationException(
+                    LocalizationService.Get("Main.BitrateRequired"));
 
             if (_selectedMode == 0)
             {
@@ -1204,7 +1389,12 @@ namespace DexManager.Forms
                     : "단일창 " + _selectedMode + " 실행 설정을 저장했습니다.");
             if (showMessage)
             {
-                MessageBox.Show(this, "실행 설정을 저장했습니다. DeX 실행 중이면 다음 시작부터 적용됩니다.", "DEX Manager", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(
+                    this,
+                    LocalizationService.Get("Main.ApplyDeferred"),
+                    LocalizationService.Get("App.Name"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
         }
 
@@ -1408,6 +1598,25 @@ namespace DexManager.Forms
             };
         }
 
+        private static void SelectAllOnFocus(NumericUpDown box)
+        {
+            box.Enter += delegate
+            {
+                box.BeginInvoke((Action)delegate
+                {
+                    box.Select(0, box.Text.Length);
+                });
+            };
+        }
+
+        private static void SelectAllOnFocus(TextBox box)
+        {
+            box.Enter += delegate
+            {
+                box.BeginInvoke((Action)box.SelectAll);
+            };
+        }
+
         private ThemedButton CreateThemedButton(
             string text,
             bool primary,
@@ -1447,22 +1656,32 @@ namespace DexManager.Forms
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(75, 85, 99),
                 Location = new Point(18, 29),
-                Text = "모드"
+                Text = LocalizationService.Get("Main.Mode")
             });
 
-            _dexModeButton = CreateSidebarButton("DeX", 68, true);
+            _dexModeButton = CreateSidebarButton(
+                LocalizationService.Get("Main.Dex"), 68, true);
             _dexModeButton.Click += delegate { SelectDexMode(); };
             sidebar.Controls.Add(_dexModeButton);
 
-            _singleModeButton1 = CreateSidebarButton("단일창 1", 110, false);
+            _singleModeButton1 = CreateSidebarButton(
+                LocalizationService.Format("Main.SingleWindow", 1),
+                110,
+                false);
             _singleModeButton1.Click += delegate { SelectSingleWindowPreview(1); };
             sidebar.Controls.Add(_singleModeButton1);
 
-            _singleModeButton2 = CreateSidebarButton("단일창 2", 152, false);
+            _singleModeButton2 = CreateSidebarButton(
+                LocalizationService.Format("Main.SingleWindow", 2),
+                152,
+                false);
             _singleModeButton2.Click += delegate { SelectSingleWindowPreview(2); };
             sidebar.Controls.Add(_singleModeButton2);
 
-            _singleModeButton3 = CreateSidebarButton("단일창 3", 194, false);
+            _singleModeButton3 = CreateSidebarButton(
+                LocalizationService.Format("Main.SingleWindow", 3),
+                194,
+                false);
             _singleModeButton3.Click += delegate { SelectSingleWindowPreview(3); };
             sidebar.Controls.Add(_singleModeButton3);
 
@@ -1472,8 +1691,17 @@ namespace DexManager.Forms
                 ForeColor = Color.FromArgb(107, 114, 128),
                 Location = new Point(16, 250),
                 Size = new Size(80, 80),
-                Text = "각 슬롯은 서로 다른 앱과 설정을 기억합니다."
+                Text = LocalizationService.Get("Main.SidebarHint")
             });
+
+            var settingsButton = CreateSidebarButton(
+                LocalizationService.Get("Main.Settings"),
+                ClientSize.Height - 48,
+                false);
+            settingsButton.Anchor =
+                AnchorStyles.Left | AnchorStyles.Bottom;
+            settingsButton.Click += delegate { ShowSettingsForm(); };
+            sidebar.Controls.Add(settingsButton);
 
             Controls.Add(sidebar);
             sidebar.BringToFront();
@@ -1495,10 +1723,11 @@ namespace DexManager.Forms
             SaveCurrentModeBeforeSwitch();
             _selectedMode = 0;
             SetSelectedModeButton(0);
-            _modeHintLabel.Text = "DeX 모드";
-            _displaySettingsTitle.Text = "DeX 화면 설정";
-            _startButton.Text = "DeX 시작";
-            _stopButton.Text = "DeX 중지";
+            _modeHintLabel.Text = LocalizationService.Get("Main.DexMode");
+            _displaySettingsTitle.Text =
+                LocalizationService.Get("Main.DisplaySettings.Dex");
+            _startButton.Text = LocalizationService.Get("Main.StartDex");
+            _stopButton.Text = LocalizationService.Get("Main.StopDex");
             _reuseDisplayBox.Visible = true;
             _reuseDisplayBox.Enabled = true;
             _flexDisplayBox.Visible = false;
@@ -1512,10 +1741,14 @@ namespace DexManager.Forms
             SaveCurrentModeBeforeSwitch();
             _selectedMode = slot;
             SetSelectedModeButton(slot);
-            _modeHintLabel.Text = "단일창 " + slot + " · Scrcpy 새 가상화면";
-            _displaySettingsTitle.Text = "단일창 " + slot + " 화면 설정";
-            _startButton.Text = "단일창 시작";
-            _stopButton.Text = "단일창 중지";
+            _modeHintLabel.Text =
+                LocalizationService.Format("Main.SingleMode", slot);
+            _displaySettingsTitle.Text =
+                LocalizationService.Format(
+                    "Main.DisplaySettings.Single",
+                    slot);
+            _startButton.Text = LocalizationService.Get("Main.StartSingle");
+            _stopButton.Text = LocalizationService.Get("Main.StopSingle");
             _reuseDisplayBox.Visible = false;
             _reuseDisplayBox.Enabled = false;
             _flexDisplayBox.Visible = true;
@@ -1588,6 +1821,48 @@ namespace DexManager.Forms
                 : _singleWindowService.IsRunning(_selectedMode);
         }
 
+        private void AttachRunSettingChangeHandlers()
+        {
+            EventHandler changed = delegate { MarkRunSettingsDirty(); };
+            _resolutionBox.SelectedIndexChanged += changed;
+            _widthBox.ValueChanged += changed;
+            _heightBox.ValueChanged += changed;
+            _dpiBox.ValueChanged += changed;
+            _bitRateBox.TextChanged += changed;
+            _maxFpsBox.SelectedIndexChanged += changed;
+            _turnScreenOffBox.CheckedChanged += changed;
+            _stayAwakeBox.CheckedChanged += changed;
+            _useHidKeyboardBox.CheckedChanged += changed;
+            _useHidMouseBox.CheckedChanged += changed;
+            _forceStopAppBox.CheckedChanged += changed;
+            _reuseDisplayBox.CheckedChanged += changed;
+            _flexDisplayBox.CheckedChanged += changed;
+            _additionalArgumentsBox.TextChanged += changed;
+            _startAppBox.TextChanged += changed;
+            _startAppBox.SelectedIndexChanged += changed;
+        }
+
+        private void MarkRunSettingsDirty()
+        {
+            if (_loadingRunSettings ||
+                _selectedMode < 0 ||
+                _selectedMode >= _modeSettingsDirty.Length)
+            {
+                return;
+            }
+
+            _modeSettingsDirty[_selectedMode] = true;
+            UpdateApplySettingsLink();
+        }
+
+        private void UpdateApplySettingsLink()
+        {
+            if (_applySettingsLink == null) return;
+            _applySettingsLink.Visible =
+                IsSelectedModeRunning() &&
+                _modeSettingsDirty[_selectedMode];
+        }
+
         private bool IsAnySingleWindowRunning()
         {
             for (var slot = 1; slot <= 3; slot++)
@@ -1610,15 +1885,20 @@ namespace DexManager.Forms
                 ? settings.StartAppPackage
                 : settings.StartAppName;
             return string.IsNullOrWhiteSpace(app)
-                ? "Scrcpy 새 가상화면이 실행 중입니다."
-                : app + " 앱이 실행 중입니다.";
+                ? LocalizationService.Get("Main.SingleRunningDetail")
+                : LocalizationService.Format(
+                    "Main.AppRunningDetail",
+                    app);
         }
 
         private void UpdateSingleWindowIndicator(int slot)
         {
             if (!string.IsNullOrWhiteSpace(_connectionError))
             {
-                SetConnectionIndicator(Color.Firebrick, "오류", _connectionError);
+                SetConnectionIndicator(
+                    Color.Firebrick,
+                    LocalizationService.Get("Status.Error"),
+                    _connectionError);
                 return;
             }
             if (_lastDeviceState == null ||
@@ -1631,10 +1911,10 @@ namespace DexManager.Forms
             var settings = GetSingleWindowSettings(slot);
             SetConnectionIndicator(
                 Color.FromArgb(37, 99, 235),
-                "단일창 " + slot + " 준비",
+                LocalizationService.Format("Main.SingleReady", slot),
                 string.IsNullOrWhiteSpace(settings.StartAppPackage)
-                    ? "실행할 앱을 선택하세요."
-                    : "시작 버튼을 누르면 선택한 앱을 새 가상화면에서 실행합니다.");
+                    ? LocalizationService.Get("Main.SelectApp")
+                    : LocalizationService.Get("Main.PressStart"));
         }
 
         private void SetSelectedModeButton(int slot)
@@ -1730,10 +2010,15 @@ namespace DexManager.Forms
 
         private static string GetDeviceStatusText(DeviceState state)
         {
-            if (state.Status == AdbDeviceStatus.Device) return "연결됨 (" + state.Serial + ")";
-            if (state.Status == AdbDeviceStatus.Unauthorized) return "RSA 승인 필요";
-            if (state.Status == AdbDeviceStatus.Offline) return "오프라인";
-            return "연결 안 됨";
+            if (state.Status == AdbDeviceStatus.Device)
+                return LocalizationService.Format(
+                    "Device.Connected",
+                    state.Serial);
+            if (state.Status == AdbDeviceStatus.Unauthorized)
+                return LocalizationService.Get("Device.Unauthorized");
+            if (state.Status == AdbDeviceStatus.Offline)
+                return LocalizationService.Get("Device.Offline");
+            return LocalizationService.Get("Device.Disconnected");
         }
 
         private static decimal Clamp(int value, NumericUpDown box)
@@ -1754,7 +2039,10 @@ namespace DexManager.Forms
         {
             Hide();
             ShowInTaskbar = false;
-            if (showBalloon) _trayService.ShowBalloon("DEX Manager", "프로그램이 시스템 트레이에서 계속 실행됩니다.");
+            if (showBalloon)
+                _trayService.ShowBalloon(
+                    LocalizationService.Get("App.Name"),
+                    LocalizationService.Get("Main.TrayContinues"));
         }
 
         private void ShowMainWindow()
@@ -1792,7 +2080,9 @@ namespace DexManager.Forms
                         _settingsService,
                         _settings,
                         _adbService,
-                        _wirelessAdbService);
+                        _wirelessAdbService,
+                        ShowLogForm,
+                        ShowEnvironmentCheck);
                     _settingsForm.FormClosed += delegate { _settingsForm = null; };
                 }
                 _settingsForm.Show(this);
@@ -1831,7 +2121,8 @@ namespace DexManager.Forms
             if (_exitInProgress) return;
             _exitInProgress = true;
             BeginPhoneScreenWakeSuppression();
-            _dexStatusValue.Text = "종료 정리 중";
+            _dexStatusValue.Text =
+                LocalizationService.Get("Status.ShuttingDown");
             Enabled = false;
             _deviceMonitor.Stop();
             await Task.Run(delegate { _singleWindowService.StopAll(); });

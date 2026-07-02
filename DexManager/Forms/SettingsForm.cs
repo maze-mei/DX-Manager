@@ -14,6 +14,8 @@ namespace DexManager.Forms
         private readonly AppSettings _settings;
         private readonly AdbService _adbService;
         private readonly WirelessAdbService _wirelessAdbService;
+        private readonly Action _showLogs;
+        private readonly Action _showEnvironmentCheck;
 
         private RadioButton _automaticAdbBox;
         private RadioButton _manualAdbBox;
@@ -60,19 +62,26 @@ namespace DexManager.Forms
         private Button _wirelessConnectButton;
         private Button _wirelessDisconnectButton;
         private Button _pairButton;
+        private ComboBox _languageBox;
+        private Label _saveStatusLabel;
+        private Timer _saveStatusTimer;
 
         public SettingsForm(
             SettingsService settingsService,
             AppSettings settings,
             AdbService adbService,
-            WirelessAdbService wirelessAdbService)
+            WirelessAdbService wirelessAdbService,
+            Action showLogs,
+            Action showEnvironmentCheck)
         {
             _settingsService = settingsService;
             _settings = settings;
             _adbService = adbService;
             _wirelessAdbService = wirelessAdbService;
+            _showLogs = showLogs;
+            _showEnvironmentCheck = showEnvironmentCheck;
 
-            Text = "DEX Manager 설정";
+            Text = LocalizationService.Get("Settings.Title");
             StartPosition = FormStartPosition.CenterParent;
             ClientSize = new Size(820, 610);
             MinimumSize = new Size(760, 540);
@@ -82,7 +91,7 @@ namespace DexManager.Forms
                 Dock = DockStyle.Top,
                 Height = 44,
                 Padding = new Padding(10),
-                Text = "해상도와 Scrcpy 실행 옵션은 메인 창에서 변경합니다. ADB/경로와 고급 동작은 이 창에서 관리합니다."
+                Text = LocalizationService.Get("Settings.Description")
             };
 
             var tabs = new TabControl { Dock = DockStyle.Fill };
@@ -91,7 +100,22 @@ namespace DexManager.Forms
             tabs.TabPages.Add(BuildPathTab());
             tabs.TabPages.Add(BuildKeyboardTab());
             tabs.TabPages.Add(BuildTimingTab());
+            tabs.TabPages.Add(BuildDiagnosticsTab());
 
+            var bottomPanel = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 76
+            };
+            _saveStatusLabel = new Label
+            {
+                Dock = DockStyle.Top,
+                Height = 24,
+                Padding = new Padding(8, 0, 12, 0),
+                TextAlign = ContentAlignment.MiddleRight,
+                AutoEllipsis = true,
+                Visible = false
+            };
             var buttons = new FlowLayoutPanel
             {
                 Dock = DockStyle.Bottom,
@@ -99,80 +123,115 @@ namespace DexManager.Forms
                 FlowDirection = FlowDirection.RightToLeft,
                 Padding = new Padding(8)
             };
-            var saveButton = new Button { Text = "저장", Size = new Size(96, 32) };
+            var saveButton = new Button
+            {
+                Text = LocalizationService.Get("Common.Save"),
+                Size = new Size(96, 32)
+            };
             saveButton.Click += SaveButton_Click;
-            var closeButton = new Button { Text = "닫기", Size = new Size(96, 32) };
+            var closeButton = new Button
+            {
+                Text = LocalizationService.Get("Common.Close"),
+                Size = new Size(96, 32)
+            };
             closeButton.Click += delegate { Close(); };
             buttons.Controls.Add(saveButton);
             buttons.Controls.Add(closeButton);
+            bottomPanel.Controls.Add(_saveStatusLabel);
+            bottomPanel.Controls.Add(buttons);
+            _saveStatusTimer = new Timer { Interval = 2800 };
+            _saveStatusTimer.Tick += delegate
+            {
+                _saveStatusTimer.Stop();
+                _saveStatusLabel.Visible = false;
+            };
+            FormClosed += delegate { _saveStatusTimer.Dispose(); };
 
             Controls.Add(tabs);
             Controls.Add(description);
-            Controls.Add(buttons);
+            Controls.Add(bottomPanel);
             LoadValues();
         }
 
         private TabPage BuildGeneralTab()
         {
-            var page = new TabPage("기본");
+            var page = new TabPage(LocalizationService.Get("Settings.General"));
             var table = CreateTable();
-            _startWithWindowsBox = AddCheck(table, "Windows 시작 시 자동 실행");
-            _startMinimizedBox = AddCheck(table, "자동 실행 시 트레이로 시작");
-            _wakeUpModeBox = AddCombo<ScrcpyWakeUpMode>(table, "ADB Wake-up 방식");
-            _autoHideBox = AddCheck(table, "자동 숨김 사용");
-            _autoStartDexBox = AddCheck(table, "기기 연결 시 DeX 자동 시작");
-            _resetDisplayOnStopBox = AddCheck(table, "중지/종료 시 가상화면 제거");
-            _disableStayAwakeBox = AddCheck(table, "중지/종료 시 stay awake 해제");
+            _languageBox = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Dock = DockStyle.Left,
+                Width = 210
+            };
+            foreach (AppLanguage language in Enum.GetValues(typeof(AppLanguage)))
+                _languageBox.Items.Add(new LanguageOption(language));
+            AddRow(table, LocalizationService.Get("Settings.Language"), _languageBox);
+            AddRow(
+                table,
+                string.Empty,
+                new Label
+                {
+                    AutoSize = true,
+                    ForeColor = Color.DimGray,
+                    Text = LocalizationService.Get("Settings.LanguageRestart")
+                });
+            _startWithWindowsBox = AddCheck(table, LocalizationService.Get("Settings.StartWithWindows"));
+            _startMinimizedBox = AddCheck(table, LocalizationService.Get("Settings.StartMinimized"));
+            _wakeUpModeBox = AddCombo<ScrcpyWakeUpMode>(table, LocalizationService.Get("Settings.WakeUpMode"));
+            _autoHideBox = AddCheck(table, LocalizationService.Get("Settings.AutoHide"));
+            _autoStartDexBox = AddCheck(table, LocalizationService.Get("Settings.AutoStartDex"));
+            _resetDisplayOnStopBox = AddCheck(table, LocalizationService.Get("Settings.ResetDisplay"));
+            _disableStayAwakeBox = AddCheck(table, LocalizationService.Get("Settings.DisableStayAwake"));
             page.Controls.Add(Wrap(table));
             return page;
         }
 
         private TabPage BuildPathTab()
         {
-            var page = new TabPage("경로 / ADB");
+            var page = new TabPage(LocalizationService.Get("Settings.Paths"));
             var table = CreateTable();
 
             _automaticAdbBox = new RadioButton
             {
-                Text = "자동 선택 (Windows 버전과 Scrcpy 경로 기준)",
+                Text = LocalizationService.Get("Settings.AdbAuto"),
                 AutoSize = true
             };
             _manualAdbBox = new RadioButton
             {
-                Text = "수동 지정",
+                Text = LocalizationService.Get("Settings.AdbManual"),
                 AutoSize = true
             };
             _automaticAdbBox.CheckedChanged += delegate { UpdateManualAdbControls(); };
             _manualAdbBox.CheckedChanged += delegate { UpdateManualAdbControls(); };
-            AddRow(table, "ADB 모드", _automaticAdbBox);
+            AddRow(table, LocalizationService.Get("Settings.AdbMode"), _automaticAdbBox);
             AddRow(table, string.Empty, _manualAdbBox);
-            AddReadOnly(table, "현재 OS", WindowsVersionHelper.GetDisplayName());
-            AddReadOnly(table, "현재 사용 중인 ADB", _adbService.AdbPath);
-            AddReadOnly(table, "ADB 버전", GetAdbVersionText());
+            AddReadOnly(table, LocalizationService.Get("Settings.CurrentOs"), WindowsVersionHelper.GetDisplayName());
+            AddReadOnly(table, LocalizationService.Get("Settings.CurrentAdb"), _adbService.AdbPath);
+            AddReadOnly(table, LocalizationService.Get("Settings.AdbVersion"), GetAdbVersionText());
 
             _manualAdbPanel = CreatePathPanel(out _manualAdbPathBox, true);
-            AddRow(table, "수동 ADB 경로", _manualAdbPanel);
-            _scrcpyPathBox = AddPath(table, "Scrcpy 실행 파일", true);
-            _screenshotFolderBox = AddPath(table, "PC 스크린샷 폴더", false);
-            _deviceScreenshotFolderBox = AddText(table, "폰 전송 폴더");
-            _logFolderBox = AddPath(table, "로그 폴더", false);
+            AddRow(table, LocalizationService.Get("Settings.ManualAdbPath"), _manualAdbPanel);
+            _scrcpyPathBox = AddPath(table, LocalizationService.Get("Settings.ScrcpyPath"), true);
+            _screenshotFolderBox = AddPath(table, LocalizationService.Get("Settings.ScreenshotFolder"), false);
+            _deviceScreenshotFolderBox = AddText(table, LocalizationService.Get("Settings.DeviceFolder"));
+            _logFolderBox = AddPath(table, LocalizationService.Get("Settings.LogFolder"), false);
             page.Controls.Add(Wrap(table));
             return page;
         }
 
         private TabPage BuildConnectionTab()
         {
-            var page = new TabPage("연결");
+            var page = new TabPage(LocalizationService.Get("Settings.Connection"));
             var table = CreateTable();
 
             _usbConnectionBox = new RadioButton
             {
-                Text = "USB 연결 사용",
+                Text = LocalizationService.Get("Settings.Usb"),
                 AutoSize = true
             };
             _wirelessConnectionBox = new RadioButton
             {
-                Text = "무선 ADB 연결 사용",
+                Text = LocalizationService.Get("Settings.Wireless"),
                 AutoSize = true
             };
             _usbConnectionBox.CheckedChanged += delegate
@@ -183,18 +242,18 @@ namespace DexManager.Forms
             {
                 UpdateWirelessControls();
             };
-            AddRow(table, "연결 방식", _usbConnectionBox);
+            AddRow(table, LocalizationService.Get("Settings.ConnectionMode"), _usbConnectionBox);
             AddRow(table, string.Empty, _wirelessConnectionBox);
 
-            _wirelessHostBox = AddText(table, "휴대폰 IP 주소");
+            _wirelessHostBox = AddText(table, LocalizationService.Get("Settings.PhoneIp"));
             _wirelessPortBox = AddNumber(
                 table,
-                "연결 포트",
+                LocalizationService.Get("Settings.ConnectPort"),
                 1,
                 65535);
             _wirelessAutoReconnectBox = AddCheck(
                 table,
-                "연결이 끊기면 자동으로 다시 연결");
+                LocalizationService.Get("Settings.AutoReconnect"));
 
             var connectionButtons = new FlowLayoutPanel
             {
@@ -204,7 +263,7 @@ namespace DexManager.Forms
             };
             _wirelessPrepareButton = new Button
             {
-                Text = "USB로 무선 준비",
+                Text = LocalizationService.Get("Settings.PrepareWireless"),
                 AutoSize = true,
                 Height = 30
             };
@@ -212,7 +271,7 @@ namespace DexManager.Forms
                 WirelessPrepareButton_Click;
             _wirelessConnectButton = new Button
             {
-                Text = "무선 연결",
+                Text = LocalizationService.Get("Settings.ConnectWireless"),
                 AutoSize = true,
                 Height = 30
             };
@@ -220,7 +279,7 @@ namespace DexManager.Forms
                 WirelessConnectButton_Click;
             _wirelessDisconnectButton = new Button
             {
-                Text = "연결 해제",
+                Text = LocalizationService.Get("Settings.Disconnect"),
                 AutoSize = true,
                 Height = 30
             };
@@ -229,14 +288,14 @@ namespace DexManager.Forms
             connectionButtons.Controls.Add(_wirelessPrepareButton);
             connectionButtons.Controls.Add(_wirelessConnectButton);
             connectionButtons.Controls.Add(_wirelessDisconnectButton);
-            AddRow(table, "무선 연결", connectionButtons);
+            AddRow(table, LocalizationService.Get("Settings.WirelessActions"), connectionButtons);
 
             _wirelessStatusLabel = new Label
             {
                 AutoSize = true,
                 MaximumSize = new Size(570, 0)
             };
-            AddRow(table, "현재 상태", _wirelessStatusLabel);
+            AddRow(table, LocalizationService.Get("Settings.CurrentStatus"), _wirelessStatusLabel);
 
             AddRow(
                 table,
@@ -245,21 +304,18 @@ namespace DexManager.Forms
                 {
                     AutoSize = true,
                     MaximumSize = new Size(570, 0),
-                    Text =
-                        "케이블 없이 처음 연결할 때만 페어링 주소의 " +
-                        "포트와 6자리 코드를 입력합니다. 연결 포트는 " +
-                        "페어링 포트와 다를 수 있습니다."
+                    Text = LocalizationService.Get("Settings.PairGuide")
                 });
             _pairingPortBox = AddNumber(
                 table,
-                "페어링 포트",
+                LocalizationService.Get("Settings.PairingPort"),
                 1,
                 65535);
-            _pairingCodeBox = AddText(table, "페어링 코드");
+            _pairingCodeBox = AddText(table, LocalizationService.Get("Settings.PairingCode"));
             _pairingCodeBox.UseSystemPasswordChar = true;
             _pairButton = new Button
             {
-                Text = "페어링",
+                Text = LocalizationService.Get("Settings.Pair"),
                 AutoSize = true,
                 Height = 30
             };
@@ -272,40 +328,93 @@ namespace DexManager.Forms
 
         private TabPage BuildKeyboardTab()
         {
-            var page = new TabPage("키 입력");
+            var page = new TabPage(LocalizationService.Get("Settings.Keyboard"));
             var table = CreateTable();
-            _captureHotkeyBox = AddText(table, "캡처 단축키");
-            _exitHotkeyBox = AddText(table, "종료 단축키");
-            _lowLevelHotkeyBox = AddCheck(table, "저수준 키보드 후크로 단축키 처리");
-            _keyboardDiagnosticsBox = AddCheck(table, "키 진단 로그 남기기");
-            _convertHangulBox = AddCheck(table, "한영키를 Shift+Space로 보정");
-            _hangulInputModeBox = AddCombo<KeyInputMode>(table, "한영키 전송 방식");
-            _rightWindowsBox = AddCheck(table, "오른쪽 Windows 키 보정");
-            _convertEnterBox = AddCheck(table, "Scroll Lock으로 Enter/Shift+Enter 모드 전환");
-            _enterInputModeBox = AddCombo<KeyInputMode>(table, "Enter 전송 방식");
-            _ignoreShiftSpaceBox = AddCheck(table, "직접 Shift+Space 입력 무시");
+            _captureHotkeyBox = AddText(table, LocalizationService.Get("Settings.CaptureHotkey"));
+            _exitHotkeyBox = AddText(table, LocalizationService.Get("Settings.ExitHotkey"));
+            _lowLevelHotkeyBox = AddCheck(table, LocalizationService.Get("Settings.LowLevelHotkey"));
+            _keyboardDiagnosticsBox = AddCheck(table, LocalizationService.Get("Settings.KeyDiagnostics"));
+            _convertHangulBox = AddCheck(table, LocalizationService.Get("Settings.HangulCorrection"));
+            _hangulInputModeBox = AddCombo<KeyInputMode>(table, LocalizationService.Get("Settings.HangulMode"));
+            _rightWindowsBox = AddCheck(table, LocalizationService.Get("Settings.RightWindows"));
+            _convertEnterBox = AddCheck(table, LocalizationService.Get("Settings.EnterConversion"));
+            _enterInputModeBox = AddCombo<KeyInputMode>(table, LocalizationService.Get("Settings.EnterMode"));
+            _ignoreShiftSpaceBox = AddCheck(table, LocalizationService.Get("Settings.IgnoreShiftSpace"));
             page.Controls.Add(Wrap(table));
             return page;
         }
 
         private TabPage BuildTimingTab()
         {
-            var page = new TabPage("시간 / 캡처");
+            var page = new TabPage(LocalizationService.Get("Settings.Timing"));
             var table = CreateTable();
-            _deviceMonitorIntervalBox = AddNumber(table, "기기 감시 주기(ms)", 200, 60000);
-            _disconnectMonitorIntervalBox = AddNumber(table, "분리 감시 주기(ms)", 200, 60000);
-            _connectedStartDelayBox = AddNumber(table, "연결 후 시작 대기(ms)", 0, 60000);
-            _adbWakeUpDelayBox = AddNumber(table, "ADB Wake-up 대기(ms)", 0, 60000);
-            _autoHideSecondsBox = AddNumber(table, "자동 숨김 대기(초)", 1, 3600);
-            _captureWaitSecondsBox = AddNumber(table, "캡처 선택 대기(초)", 1, 60);
-            _processTimeoutBox = AddNumber(table, "프로세스 제한시간(ms)", 1000, 120000);
-            _pushCaptureBox = AddCheck(table, "캡처 후 폰으로 전송");
+            _deviceMonitorIntervalBox = AddNumber(table, LocalizationService.Get("Settings.DeviceInterval"), 200, 60000);
+            _disconnectMonitorIntervalBox = AddNumber(table, LocalizationService.Get("Settings.DisconnectInterval"), 200, 60000);
+            _connectedStartDelayBox = AddNumber(table, LocalizationService.Get("Settings.StartDelay"), 0, 60000);
+            _adbWakeUpDelayBox = AddNumber(table, LocalizationService.Get("Settings.WakeDelay"), 0, 60000);
+            _autoHideSecondsBox = AddNumber(table, LocalizationService.Get("Settings.HideDelay"), 1, 3600);
+            _captureWaitSecondsBox = AddNumber(table, LocalizationService.Get("Settings.CaptureDelay"), 1, 60);
+            _processTimeoutBox = AddNumber(table, LocalizationService.Get("Settings.ProcessTimeout"), 1000, 120000);
+            _pushCaptureBox = AddCheck(table, LocalizationService.Get("Settings.PushCapture"));
             page.Controls.Add(Wrap(table));
+            return page;
+        }
+
+        private TabPage BuildDiagnosticsTab()
+        {
+            var page = new TabPage(
+                LocalizationService.Get("Settings.Diagnostics"));
+            var panel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                Padding = new Padding(24),
+                WrapContents = false
+            };
+            panel.Controls.Add(new Label
+            {
+                AutoSize = true,
+                MaximumSize = new Size(700, 0),
+                Margin = new Padding(0, 0, 0, 18),
+                Text = LocalizationService.Get("Settings.DiagnosticsGuide")
+            });
+            var logButton = new Button
+            {
+                Text = LocalizationService.Get("Settings.OpenLogs"),
+                Size = new Size(220, 36),
+                Margin = new Padding(0, 0, 0, 10)
+            };
+            logButton.Click += delegate
+            {
+                if (_showLogs != null) _showLogs();
+            };
+            var environmentButton = new Button
+            {
+                Text = LocalizationService.Get("Settings.OpenEnvironment"),
+                Size = new Size(220, 36)
+            };
+            environmentButton.Click += delegate
+            {
+                if (_showEnvironmentCheck != null)
+                    _showEnvironmentCheck();
+            };
+            panel.Controls.Add(logButton);
+            panel.Controls.Add(environmentButton);
+            page.Controls.Add(panel);
             return page;
         }
 
         private void LoadValues()
         {
+            foreach (var item in _languageBox.Items)
+            {
+                var option = item as LanguageOption;
+                if (option != null && option.Value == _settings.Language)
+                {
+                    _languageBox.SelectedItem = option;
+                    break;
+                }
+            }
             _automaticAdbBox.Checked =
                 _settings.Paths.AdbSelectionMode == AdbSelectionMode.Auto;
             _manualAdbBox.Checked = !_automaticAdbBox.Checked;
@@ -365,21 +474,41 @@ namespace DexManager.Forms
             {
                 SaveValues();
                 _settingsService.Save(_settings);
-                MessageBox.Show(
-                    this,
-                    "설정을 저장했습니다. ADB 및 Scrcpy 경로 변경은 프로그램을 다시 시작한 뒤 적용됩니다.",
-                    "DEX Manager",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                ShowSaveStatus(
+                    LocalizationService.Get("Settings.SavedInline"),
+                    Color.DarkGreen,
+                    2800);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "설정을 저장하지 못했습니다.\r\n\r\n" + ex.Message, "DEX Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowSaveStatus(
+                    LocalizationService.Format(
+                        "Settings.SaveFailedInline",
+                        ex.Message),
+                    Color.Firebrick,
+                    5000);
             }
+        }
+
+        private void ShowSaveStatus(
+            string message,
+            Color color,
+            int durationMs)
+        {
+            _saveStatusTimer.Stop();
+            _saveStatusLabel.ForeColor = color;
+            _saveStatusLabel.Text = message;
+            _saveStatusLabel.Visible = true;
+            _saveStatusTimer.Interval = Math.Max(durationMs, 500);
+            _saveStatusTimer.Start();
         }
 
         private void SaveValues()
         {
+            var language = _languageBox.SelectedItem as LanguageOption;
+            _settings.Language = language == null
+                ? AppLanguage.Auto
+                : language.Value;
             _settings.Paths.AdbSelectionMode = _manualAdbBox.Checked
                 ? AdbSelectionMode.Manual
                 : AdbSelectionMode.Auto;
@@ -425,7 +554,8 @@ namespace DexManager.Forms
                 string.IsNullOrWhiteSpace(_wirelessHostBox.Text))
             {
                 throw new InvalidOperationException(
-                    "무선 연결을 사용할 때는 휴대폰 IP 주소를 입력하세요.");
+                    LocalizationService.Get(
+                        "Settings.WirelessRequiresIp"));
             }
             _settings.Connection.Mode = _wirelessConnectionBox.Checked
                 ? AdbConnectionMode.Wireless
@@ -557,7 +687,9 @@ namespace DexManager.Forms
                 if (!IsDisposed)
                 {
                     _wirelessStatusLabel.Text =
-                        "무선 연결 작업 실패: " + ex.Message;
+                        LocalizationService.Format(
+                            "Settings.WirelessOperationFailed",
+                            ex.Message);
                     _wirelessStatusLabel.ForeColor = Color.Firebrick;
                 }
             }
@@ -586,15 +718,18 @@ namespace DexManager.Forms
             {
                 _wirelessStatusLabel.Text =
                     _settings.Connection.Mode == AdbConnectionMode.Wireless
-                        ? "무선 연결 대기"
-                        : "USB 장치 연결 대기";
+                        ? LocalizationService.Get(
+                            "Settings.WirelessWaiting")
+                        : LocalizationService.Get(
+                            "Settings.UsbWaiting");
                 return;
             }
             _wirelessStatusLabel.Text =
-                (AdbService.IsTcpIpSerial(target)
-                    ? "무선 대상: "
-                    : "USB 대상: ") +
-                target;
+                LocalizationService.Format(
+                    AdbService.IsTcpIpSerial(target)
+                        ? "Settings.WirelessTarget"
+                        : "Settings.UsbTarget",
+                    target);
         }
 
         private string GetAdbVersionText()
@@ -603,13 +738,20 @@ namespace DexManager.Forms
             {
                 var result = _adbService.GetVersion();
                 if (!result.IsSuccess)
-                    return "확인 실패: " + result.StandardError;
+                    return LocalizationService.Format(
+                        "Settings.CheckFailed",
+                        result.StandardError);
                 var lines = result.StandardOutput.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-                return lines.Length == 0 ? "버전 출력 없음" : lines[0];
+                return lines.Length == 0
+                    ? LocalizationService.Get(
+                        "Settings.NoVersionOutput")
+                    : lines[0];
             }
             catch (Exception ex)
             {
-                return "확인 실패: " + ex.Message;
+                return LocalizationService.Format(
+                    "Settings.CheckFailed",
+                    ex.Message);
             }
         }
 
@@ -648,12 +790,21 @@ namespace DexManager.Forms
         {
             var textBox = new TextBox { Dock = DockStyle.Fill };
             box = textBox;
-            var button = new Button { Text = "찾아보기", Dock = DockStyle.Right, Width = 86 };
+            var button = new Button
+            {
+                Text = LocalizationService.Get("Common.Browse"),
+                Dock = DockStyle.Right,
+                Width = 86
+            };
             button.Click += delegate
             {
                 if (file)
                 {
-                    using (var dialog = new OpenFileDialog { Filter = "실행 파일 (*.exe)|*.exe|모든 파일 (*.*)|*.*" })
+                    using (var dialog = new OpenFileDialog
+                    {
+                        Filter = LocalizationService.Get(
+                            "Settings.ExecutableFilter")
+                    })
                     {
                         if (dialog.ShowDialog() == DialogResult.OK) textBox.Text = dialog.FileName;
                     }
@@ -713,6 +864,21 @@ namespace DexManager.Forms
             if (value < box.Minimum) return box.Minimum;
             if (value > box.Maximum) return box.Maximum;
             return value;
+        }
+
+        private sealed class LanguageOption
+        {
+            public LanguageOption(AppLanguage value)
+            {
+                Value = value;
+            }
+
+            public AppLanguage Value { get; private set; }
+
+            public override string ToString()
+            {
+                return LocalizationService.GetLanguageName(Value);
+            }
         }
     }
 }
