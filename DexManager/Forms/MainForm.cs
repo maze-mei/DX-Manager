@@ -43,9 +43,9 @@ namespace DexManager.Forms
         private readonly Button _startButton;
         private readonly Button _stopButton;
         private readonly LinkLabel _applySettingsLink;
-        private readonly ComboBox _resolutionBox;
-        private readonly NumericUpDown _widthBox;
-        private readonly NumericUpDown _heightBox;
+        private readonly ThemedSelectControl _resolutionBox;
+        private readonly ThemedNumberControl _widthBox;
+        private readonly ThemedNumberControl _heightBox;
         private readonly Label _widthLabel;
         private readonly Label _heightLabel;
         private readonly Label _dpiLabel;
@@ -54,9 +54,9 @@ namespace DexManager.Forms
         private readonly Label _maxFpsLabel;
         private readonly Label _startAppLabel;
         private readonly Label _optionsTitle;
-        private readonly NumericUpDown _dpiBox;
-        private readonly TextBox _bitRateBox;
-        private readonly ComboBox _maxFpsBox;
+        private readonly ThemedNumberControl _dpiBox;
+        private readonly ThemedTextControl _bitRateBox;
+        private readonly ThemedSelectControl _maxFpsBox;
         private readonly CheckBox _turnScreenOffBox;
         private readonly CheckBox _stayAwakeBox;
         private readonly CheckBox _useHidKeyboardBox;
@@ -74,12 +74,6 @@ namespace DexManager.Forms
         private RoundedPanel _statusCard;
         private RoundedPanel _displayCard;
         private RoundedPanel _optionsCard;
-        private ThemedFieldHost _resolutionHost;
-        private ThemedFieldHost _widthHost;
-        private ThemedFieldHost _heightHost;
-        private ThemedFieldHost _dpiHost;
-        private ThemedFieldHost _bitRateHost;
-        private ThemedFieldHost _maxFpsHost;
         private readonly Timer _phoneScreenWakeTimer;
         private ThemedButton _dexModeButton;
         private ThemedButton _singleModeButton1;
@@ -203,7 +197,7 @@ namespace DexManager.Forms
                 LocalizationService.Get("Main.DisplaySettings.Dex"),
                 32,
                 226);
-            _resolutionBox = CreateStyledCombo(105, 263, 130);
+            _resolutionBox = CreateCustomSelect(105, 263, 130);
             _resolutionBox.TabIndex = 0;
             _resolutionBox.Items.Add(new ResolutionPreset("1600 x 900", 1600, 900));
             _resolutionBox.Items.Add(new ResolutionPreset("1920 x 1080", 1920, 1080));
@@ -211,20 +205,19 @@ namespace DexManager.Forms
             _resolutionBox.Items.Add(new ResolutionPreset(
                 LocalizationService.Get("Main.Custom"), 0, 0));
             _resolutionBox.SelectedIndexChanged += ResolutionBox_SelectedIndexChanged;
-            _widthBox = CreateStyledNumber(320, 7680, 285, 263, 55);
-            _heightBox = CreateStyledNumber(240, 4320, 395, 263, 55);
-            _dpiBox = CreateStyledNumber(80, 640, 490, 263, 90);
-            _bitRateBox = CreateStyledTextBox(105, 298, 130);
-            _maxFpsBox = CreateStyledCombo(495, 298, 90);
+            _widthBox = CreateCustomNumber(
+                320, 7680, 285, 263, 55, false);
+            _heightBox = CreateCustomNumber(
+                240, 4320, 395, 263, 55, false);
+            _dpiBox = CreateCustomNumber(
+                80, 640, 490, 263, 90, true);
+            _bitRateBox = CreateCustomText(105, 298, 130);
+            _maxFpsBox = CreateCustomSelect(495, 298, 90);
             _widthBox.TabIndex = 1;
             _heightBox.TabIndex = 2;
             _dpiBox.TabIndex = 3;
             _bitRateBox.TabIndex = 4;
             _maxFpsBox.TabIndex = 5;
-            SelectAllOnFocus(_widthBox);
-            SelectAllOnFocus(_heightBox);
-            SelectAllOnFocus(_dpiBox);
-            SelectAllOnFocus(_bitRateBox);
             _maxFpsBox.Items.Add(30);
             _maxFpsBox.Items.Add(60);
             _resolutionLabel = AddFieldLabel(
@@ -1019,14 +1012,11 @@ namespace DexManager.Forms
         {
             var preset = _resolutionBox.SelectedItem as ResolutionPreset;
             var custom = preset == null || preset.Width == 0;
-            if (_resolutionHost != null)
-                _resolutionHost.Width = custom ? 130 : 304;
+            _resolutionBox.Width = custom ? 130 : 304;
             _widthBox.Enabled = custom;
             _heightBox.Enabled = custom;
             _widthBox.Visible = custom;
             _heightBox.Visible = custom;
-            if (_widthHost != null) _widthHost.Visible = custom;
-            if (_heightHost != null) _heightHost.Visible = custom;
             _widthLabel.Visible = custom;
             _heightLabel.Visible = custom;
             if (custom)
@@ -1556,11 +1546,6 @@ namespace DexManager.Forms
             });
         }
 
-        private static NumericUpDown CreateNumber(int min, int max, int width)
-        {
-            return new NumericUpDown { Minimum = min, Maximum = max, Width = width };
-        }
-
         private static CheckBox CreateOption(string text, int x, int y)
         {
             return new ThemedCheckBox
@@ -1568,6 +1553,51 @@ namespace DexManager.Forms
                 Text = text,
                 Location = new Point(x, y),
                 Size = new Size(284, 30)
+            };
+        }
+
+        private static ThemedSelectControl CreateCustomSelect(
+            int x,
+            int y,
+            int width)
+        {
+            return new ThemedSelectControl
+            {
+                Location = new Point(x, y),
+                Size = new Size(width, 32)
+            };
+        }
+
+        private static ThemedNumberControl CreateCustomNumber(
+            int min,
+            int max,
+            int x,
+            int y,
+            int width,
+            bool showStepButtons)
+        {
+            var control = new ThemedNumberControl
+            {
+                Minimum = min,
+                Maximum = max,
+                Increment = 1,
+                ShowStepButtons = showStepButtons,
+                Location = new Point(x, y),
+                Size = new Size(width, 32)
+            };
+            control.Value = min;
+            return control;
+        }
+
+        private static ThemedTextControl CreateCustomText(
+            int x,
+            int y,
+            int width)
+        {
+            return new ThemedTextControl
+            {
+                Location = new Point(x, y),
+                Size = new Size(width, 32)
             };
         }
 
@@ -1594,22 +1624,6 @@ namespace DexManager.Forms
             return box;
         }
 
-        private NumericUpDown CreateStyledNumber(int min, int max, int x, int y, int width)
-        {
-            return new NumericUpDown
-            {
-                Minimum = min,
-                Maximum = max,
-                BorderStyle = BorderStyle.FixedSingle,
-                BackColor = _theme.CardSoft,
-                ForeColor = _theme.TextPrimary,
-                Font = new Font("Segoe UI", 9F),
-                TextAlign = HorizontalAlignment.Left,
-                Location = new Point(x, y),
-                Size = new Size(width, 32)
-            };
-        }
-
         private TextBox CreateStyledTextBox(
             int x,
             int y,
@@ -1628,25 +1642,6 @@ namespace DexManager.Forms
                 AutoSize = false,
                 Location = new Point(x, y),
                 Size = new Size(width, 32)
-            };
-        }
-
-        private static void SelectAllOnFocus(NumericUpDown box)
-        {
-            box.Enter += delegate
-            {
-                box.BeginInvoke((Action)delegate
-                {
-                    box.Select(0, box.Text.Length);
-                });
-            };
-        }
-
-        private static void SelectAllOnFocus(TextBox box)
-        {
-            box.Enter += delegate
-            {
-                box.BeginInvoke((Action)box.SelectAll);
             };
         }
 
@@ -1700,53 +1695,23 @@ namespace DexManager.Forms
 
             MoveToCard(_displaySettingsTitle, _displayCard, 20, 13);
             MoveToCard(_resolutionLabel, _displayCard, 20, 51);
-            _resolutionHost = CreateFieldHost(
-                _resolutionBox,
-                FieldChromeKind.Combo,
-                _displayCard,
-                20,
-                72,
-                304);
+            MoveToCard(_resolutionBox, _displayCard, 20, 72);
+            _resolutionBox.Size = new Size(304, 32);
             MoveToCard(_widthLabel, _displayCard, 158, 78);
-            _widthHost = CreateFieldHost(
-                _widthBox,
-                FieldChromeKind.Text,
-                _displayCard,
-                196,
-                72,
-                55);
+            MoveToCard(_widthBox, _displayCard, 196, 72);
+            _widthBox.Size = new Size(55, 32);
             MoveToCard(_heightLabel, _displayCard, 257, 78);
-            _heightHost = CreateFieldHost(
-                _heightBox,
-                FieldChromeKind.Text,
-                _displayCard,
-                305,
-                72,
-                55);
+            MoveToCard(_heightBox, _displayCard, 305, 72);
+            _heightBox.Size = new Size(55, 32);
             MoveToCard(_dpiLabel, _displayCard, 362, 51);
-            _dpiHost = CreateFieldHost(
-                _dpiBox,
-                FieldChromeKind.Number,
-                _displayCard,
-                362,
-                72,
-                304);
+            MoveToCard(_dpiBox, _displayCard, 362, 72);
+            _dpiBox.Size = new Size(304, 32);
             MoveToCard(_bitRateLabel, _displayCard, 20, 108);
-            _bitRateHost = CreateFieldHost(
-                _bitRateBox,
-                FieldChromeKind.Text,
-                _displayCard,
-                20,
-                129,
-                304);
+            MoveToCard(_bitRateBox, _displayCard, 20, 129);
+            _bitRateBox.Size = new Size(304, 32);
             MoveToCard(_maxFpsLabel, _displayCard, 362, 108);
-            _maxFpsHost = CreateFieldHost(
-                _maxFpsBox,
-                FieldChromeKind.Combo,
-                _displayCard,
-                362,
-                129,
-                304);
+            MoveToCard(_maxFpsBox, _displayCard, 362, 129);
+            _maxFpsBox.Size = new Size(304, 32);
 
             MoveToCard(_optionsTitle, _optionsCard, 20, 13);
             MoveToCard(_turnScreenOffBox, _optionsCard, 20, 49);
@@ -1801,24 +1766,6 @@ namespace DexManager.Forms
             Controls.Add(card);
             card.SendToBack();
             return card;
-        }
-
-        private static ThemedFieldHost CreateFieldHost(
-            Control editor,
-            FieldChromeKind kind,
-            Control parent,
-            int x,
-            int y,
-            int width)
-        {
-            var host = new ThemedFieldHost(editor, kind)
-            {
-                Parent = parent,
-                Location = new Point(x, y),
-                Size = new Size(width, 32)
-            };
-            host.BringToFront();
-            return host;
         }
 
         private static void MoveToCard(
@@ -2326,7 +2273,7 @@ namespace DexManager.Forms
             return LocalizationService.Get("Device.Disconnected");
         }
 
-        private static decimal Clamp(int value, NumericUpDown box)
+        private static decimal Clamp(int value, ThemedNumberControl box)
         {
             if (value < box.Minimum) return box.Minimum;
             if (value > box.Maximum) return box.Maximum;
