@@ -33,6 +33,8 @@ namespace DexManager.Forms
         }
 
         public int CornerRadius { get; set; }
+        public bool NavigationStyle { get; set; }
+        public bool ShowNavigationDot { get; set; }
 
         protected override void OnMouseEnter(System.EventArgs e)
         {
@@ -74,11 +76,17 @@ namespace DexManager.Forms
             bounds.Width--;
             bounds.Height--;
             var colors = ThemeColors.Current;
-            var fill = Primary
-                ? (_hovered ? colors.AccentHover : colors.Accent)
-                : (_hovered ? colors.AccentSoft : colors.CardSoft);
-            var border = Primary ? fill : colors.ControlBorder;
-            var text = Primary ? Color.White : ForeColor;
+            var fill = NavigationStyle
+                ? (Primary ? colors.AccentSoft : Parent.BackColor)
+                : (Primary
+                    ? (_hovered ? colors.AccentHover : colors.Accent)
+                    : (_hovered ? colors.AccentSoft : colors.CardSoft));
+            var border = NavigationStyle
+                ? fill
+                : (Primary ? fill : colors.ControlBorder);
+            var text = NavigationStyle
+                ? (Primary ? colors.TextPrimary : colors.TextSecondary)
+                : (Primary ? Color.White : ForeColor);
             if (!Enabled)
             {
                 fill = colors.DisabledBackground;
@@ -94,7 +102,7 @@ namespace DexManager.Forms
                 e.Graphics.DrawPath(pen, path);
             }
 
-            if (Focused)
+            if (Focused && !NavigationStyle)
             {
                 var focusBounds = bounds;
                 focusBounds.Inflate(-2, -2);
@@ -109,14 +117,35 @@ namespace DexManager.Forms
                 }
             }
 
+            if (NavigationStyle && ShowNavigationDot)
+            {
+                var dot = new Rectangle(14, (Height - 7) / 2, 7, 7);
+                using (var brush = new SolidBrush(
+                    Primary ? colors.Accent : colors.TextTertiary))
+                {
+                    e.Graphics.FillEllipse(brush, dot);
+                }
+            }
+
+            var textBounds = NavigationStyle
+                ? new Rectangle(
+                    ShowNavigationDot ? 30 : 14,
+                    0,
+                    Width - (ShowNavigationDot ? 38 : 28),
+                    Height)
+                : bounds;
             TextRenderer.DrawText(
                 e.Graphics,
                 Text,
                 Font,
-                bounds,
+                textBounds,
                 text,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
-                TextFormatFlags.EndEllipsis);
+                NavigationStyle
+                    ? TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
+                        TextFormatFlags.EndEllipsis
+                    : TextFormatFlags.HorizontalCenter |
+                        TextFormatFlags.VerticalCenter |
+                        TextFormatFlags.EndEllipsis);
         }
 
         private static GraphicsPath RoundedPath(Rectangle rectangle, int radius)
@@ -294,6 +323,7 @@ namespace DexManager.Forms
     internal sealed class StatusRing : Control
     {
         private Color _statusColor = Color.DarkOrange;
+        private bool _complete;
 
         public StatusRing()
         {
@@ -314,6 +344,16 @@ namespace DexManager.Forms
             }
         }
 
+        public bool Complete
+        {
+            get { return _complete; }
+            set
+            {
+                _complete = value;
+                Invalidate();
+            }
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -324,7 +364,10 @@ namespace DexManager.Forms
                 track.StartCap = track.EndCap = LineCap.Round;
                 status.StartCap = status.EndCap = LineCap.Round;
                 e.Graphics.DrawEllipse(track, bounds);
-                e.Graphics.DrawArc(status, bounds, -90, 140);
+                if (Complete)
+                    e.Graphics.DrawEllipse(status, bounds);
+                else
+                    e.Graphics.DrawArc(status, bounds, -90, 140);
             }
         }
     }

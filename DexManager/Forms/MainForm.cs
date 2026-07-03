@@ -197,7 +197,7 @@ namespace DexManager.Forms
                 LocalizationService.Get("Main.DisplaySettings.Dex"),
                 32,
                 226);
-            _resolutionBox = CreateStyledCombo(105, 263, 130, true);
+            _resolutionBox = CreateStyledCombo(105, 263, 130);
             _resolutionBox.TabIndex = 0;
             _resolutionBox.Items.Add(new ResolutionPreset("1600 x 900", 1600, 900));
             _resolutionBox.Items.Add(new ResolutionPreset("1920 x 1080", 1920, 1080));
@@ -208,8 +208,8 @@ namespace DexManager.Forms
             _widthBox = CreateStyledNumber(320, 7680, 285, 263, 55);
             _heightBox = CreateStyledNumber(240, 4320, 395, 263, 55);
             _dpiBox = CreateStyledNumber(80, 640, 490, 263, 90);
-            _bitRateBox = CreateStyledTextBox(105, 298, 130, true);
-            _maxFpsBox = CreateStyledCombo(495, 298, 90, true);
+            _bitRateBox = CreateStyledTextBox(105, 298, 130);
+            _maxFpsBox = CreateStyledCombo(495, 298, 90);
             _widthBox.TabIndex = 1;
             _heightBox.TabIndex = 2;
             _dpiBox.TabIndex = 3;
@@ -973,6 +973,11 @@ namespace DexManager.Forms
         private void SetConnectionIndicator(Color color, string status, string detail)
         {
             _indicatorDot.StatusColor = color;
+            var argb = color.ToArgb();
+            _indicatorDot.Complete =
+                argb == Color.ForestGreen.ToArgb() ||
+                argb == Color.Green.ToArgb() ||
+                argb == Color.DarkGreen.ToArgb();
             _indicatorStatus.Text = status;
             _indicatorDetail.Text = detail;
         }
@@ -1008,7 +1013,7 @@ namespace DexManager.Forms
         {
             var preset = _resolutionBox.SelectedItem as ResolutionPreset;
             var custom = preset == null || preset.Width == 0;
-            _resolutionBox.Width = custom ? 130 : 210;
+            _resolutionBox.Width = custom ? 130 : 304;
             _widthBox.Enabled = custom;
             _heightBox.Enabled = custom;
             _widthBox.Visible = custom;
@@ -1571,13 +1576,12 @@ namespace DexManager.Forms
                 ForeColor = _theme.TextPrimary,
                 Font = new Font("Segoe UI", 9F),
                 Location = new Point(x, y),
-                Size = new Size(width, 28)
+                Size = new Size(width, 32),
+                DrawMode = DrawMode.OwnerDrawFixed,
+                ItemHeight = 24,
+                Tag = centerText
             };
-            if (centerText)
-            {
-                box.DrawMode = DrawMode.OwnerDrawFixed;
-                box.DrawItem += CenteredComboBox_DrawItem;
-            }
+            box.DrawItem += CenteredComboBox_DrawItem;
             return box;
         }
 
@@ -1591,9 +1595,9 @@ namespace DexManager.Forms
                 BackColor = _theme.CardSoft,
                 ForeColor = _theme.TextPrimary,
                 Font = new Font("Segoe UI", 9F),
-                TextAlign = HorizontalAlignment.Center,
+                TextAlign = HorizontalAlignment.Left,
                 Location = new Point(x, y),
-                Size = new Size(width, 28)
+                Size = new Size(width, 32)
             };
         }
 
@@ -1612,8 +1616,9 @@ namespace DexManager.Forms
                 TextAlign = centerText
                     ? HorizontalAlignment.Center
                     : HorizontalAlignment.Left,
+                AutoSize = false,
                 Location = new Point(x, y),
-                Size = new Size(width, 28)
+                Size = new Size(width, 32)
             };
         }
 
@@ -1687,20 +1692,20 @@ namespace DexManager.Forms
             MoveToCard(_displaySettingsTitle, _displayCard, 20, 13);
             MoveToCard(_resolutionLabel, _displayCard, 20, 51);
             MoveToCard(_resolutionBox, _displayCard, 20, 72);
-            _resolutionBox.Size = new Size(210, 28);
+            _resolutionBox.Size = new Size(304, 32);
             MoveToCard(_widthLabel, _displayCard, 158, 78);
             MoveToCard(_widthBox, _displayCard, 196, 72);
             MoveToCard(_heightLabel, _displayCard, 257, 78);
             MoveToCard(_heightBox, _displayCard, 305, 72);
-            MoveToCard(_dpiLabel, _displayCard, 370, 51);
-            MoveToCard(_dpiBox, _displayCard, 370, 72);
-            _dpiBox.Size = new Size(100, 28);
+            MoveToCard(_dpiLabel, _displayCard, 362, 51);
+            MoveToCard(_dpiBox, _displayCard, 362, 72);
+            _dpiBox.Size = new Size(304, 32);
             MoveToCard(_bitRateLabel, _displayCard, 20, 108);
             MoveToCard(_bitRateBox, _displayCard, 20, 129);
-            _bitRateBox.Size = new Size(210, 28);
-            MoveToCard(_maxFpsLabel, _displayCard, 370, 108);
-            MoveToCard(_maxFpsBox, _displayCard, 370, 129);
-            _maxFpsBox.Size = new Size(100, 28);
+            _bitRateBox.Size = new Size(304, 32);
+            MoveToCard(_maxFpsLabel, _displayCard, 362, 108);
+            MoveToCard(_maxFpsBox, _displayCard, 362, 129);
+            _maxFpsBox.Size = new Size(304, 32);
 
             MoveToCard(_optionsTitle, _optionsCard, 20, 13);
             MoveToCard(_turnScreenOffBox, _optionsCard, 20, 49);
@@ -1907,6 +1912,7 @@ namespace DexManager.Forms
             var settingsButton = CreateSidebarButton(
                 LocalizationService.Get("Main.Settings"),
                 _sidebar.Height - 48,
+                false,
                 false);
             settingsButton.Anchor =
                 AnchorStyles.Left | AnchorStyles.Bottom;
@@ -1917,13 +1923,20 @@ namespace DexManager.Forms
             _sidebar.BringToFront();
         }
 
-        private ThemedButton CreateSidebarButton(string text, int y, bool selected)
+        private ThemedButton CreateSidebarButton(
+            string text,
+            int y,
+            bool selected,
+            bool showDot = true)
         {
             return new ThemedButton
             {
                 Text = text,
                 Primary = selected,
                 CornerRadius = 18,
+                NavigationStyle = true,
+                ShowNavigationDot = showDot,
+                TabStop = false,
                 Location = new Point(10, y),
                 Size = new Size(168, 34),
                 ForeColor = _theme.TextSecondary
@@ -2216,13 +2229,24 @@ namespace DexManager.Forms
             var color = (e.State & DrawItemState.Selected) == DrawItemState.Selected
                 ? Color.White
                 : colors.TextPrimary;
+            var centered = comboBox.Tag is bool && (bool)comboBox.Tag;
+            var textBounds = centered
+                ? e.Bounds
+                : new Rectangle(
+                    e.Bounds.Left + 10,
+                    e.Bounds.Top,
+                    System.Math.Max(e.Bounds.Width - 14, 0),
+                    e.Bounds.Height);
             TextRenderer.DrawText(
                 e.Graphics,
                 text,
                 comboBox.Font,
-                e.Bounds,
+                textBounds,
                 color,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
+                (centered
+                    ? TextFormatFlags.HorizontalCenter
+                    : TextFormatFlags.Left) |
+                TextFormatFlags.VerticalCenter |
                 TextFormatFlags.EndEllipsis);
             e.DrawFocusRectangle();
         }
