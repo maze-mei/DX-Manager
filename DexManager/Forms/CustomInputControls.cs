@@ -101,6 +101,19 @@ namespace DexManager.Forms
             base.OnKeyDown(e);
         }
 
+        protected override bool IsInputKey(Keys keyData)
+        {
+            var key = keyData & Keys.KeyCode;
+            if (key == Keys.Up ||
+                key == Keys.Down ||
+                key == Keys.Enter ||
+                key == Keys.Space)
+            {
+                return true;
+            }
+            return base.IsInputKey(keyData);
+        }
+
         protected override void OnEnter(EventArgs e)
         {
             Invalidate();
@@ -176,7 +189,8 @@ namespace DexManager.Forms
             _dropDown.FormClosed += delegate
             {
                 _dropDown = null;
-                if (!IsDisposed) Focus();
+                if (!IsDisposed && IsHandleCreated)
+                    BeginInvoke((Action)delegate { Focus(); });
             };
             var screenPoint = PointToScreen(new Point(0, Height + 3));
             var workingArea = Screen.FromControl(this).WorkingArea;
@@ -293,7 +307,13 @@ namespace DexManager.Forms
         {
             base.OnMouseDown(e);
             if (!Enabled || e.Button != MouseButtons.Left) return;
+            var alreadyFocused = Focused;
             Focus();
+            if (!alreadyFocused)
+            {
+                SelectAll();
+                return;
+            }
             _selectionStart = FindCharacterIndex(e.X - 10);
             _selectionLength = 0;
             Invalidate();
@@ -377,6 +397,22 @@ namespace DexManager.Forms
             base.OnKeyDown(e);
         }
 
+        protected override bool IsInputKey(Keys keyData)
+        {
+            var key = keyData & Keys.KeyCode;
+            if (key == Keys.Left ||
+                key == Keys.Right ||
+                key == Keys.Up ||
+                key == Keys.Down ||
+                key == Keys.Home ||
+                key == Keys.End ||
+                key == Keys.Delete)
+            {
+                return true;
+            }
+            return base.IsInputKey(keyData);
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             var colors = ThemeColors.Current;
@@ -387,16 +423,23 @@ namespace DexManager.Forms
                 Focused,
                 Enabled);
 
+            var value = Text ?? string.Empty;
+            var selectionStart = Math.Max(
+                0,
+                Math.Min(_selectionStart, value.Length));
+            var selectionLength = Math.Max(
+                0,
+                Math.Min(_selectionLength, value.Length - selectionStart));
             var textY = (Height - Font.Height) / 2;
             var textColor = Enabled ? colors.TextPrimary : colors.DisabledText;
-            DrawText(e.Graphics, Text, 10, textY, textColor);
+            DrawText(e.Graphics, value, 10, textY, textColor);
 
-            if (Focused && _selectionLength > 0)
+            if (Focused && selectionLength > 0)
             {
-                var prefix = Text.Substring(0, _selectionStart);
-                var selected = Text.Substring(
-                    _selectionStart,
-                    _selectionLength);
+                var prefix = value.Substring(0, selectionStart);
+                var selected = value.Substring(
+                    selectionStart,
+                    selectionLength);
                 var selectionX = 10 + MeasureText(prefix);
                 var selectionWidth = Math.Max(MeasureText(selected), 2);
                 var selectionBounds = new Rectangle(
@@ -416,7 +459,7 @@ namespace DexManager.Forms
             else if (Focused)
             {
                 var caretX = 10 + MeasureText(
-                    Text.Substring(0, _selectionStart));
+                    value.Substring(0, selectionStart));
                 using (var pen = new Pen(colors.TextPrimary))
                     e.Graphics.DrawLine(
                         pen,
@@ -472,8 +515,8 @@ namespace DexManager.Forms
                 return;
             }
             if (_selectionStart <= 0) return;
-            Text = Text.Remove(_selectionStart - 1, 1);
             _selectionStart--;
+            Text = Text.Remove(_selectionStart, 1);
             Invalidate();
         }
 

@@ -55,7 +55,7 @@ namespace DexManager.Forms
         private readonly Label _startAppLabel;
         private readonly Label _optionsTitle;
         private readonly ThemedNumberControl _dpiBox;
-        private readonly ThemedTextControl _bitRateBox;
+        private readonly ThemedNumberControl _bitRateBox;
         private readonly ThemedSelectControl _maxFpsBox;
         private readonly CheckBox _turnScreenOffBox;
         private readonly CheckBox _stayAwakeBox;
@@ -211,7 +211,8 @@ namespace DexManager.Forms
                 240, 4320, 395, 263, 55, false);
             _dpiBox = CreateCustomNumber(
                 80, 640, 490, 263, 90, true);
-            _bitRateBox = CreateCustomText(105, 298, 130);
+            _bitRateBox = CreateCustomNumber(
+                1, 9999, 105, 298, 130, false);
             _maxFpsBox = CreateCustomSelect(495, 298, 90);
             _widthBox.TabIndex = 1;
             _heightBox.TabIndex = 2;
@@ -1098,7 +1099,9 @@ namespace DexManager.Forms
             _widthBox.Value = Clamp(width, _widthBox);
             _heightBox.Value = Clamp(height, _heightBox);
             _dpiBox.Value = Clamp(dpi, _dpiBox);
-            _bitRateBox.Text = bitRate;
+            _bitRateBox.Value = Clamp(
+                ParseBitRateNumber(bitRate),
+                _bitRateBox);
             _maxFpsBox.SelectedItem = maxFps == 30 ? 30 : 60;
             _turnScreenOffBox.Checked = turnScreenOff;
             _stayAwakeBox.Checked = stayAwake;
@@ -1346,10 +1349,7 @@ namespace DexManager.Forms
 
         private void ApplyRunSettings(bool showMessage)
         {
-            var bitRate = _bitRateBox.Text.Trim();
-            if (string.IsNullOrWhiteSpace(bitRate))
-                throw new InvalidOperationException(
-                    LocalizationService.Get("Main.BitrateRequired"));
+            var bitRate = ((int)_bitRateBox.Value).ToString() + "M";
 
             if (_selectedMode == 0)
             {
@@ -1464,6 +1464,24 @@ namespace DexManager.Forms
             return _maxFpsBox.SelectedItem is int
                 ? (int)_maxFpsBox.SelectedItem
                 : 60;
+        }
+
+        private static int ParseBitRateNumber(string value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            if (normalized.EndsWith(
+                "M",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                normalized = normalized.Substring(
+                    0,
+                    normalized.Length - 1);
+            }
+
+            int result;
+            return int.TryParse(normalized, out result) && result > 0
+                ? result
+                : 20;
         }
 
         private void SetSelectedAppPackage(
