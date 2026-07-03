@@ -34,8 +34,8 @@
   <data name="Main.HidMouse" xml:space="preserve"><value>HID 마우스 (-M)</value></data>
   <data name="Main.ForceStop" xml:space="preserve"><value>선택 앱 강제 종료</value></data>
   <data name="Main.ReuseDisplay" xml:space="preserve"><value>기존 가상화면 재사용</value></data>
-  <data name="Main.FlexDisplay" xml:space="preserve"><value>동적 창 크기 (--flex-display)</value></data>
-  <data name="Main.StayAwake" xml:space="preserve"><value>잠자기 방지 (--keep-active)</value></data>
+  <data name="Main.FlexDisplay" xml:space="preserve"><value>동적 창 크기 (-x)</value></data>
+  <data name="Main.StayAwake" xml:space="preserve"><value>잠자기 방지 (-w)</value></data>
   <data name="Main.StartApp" xml:space="preserve"><value>시작 앱</value></data>
   <data name="Main.NoApp" xml:space="preserve"><value>선택 안 함</value></data>
   <data name="Main.LoadApps" xml:space="preserve"><value>앱 목록 불러오기</value></data>
@@ -124,6 +124,11 @@
   <data name="Settings.Diagnostics" xml:space="preserve"><value>진단</value></data>
   <data name="Settings.Language" xml:space="preserve"><value>표시 언어</value></data>
   <data name="Settings.LanguageRestart" xml:space="preserve"><value>언어 변경은 DX Manager를 다시 시작한 뒤 적용됩니다.</value></data>
+  <data name="Settings.Theme" xml:space="preserve"><value>앱 테마</value></data>
+  <data name="Settings.ThemeAuto" xml:space="preserve"><value>Windows 설정 사용</value></data>
+  <data name="Settings.ThemeLight" xml:space="preserve"><value>라이트</value></data>
+  <data name="Settings.ThemeDark" xml:space="preserve"><value>다크</value></data>
+  <data name="Settings.ThemeRestart" xml:space="preserve"><value>테마 변경은 DX Manager를 다시 시작한 뒤 적용됩니다.</value></data>
   <data name="Settings.OpenLogs" xml:space="preserve"><value>현재 세션 로그 열기</value></data>
   <data name="Settings.OpenEnvironment" xml:space="preserve"><value>환경 점검 실행</value></data>
   <data name="Settings.DiagnosticsGuide" xml:space="preserve"><value>로그를 열거나 ADB, Scrcpy와 장치 연결 상태를 점검합니다.</value></data>

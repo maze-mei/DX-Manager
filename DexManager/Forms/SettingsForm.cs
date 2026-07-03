@@ -63,6 +63,7 @@ namespace DexManager.Forms
         private Button _wirelessDisconnectButton;
         private Button _pairButton;
         private ComboBox _languageBox;
+        private ComboBox _themeBox;
         private Label _saveStatusLabel;
         private Timer _saveStatusTimer;
 
@@ -174,6 +175,24 @@ namespace DexManager.Forms
                     AutoSize = true,
                     ForeColor = Color.DimGray,
                     Text = LocalizationService.Get("Settings.LanguageRestart")
+                });
+            _themeBox = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Dock = DockStyle.Left,
+                Width = 210
+            };
+            foreach (AppTheme theme in Enum.GetValues(typeof(AppTheme)))
+                _themeBox.Items.Add(new ThemeOption(theme));
+            AddRow(table, LocalizationService.Get("Settings.Theme"), _themeBox);
+            AddRow(
+                table,
+                string.Empty,
+                new Label
+                {
+                    AutoSize = true,
+                    ForeColor = Color.DimGray,
+                    Text = LocalizationService.Get("Settings.ThemeRestart")
                 });
             _startWithWindowsBox = AddCheck(table, LocalizationService.Get("Settings.StartWithWindows"));
             _startMinimizedBox = AddCheck(table, LocalizationService.Get("Settings.StartMinimized"));
@@ -415,6 +434,15 @@ namespace DexManager.Forms
                     break;
                 }
             }
+            foreach (var item in _themeBox.Items)
+            {
+                var option = item as ThemeOption;
+                if (option != null && option.Value == _settings.Theme)
+                {
+                    _themeBox.SelectedItem = option;
+                    break;
+                }
+            }
             _automaticAdbBox.Checked =
                 _settings.Paths.AdbSelectionMode == AdbSelectionMode.Auto;
             _manualAdbBox.Checked = !_automaticAdbBox.Checked;
@@ -509,6 +537,10 @@ namespace DexManager.Forms
             _settings.Language = language == null
                 ? AppLanguage.Auto
                 : language.Value;
+            var theme = _themeBox.SelectedItem as ThemeOption;
+            _settings.Theme = theme == null
+                ? AppTheme.Auto
+                : theme.Value;
             _settings.Paths.AdbSelectionMode = _manualAdbBox.Checked
                 ? AdbSelectionMode.Manual
                 : AdbSelectionMode.Auto;
@@ -878,6 +910,25 @@ namespace DexManager.Forms
             public override string ToString()
             {
                 return LocalizationService.GetLanguageName(Value);
+            }
+        }
+
+        private sealed class ThemeOption
+        {
+            public ThemeOption(AppTheme value)
+            {
+                Value = value;
+            }
+
+            public AppTheme Value { get; private set; }
+
+            public override string ToString()
+            {
+                if (Value == AppTheme.Light)
+                    return LocalizationService.Get("Settings.ThemeLight");
+                if (Value == AppTheme.Dark)
+                    return LocalizationService.Get("Settings.ThemeDark");
+                return LocalizationService.Get("Settings.ThemeAuto");
             }
         }
     }

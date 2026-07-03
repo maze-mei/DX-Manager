@@ -34,8 +34,8 @@
   <data name="Main.HidMouse" xml:space="preserve"><value>HID mouse (-M)</value></data>
   <data name="Main.ForceStop" xml:space="preserve"><value>Force-stop selected app</value></data>
   <data name="Main.ReuseDisplay" xml:space="preserve"><value>Reuse existing display</value></data>
-  <data name="Main.FlexDisplay" xml:space="preserve"><value>Dynamic window size (--flex-display)</value></data>
-  <data name="Main.StayAwake" xml:space="preserve"><value>Keep device active (--keep-active)</value></data>
+  <data name="Main.FlexDisplay" xml:space="preserve"><value>Dynamic window size (-x)</value></data>
+  <data name="Main.StayAwake" xml:space="preserve"><value>Stay awake (-w)</value></data>
   <data name="Main.StartApp" xml:space="preserve"><value>Start app</value></data>
   <data name="Main.NoApp" xml:space="preserve"><value>None</value></data>
   <data name="Main.LoadApps" xml:space="preserve"><value>Load app list</value></data>
@@ -124,6 +124,11 @@
   <data name="Settings.Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
   <data name="Settings.Language" xml:space="preserve"><value>Display language</value></data>
   <data name="Settings.LanguageRestart" xml:space="preserve"><value>Language changes are applied after restarting DX Manager.</value></data>
+  <data name="Settings.Theme" xml:space="preserve"><value>App theme</value></data>
+  <data name="Settings.ThemeAuto" xml:space="preserve"><value>Use Windows setting</value></data>
+  <data name="Settings.ThemeLight" xml:space="preserve"><value>Light</value></data>
+  <data name="Settings.ThemeDark" xml:space="preserve"><value>Dark</value></data>
+  <data name="Settings.ThemeRestart" xml:space="preserve"><value>Theme changes are applied after restarting DX Manager.</value></data>
   <data name="Settings.OpenLogs" xml:space="preserve"><value>Open session log</value></data>
   <data name="Settings.OpenEnvironment" xml:space="preserve"><value>Run environment check</value></data>
   <data name="Settings.DiagnosticsGuide" xml:space="preserve"><value>Open logs or check ADB, Scrcpy and device connectivity.</value></data>

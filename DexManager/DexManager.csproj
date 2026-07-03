@@ -61,6 +61,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\ThemedControls.cs" />
+    <Compile Include="Forms\ThemeColors.cs" />
     <Compile Include="Models\AppSettings.cs" />
     <Compile Include="Models\AdbDeviceInfo.cs" />
     <Compile Include="Models\LastSuccessSettings.cs" />

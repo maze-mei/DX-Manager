@@ -19,13 +19,15 @@ namespace DexManager.Models
         [DataMember(Order = 9)] public List<SingleWindowSlotSettings> SingleWindowSlots { get; set; }
         [DataMember(Order = 10)] public ConnectionSettings Connection { get; set; }
         [DataMember(Order = 11)] public AppLanguage Language { get; set; }
+        [DataMember(Order = 12)] public AppTheme Theme { get; set; }
 
         public static AppSettings CreateDefault()
         {
             return new AppSettings
             {
-                SchemaVersion = 14,
+                SchemaVersion = 15,
                 Language = AppLanguage.Auto,
+                Theme = AppTheme.Auto,
                 Paths = new PathSettings
                 {
                     AdbPath = string.Empty,
@@ -245,6 +247,11 @@ namespace DexManager.Models
                 }
                 SchemaVersion = defaults.SchemaVersion;
             }
+            if (oldSchemaVersion < 15)
+            {
+                Theme = defaults.Theme;
+                SchemaVersion = defaults.SchemaVersion;
+            }
             if (VirtualDisplay.CustomWidth <= 0)
                 VirtualDisplay.CustomWidth = VirtualDisplay.Width;
             if (VirtualDisplay.CustomHeight <= 0)
@@ -280,6 +287,8 @@ namespace DexManager.Models
             }
             if (!System.Enum.IsDefined(typeof(AppLanguage), Language))
                 Language = defaults.Language;
+            if (!System.Enum.IsDefined(typeof(AppTheme), Theme))
+                Theme = defaults.Theme;
             if (Connection.WirelessPort < 1 ||
                 Connection.WirelessPort > 65535)
             {
@@ -402,6 +411,13 @@ namespace DexManager.Models
         Auto = 0,
         Korean = 1,
         English = 2
+    }
+
+    public enum AppTheme
+    {
+        Auto = 0,
+        Light = 1,
+        Dark = 2
     }
 
     [DataContract]

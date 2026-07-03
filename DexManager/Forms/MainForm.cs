@@ -34,7 +34,9 @@ namespace DexManager.Forms
         private readonly Label _deviceStatusValue;
         private readonly Label _scrcpyStatusValue;
         private readonly Label _dexStatusValue;
-        private readonly Label _indicatorDot;
+        private readonly ThemePalette _theme;
+        private readonly Label _pageTitle;
+        private readonly StatusRing _indicatorDot;
         private readonly Label _indicatorStatus;
         private readonly Label _indicatorDetail;
         private readonly Label _deviceInfoLabel;
@@ -47,6 +49,11 @@ namespace DexManager.Forms
         private readonly Label _widthLabel;
         private readonly Label _heightLabel;
         private readonly Label _dpiLabel;
+        private readonly Label _resolutionLabel;
+        private readonly Label _bitRateLabel;
+        private readonly Label _maxFpsLabel;
+        private readonly Label _startAppLabel;
+        private readonly Label _optionsTitle;
         private readonly NumericUpDown _dpiBox;
         private readonly TextBox _bitRateBox;
         private readonly ComboBox _maxFpsBox;
@@ -60,8 +67,13 @@ namespace DexManager.Forms
         private readonly TextBox _additionalArgumentsBox;
         private readonly ComboBox _startAppBox;
         private readonly Button _loadAppsButton;
+        private readonly LinkLabel _advancedToggle;
         private readonly Label _modeHintLabel;
         private readonly Label _displaySettingsTitle;
+        private RoundedPanel _sidebar;
+        private RoundedPanel _statusCard;
+        private RoundedPanel _displayCard;
+        private RoundedPanel _optionsCard;
         private readonly Timer _phoneScreenWakeTimer;
         private ThemedButton _dexModeButton;
         private ThemedButton _singleModeButton1;
@@ -118,35 +130,35 @@ namespace DexManager.Forms
             _isAutoRun = isAutoRun;
             _lastDeviceState = DeviceState.Disconnected();
             _selectedMode = 0;
+            _theme = ThemeColors.Use(_settings.Theme);
 
             Text = LocalizationService.Get("App.Name");
             StartPosition = FormStartPosition.CenterScreen;
-            BackColor = Color.FromArgb(248, 250, 252);
+            BackColor = _theme.WindowBackground;
             Font = new Font("Segoe UI", 9F, FontStyle.Regular);
-            ClientSize = new Size(752, 650);
+            ClientSize = new Size(920, 680);
             MinimumSize = Size;
+            AutoScroll = false;
 
-            Controls.Add(new Label
+            _pageTitle = new Label
             {
                 AutoSize = true,
-                Font = new Font("Segoe UI", 24F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(17, 24, 39),
+                Font = new Font("Segoe UI", 22F, FontStyle.Bold),
+                ForeColor = _theme.TextPrimary,
                 Location = new Point(32, 28),
                 Text = LocalizationService.Get("App.Name")
-            });
+            };
+            Controls.Add(_pageTitle);
 
-            _indicatorDot = new Label
+            _indicatorDot = new StatusRing
             {
-                AutoSize = true,
-                Font = new Font("Segoe UI", 18F, FontStyle.Bold),
-                Location = new Point(33, 91),
-                Text = "●"
+                Location = new Point(33, 91)
             };
             _indicatorStatus = new Label
             {
                 AutoSize = false,
                 Font = new Font("Segoe UI", 15F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(17, 24, 39),
+                ForeColor = _theme.TextPrimary,
                 Location = new Point(66, 90),
                 Size = new Size(240, 31),
                 TextAlign = ContentAlignment.MiddleLeft
@@ -154,14 +166,14 @@ namespace DexManager.Forms
             _indicatorDetail = new Label
             {
                 AutoEllipsis = true,
-                ForeColor = Color.FromArgb(75, 85, 99),
+                ForeColor = _theme.TextTertiary,
                 Location = new Point(35, 130),
                 Size = new Size(570, 22)
             };
             _deviceInfoLabel = new Label
             {
                 AutoEllipsis = true,
-                ForeColor = Color.FromArgb(75, 85, 99),
+                ForeColor = _theme.TextTertiary,
                 Location = new Point(35, 157),
                 Size = new Size(570, 22),
                 Text = LocalizationService.Get("Main.WaitingPhone")
@@ -209,15 +221,19 @@ namespace DexManager.Forms
             SelectAllOnFocus(_bitRateBox);
             _maxFpsBox.Items.Add(30);
             _maxFpsBox.Items.Add(60);
-            AddFieldLabel(LocalizationService.Get("Main.Resolution"), 32, 269);
+            _resolutionLabel = AddFieldLabel(
+                LocalizationService.Get("Main.Resolution"), 32, 269);
             _widthLabel = AddFieldLabel(LocalizationService.Get("Main.Width"), 240, 269);
             _heightLabel = AddFieldLabel(LocalizationService.Get("Main.Height"), 345, 269);
             _dpiLabel = AddFieldLabel("DPI", 460, 269);
-            AddFieldLabel(LocalizationService.Get("Main.Bitrate"), 32, 304);
-            AddFieldLabel(LocalizationService.Get("Main.MaxFps"), 425, 304);
+            _bitRateLabel = AddFieldLabel(
+                LocalizationService.Get("Main.Bitrate"), 32, 304);
+            _maxFpsLabel = AddFieldLabel(
+                LocalizationService.Get("Main.MaxFps"), 425, 304);
 
             AddDivider(339);
-            AddSectionTitle(LocalizationService.Get("Main.Options"), 32, 360);
+            _optionsTitle = AddSectionTitle(
+                LocalizationService.Get("Main.Options"), 32, 360);
             _turnScreenOffBox = CreateOption(LocalizationService.Get("Main.ScreenOff"), 32, 395);
             _useHidKeyboardBox = CreateOption(LocalizationService.Get("Main.HidKeyboard"), 32, 429);
             _useHidMouseBox = CreateOption(LocalizationService.Get("Main.HidMouse"), 32, 463);
@@ -245,26 +261,27 @@ namespace DexManager.Forms
                 501,
                 150);
             _loadAppsButton.Click += LoadAppsButton_Click;
-            AddFieldLabel(LocalizationService.Get("Main.StartApp"), 32, 508);
+            _startAppLabel = AddFieldLabel(
+                LocalizationService.Get("Main.StartApp"), 32, 508);
 
             _additionalArgumentsBox = CreateStyledTextBox(32, 577, 440);
             _additionalArgumentsBox.Visible = false;
-            var advancedToggle = new LinkLabel
+            _advancedToggle = new LinkLabel
             {
                 AutoSize = true,
-                LinkColor = Color.FromArgb(75, 85, 99),
-                ActiveLinkColor = Color.FromArgb(37, 99, 235),
+                LinkColor = _theme.Accent,
+                ActiveLinkColor = _theme.AccentHover,
                 Location = new Point(32, 546),
                 Text = LocalizationService.Get("Main.AdvancedClosed")
             };
-            advancedToggle.LinkClicked += delegate
+            _advancedToggle.LinkClicked += delegate
             {
                 _additionalArgumentsBox.Visible = !_additionalArgumentsBox.Visible;
-                advancedToggle.Text = _additionalArgumentsBox.Visible
+                _advancedToggle.Text = _additionalArgumentsBox.Visible
                     ? LocalizationService.Get("Main.AdvancedOpen")
                     : LocalizationService.Get("Main.AdvancedClosed");
             };
-            Controls.Add(advancedToggle);
+            Controls.Add(_advancedToggle);
 
             _startButton = CreateThemedButton(
                 LocalizationService.Get("Main.StartDex"),
@@ -327,8 +344,9 @@ namespace DexManager.Forms
             Controls.Add(_modeHintLabel);
             _phoneScreenWakeTimer = new Timer { Interval = 600 };
             _phoneScreenWakeTimer.Tick += PhoneScreenWakeTimer_Tick;
-            OffsetMainContent(112);
             AddModeSidebar();
+            ApplyDesignLayout();
+            ApplyTheme();
             AttachRunSettingChangeHandlers();
             LoadRunSettings();
 
@@ -954,7 +972,7 @@ namespace DexManager.Forms
 
         private void SetConnectionIndicator(Color color, string status, string detail)
         {
-            _indicatorDot.ForeColor = color;
+            _indicatorDot.StatusColor = color;
             _indicatorStatus.Text = status;
             _indicatorDetail.Text = detail;
         }
@@ -990,6 +1008,7 @@ namespace DexManager.Forms
         {
             var preset = _resolutionBox.SelectedItem as ResolutionPreset;
             var custom = preset == null || preset.Width == 0;
+            _resolutionBox.Width = custom ? 130 : 210;
             _widthBox.Enabled = custom;
             _heightBox.Enabled = custom;
             _widthBox.Visible = custom;
@@ -1534,7 +1553,7 @@ namespace DexManager.Forms
             {
                 Text = text,
                 Location = new Point(x, y),
-                Size = new Size(220, 28)
+                Size = new Size(284, 30)
             };
         }
 
@@ -1548,8 +1567,8 @@ namespace DexManager.Forms
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 FlatStyle = FlatStyle.Flat,
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(31, 41, 55),
+                BackColor = _theme.CardSoft,
+                ForeColor = _theme.TextPrimary,
                 Font = new Font("Segoe UI", 9F),
                 Location = new Point(x, y),
                 Size = new Size(width, 28)
@@ -1569,8 +1588,8 @@ namespace DexManager.Forms
                 Minimum = min,
                 Maximum = max,
                 BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(31, 41, 55),
+                BackColor = _theme.CardSoft,
+                ForeColor = _theme.TextPrimary,
                 Font = new Font("Segoe UI", 9F),
                 TextAlign = HorizontalAlignment.Center,
                 Location = new Point(x, y),
@@ -1587,8 +1606,8 @@ namespace DexManager.Forms
             return new TextBox
             {
                 BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(31, 41, 55),
+                BackColor = _theme.CardSoft,
+                ForeColor = _theme.TextPrimary,
                 Font = new Font("Segoe UI", 9F),
                 TextAlign = centerText
                     ? HorizontalAlignment.Center
@@ -1628,6 +1647,7 @@ namespace DexManager.Forms
             {
                 Text = text,
                 Primary = primary,
+                ForeColor = _theme.TextPrimary,
                 Location = new Point(x, y),
                 Size = new Size(width, 34)
             };
@@ -1641,70 +1661,260 @@ namespace DexManager.Forms
             }
         }
 
+        private void ApplyDesignLayout()
+        {
+            foreach (Control control in Controls)
+            {
+                var divider = control as Panel;
+                if (divider != null && divider.Height == 1)
+                    divider.Visible = false;
+            }
+
+            _statusCard = CreateCard(new Point(220, 64), new Size(686, 84));
+            _displayCard = CreateCard(new Point(220, 164), new Size(686, 166));
+            _optionsCard = CreateCard(new Point(220, 346), new Size(686, 270));
+
+            _pageTitle.Location = new Point(238, 22);
+
+            MoveToCard(_indicatorDot, _statusCard, 18, 20);
+            MoveToCard(_indicatorStatus, _statusCard, 70, 10);
+            _indicatorStatus.Size = new Size(360, 28);
+            MoveToCard(_indicatorDetail, _statusCard, 70, 38);
+            _indicatorDetail.Size = new Size(580, 18);
+            MoveToCard(_deviceInfoLabel, _statusCard, 70, 59);
+            _deviceInfoLabel.Size = new Size(580, 18);
+
+            MoveToCard(_displaySettingsTitle, _displayCard, 20, 13);
+            MoveToCard(_resolutionLabel, _displayCard, 20, 51);
+            MoveToCard(_resolutionBox, _displayCard, 20, 72);
+            _resolutionBox.Size = new Size(210, 28);
+            MoveToCard(_widthLabel, _displayCard, 158, 78);
+            MoveToCard(_widthBox, _displayCard, 196, 72);
+            MoveToCard(_heightLabel, _displayCard, 257, 78);
+            MoveToCard(_heightBox, _displayCard, 305, 72);
+            MoveToCard(_dpiLabel, _displayCard, 370, 51);
+            MoveToCard(_dpiBox, _displayCard, 370, 72);
+            _dpiBox.Size = new Size(100, 28);
+            MoveToCard(_bitRateLabel, _displayCard, 20, 108);
+            MoveToCard(_bitRateBox, _displayCard, 20, 129);
+            _bitRateBox.Size = new Size(210, 28);
+            MoveToCard(_maxFpsLabel, _displayCard, 370, 108);
+            MoveToCard(_maxFpsBox, _displayCard, 370, 129);
+            _maxFpsBox.Size = new Size(100, 28);
+
+            MoveToCard(_optionsTitle, _optionsCard, 20, 13);
+            MoveToCard(_turnScreenOffBox, _optionsCard, 20, 49);
+            MoveToCard(_useHidKeyboardBox, _optionsCard, 20, 84);
+            MoveToCard(_useHidMouseBox, _optionsCard, 20, 119);
+            MoveToCard(_forceStopAppBox, _optionsCard, 362, 49);
+            MoveToCard(_reuseDisplayBox, _optionsCard, 362, 84);
+            MoveToCard(_flexDisplayBox, _optionsCard, 362, 84);
+            MoveToCard(_stayAwakeBox, _optionsCard, 362, 119);
+            foreach (var option in new[]
+            {
+                _turnScreenOffBox,
+                _useHidKeyboardBox,
+                _useHidMouseBox,
+                _forceStopAppBox,
+                _reuseDisplayBox,
+                _flexDisplayBox,
+                _stayAwakeBox
+            })
+            {
+                option.Size = new Size(284, 30);
+            }
+            MoveToCard(_startAppLabel, _optionsCard, 20, 168);
+            MoveToCard(_startAppBox, _optionsCard, 20, 190);
+            _startAppBox.Size = new Size(470, 28);
+            MoveToCard(_loadAppsButton, _optionsCard, 500, 189);
+            _loadAppsButton.Size = new Size(146, 32);
+            MoveToCard(_advancedToggle, _optionsCard, 20, 238);
+            MoveToCard(_additionalArgumentsBox, _optionsCard, 190, 232);
+            _additionalArgumentsBox.Size = new Size(456, 28);
+
+            _startButton.Location = new Point(754, 630);
+            _stopButton.Location = _startButton.Location;
+            _applySettingsLink.Location = new Point(638, 639);
+            _modeHintLabel.Visible = false;
+
+            _sidebar.Location = new Point(14, 14);
+            _sidebar.Size = new Size(188, 602);
+            _sidebar.BringToFront();
+        }
+
+        private RoundedPanel CreateCard(Point location, Size size)
+        {
+            var card = new RoundedPanel
+            {
+                Location = location,
+                Size = size,
+                Radius = 14,
+                FillColor = _theme.CardBackground,
+                BorderColor = _theme.CardBorder
+            };
+            Controls.Add(card);
+            card.SendToBack();
+            return card;
+        }
+
+        private static void MoveToCard(
+            Control control,
+            Control card,
+            int x,
+            int y)
+        {
+            control.Parent = card;
+            control.Location = new Point(x, y);
+        }
+
+        private void ApplyTheme()
+        {
+            BackColor = _theme.WindowBackground;
+            _pageTitle.ForeColor = _theme.TextPrimary;
+            _indicatorStatus.ForeColor = _theme.TextPrimary;
+            _indicatorDetail.ForeColor = _theme.TextTertiary;
+            _deviceInfoLabel.ForeColor = _theme.TextTertiary;
+
+            ApplyCardTheme(_statusCard);
+            ApplyCardTheme(_displayCard);
+            ApplyCardTheme(_optionsCard);
+            _displaySettingsTitle.ForeColor = _theme.TextSecondary;
+            _optionsTitle.ForeColor = _theme.TextSecondary;
+
+            foreach (var label in new[]
+            {
+                _resolutionLabel,
+                _widthLabel,
+                _heightLabel,
+                _dpiLabel,
+                _bitRateLabel,
+                _maxFpsLabel,
+                _startAppLabel
+            })
+            {
+                label.ForeColor = _theme.TextTertiary;
+                label.BackColor = _theme.CardBackground;
+            }
+
+            foreach (var option in new[]
+            {
+                _turnScreenOffBox,
+                _useHidKeyboardBox,
+                _useHidMouseBox,
+                _forceStopAppBox,
+                _reuseDisplayBox,
+                _flexDisplayBox,
+                _stayAwakeBox
+            })
+            {
+                option.BackColor = _theme.CardBackground;
+                option.ForeColor = _theme.TextPrimary;
+            }
+
+            foreach (var control in new Control[]
+            {
+                _resolutionBox,
+                _widthBox,
+                _heightBox,
+                _dpiBox,
+                _bitRateBox,
+                _maxFpsBox,
+                _startAppBox,
+                _additionalArgumentsBox
+            })
+            {
+                control.BackColor = _theme.CardSoft;
+                control.ForeColor = _theme.TextPrimary;
+            }
+
+            _advancedToggle.BackColor = _theme.CardBackground;
+            _advancedToggle.LinkColor = _theme.Accent;
+            _advancedToggle.ActiveLinkColor = _theme.AccentHover;
+            _applySettingsLink.LinkColor = _theme.Accent;
+            _applySettingsLink.ActiveLinkColor = _theme.AccentHover;
+        }
+
+        private void ApplyCardTheme(RoundedPanel card)
+        {
+            card.BackColor = _theme.WindowBackground;
+            card.FillColor = _theme.CardBackground;
+            card.BorderColor = _theme.CardBorder;
+            foreach (Control control in card.Controls)
+            {
+                var label = control as Label;
+                if (label != null)
+                    label.BackColor = _theme.CardBackground;
+            }
+        }
+
         private void AddModeSidebar()
         {
-            var sidebar = new Panel
+            _sidebar = new RoundedPanel
             {
-                BackColor = Color.FromArgb(243, 246, 250),
-                Location = new Point(0, 0),
-                Size = new Size(112, ClientSize.Height)
+                Location = new Point(14, 14),
+                Size = new Size(188, 587),
+                Radius = 14,
+                FillColor = _theme.NavigationBackground,
+                BorderColor = _theme.CardBorder
             };
 
-            sidebar.Controls.Add(new Label
+            _sidebar.Controls.Add(new Label
             {
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(75, 85, 99),
-                Location = new Point(18, 29),
+                ForeColor = _theme.TextTertiary,
+                BackColor = _theme.NavigationBackground,
+                Location = new Point(20, 18),
                 Text = LocalizationService.Get("Main.Mode")
             });
 
             _dexModeButton = CreateSidebarButton(
-                LocalizationService.Get("Main.Dex"), 68, true);
+                LocalizationService.Get("Main.Dex"), 52, true);
             _dexModeButton.Click += delegate { SelectDexMode(); };
-            sidebar.Controls.Add(_dexModeButton);
+            _sidebar.Controls.Add(_dexModeButton);
 
             _singleModeButton1 = CreateSidebarButton(
                 LocalizationService.Format("Main.SingleWindow", 1),
-                110,
+                94,
                 false);
             _singleModeButton1.Click += delegate { SelectSingleWindowPreview(1); };
-            sidebar.Controls.Add(_singleModeButton1);
+            _sidebar.Controls.Add(_singleModeButton1);
 
             _singleModeButton2 = CreateSidebarButton(
                 LocalizationService.Format("Main.SingleWindow", 2),
-                152,
+                136,
                 false);
             _singleModeButton2.Click += delegate { SelectSingleWindowPreview(2); };
-            sidebar.Controls.Add(_singleModeButton2);
+            _sidebar.Controls.Add(_singleModeButton2);
 
             _singleModeButton3 = CreateSidebarButton(
                 LocalizationService.Format("Main.SingleWindow", 3),
-                194,
+                178,
                 false);
             _singleModeButton3.Click += delegate { SelectSingleWindowPreview(3); };
-            sidebar.Controls.Add(_singleModeButton3);
+            _sidebar.Controls.Add(_singleModeButton3);
 
-            sidebar.Controls.Add(new Label
+            _sidebar.Controls.Add(new Label
             {
                 AutoEllipsis = true,
-                ForeColor = Color.FromArgb(107, 114, 128),
-                Location = new Point(16, 250),
-                Size = new Size(80, 80),
+                ForeColor = _theme.TextTertiary,
+                BackColor = _theme.NavigationBackground,
+                Location = new Point(20, 238),
+                Size = new Size(148, 70),
                 Text = LocalizationService.Get("Main.SidebarHint")
             });
 
             var settingsButton = CreateSidebarButton(
                 LocalizationService.Get("Main.Settings"),
-                ClientSize.Height - 48,
+                _sidebar.Height - 48,
                 false);
             settingsButton.Anchor =
                 AnchorStyles.Left | AnchorStyles.Bottom;
             settingsButton.Click += delegate { ShowSettingsForm(); };
-            sidebar.Controls.Add(settingsButton);
+            _sidebar.Controls.Add(settingsButton);
 
-            Controls.Add(sidebar);
-            sidebar.BringToFront();
+            Controls.Add(_sidebar);
+            _sidebar.BringToFront();
         }
 
         private ThemedButton CreateSidebarButton(string text, int y, bool selected)
@@ -1713,8 +1923,10 @@ namespace DexManager.Forms
             {
                 Text = text,
                 Primary = selected,
-                Location = new Point(14, y),
-                Size = new Size(84, 32)
+                CornerRadius = 18,
+                Location = new Point(10, y),
+                Size = new Size(168, 34),
+                ForeColor = _theme.TextSecondary
             };
         }
 
@@ -1910,7 +2122,7 @@ namespace DexManager.Forms
 
             var settings = GetSingleWindowSettings(slot);
             SetConnectionIndicator(
-                Color.FromArgb(37, 99, 235),
+                _theme.Accent,
                 LocalizationService.Format("Main.SingleReady", slot),
                 string.IsNullOrWhiteSpace(settings.StartAppPackage)
                     ? LocalizationService.Get("Main.SelectApp")
@@ -1952,7 +2164,7 @@ namespace DexManager.Forms
             {
                 AutoSize = true,
                 Font = new Font("Segoe UI", 13F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(17, 24, 39),
+                ForeColor = _theme.TextSecondary,
                 Location = new Point(x, y),
                 Text = text
             };
@@ -1965,7 +2177,7 @@ namespace DexManager.Forms
             var label = new Label
             {
                 AutoSize = true,
-                ForeColor = Color.FromArgb(75, 85, 99),
+                ForeColor = _theme.TextTertiary,
                 Location = new Point(x, y),
                 Text = text
             };
@@ -1977,7 +2189,7 @@ namespace DexManager.Forms
         {
             Controls.Add(new Panel
             {
-                BackColor = Color.FromArgb(229, 231, 235),
+                BackColor = _theme.CardBorder,
                 Location = new Point(32, y),
                 Size = new Size(573, 1)
             });
@@ -1992,11 +2204,18 @@ namespace DexManager.Forms
             var comboBox = sender as ComboBox;
             if (comboBox == null) return;
 
-            e.DrawBackground();
+            var colors = ThemeColors.Current;
+            using (var background = new SolidBrush(
+                (e.State & DrawItemState.Selected) == DrawItemState.Selected
+                    ? colors.Accent
+                    : colors.CardSoft))
+            {
+                e.Graphics.FillRectangle(background, e.Bounds);
+            }
             var text = comboBox.GetItemText(comboBox.Items[e.Index]);
             var color = (e.State & DrawItemState.Selected) == DrawItemState.Selected
-                ? SystemColors.HighlightText
-                : Color.FromArgb(31, 41, 55);
+                ? Color.White
+                : colors.TextPrimary;
             TextRenderer.DrawText(
                 e.Graphics,
                 text,
