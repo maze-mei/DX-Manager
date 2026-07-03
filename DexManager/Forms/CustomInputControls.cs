@@ -826,13 +826,18 @@ namespace DexManager.Forms
 
     internal sealed class ThemedDropDownList : Control
     {
+        private const int ItemHeight = 30;
         private readonly IList<object> _items;
         private int _hoverIndex;
+        private int _topIndex;
 
         public ThemedDropDownList(IList<object> items, int selectedIndex)
         {
             _items = items;
-            _hoverIndex = selectedIndex;
+            _hoverIndex = selectedIndex >= 0
+                ? selectedIndex
+                : (items.Count > 0 ? 0 : -1);
+            _topIndex = Math.Max(0, _hoverIndex - 3);
             TabStop = true;
             Font = new Font("Segoe UI", 9F);
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
@@ -847,12 +852,14 @@ namespace DexManager.Forms
             if (e.KeyCode == Keys.Down)
             {
                 _hoverIndex = Math.Min(_items.Count - 1, _hoverIndex + 1);
+                EnsureHoverVisible();
                 Invalidate();
                 e.Handled = true;
             }
             else if (e.KeyCode == Keys.Up)
             {
                 _hoverIndex = Math.Max(0, _hoverIndex - 1);
+                EnsureHoverVisible();
                 Invalidate();
                 e.Handled = true;
             }
@@ -872,7 +879,17 @@ namespace DexManager.Forms
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            var index = Math.Max(0, Math.Min(_items.Count - 1, e.Y / 30));
+            if (_items.Count == 0)
+            {
+                base.OnMouseMove(e);
+                return;
+            }
+            var row = Math.Max(
+                0,
+                Math.Min(
+                    VisibleRowCount - 1,
+                    Math.Max(e.Y - 1, 0) / ItemHeight));
+            var index = Math.Min(_items.Count - 1, _topIndex + row);
             if (_hoverIndex != index)
             {
                 _hoverIndex = index;
@@ -892,6 +909,32 @@ namespace DexManager.Forms
             base.OnMouseDown(e);
         }
 
+        protected override void OnMouseWheel(MouseEventArgs e)
+        {
+            if (_items.Count <= VisibleRowCount)
+            {
+                base.OnMouseWheel(e);
+                return;
+            }
+            var direction = e.Delta > 0 ? -1 : 1;
+            _topIndex = Math.Max(
+                0,
+                Math.Min(MaxTopIndex, _topIndex + direction * 3));
+            _hoverIndex = Math.Max(
+                _topIndex,
+                Math.Min(
+                    _topIndex + VisibleRowCount - 1,
+                    _hoverIndex));
+            Invalidate();
+            base.OnMouseWheel(e);
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            EnsureHoverVisible();
+            base.OnResize(e);
+        }
+
         private void CommitHoveredItem()
         {
             if (_hoverIndex < 0 || _hoverIndex >= _items.Count) return;
@@ -899,13 +942,42 @@ namespace DexManager.Forms
             if (handler != null) handler(_hoverIndex);
         }
 
+        private int VisibleRowCount
+        {
+            get { return Math.Max(1, Height / ItemHeight); }
+        }
+
+        private int MaxTopIndex
+        {
+            get { return Math.Max(0, _items.Count - VisibleRowCount); }
+        }
+
+        private void EnsureHoverVisible()
+        {
+            _topIndex = Math.Max(0, Math.Min(MaxTopIndex, _topIndex));
+            if (_hoverIndex < 0) return;
+            if (_hoverIndex < _topIndex)
+                _topIndex = _hoverIndex;
+            else if (_hoverIndex >= _topIndex + VisibleRowCount)
+                _topIndex = _hoverIndex - VisibleRowCount + 1;
+            _topIndex = Math.Max(0, Math.Min(MaxTopIndex, _topIndex));
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             var colors = ThemeColors.Current;
             e.Graphics.Clear(colors.CardBackground);
-            for (var index = 0; index < _items.Count; index++)
+            var lastIndex = Math.Min(
+                _items.Count,
+                _topIndex + VisibleRowCount);
+            for (var index = _topIndex; index < lastIndex; index++)
             {
-                var bounds = new Rectangle(1, 1 + index * 30, Width - 2, 30);
+                var row = index - _topIndex;
+                var bounds = new Rectangle(
+                    1,
+                    1 + row * ItemHeight,
+                    Width - 2,
+                    ItemHeight);
                 if (index == _hoverIndex)
                 {
                     using (var brush = new SolidBrush(colors.AccentSoft))
@@ -919,6 +991,26 @@ namespace DexManager.Forms
                     colors.TextPrimary,
                     TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
                     TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding);
+            }
+            if (_items.Count > VisibleRowCount)
+            {
+                var trackHeight = Math.Max(Height - 8, 1);
+                var thumbHeight = Math.Max(
+                    24,
+                    trackHeight * VisibleRowCount / _items.Count);
+                var travel = Math.Max(trackHeight - thumbHeight, 0);
+                var thumbTop = 4 + (MaxTopIndex == 0
+                    ? 0
+                    : travel * _topIndex / MaxTopIndex);
+                using (var brush = new SolidBrush(colors.ControlBorder))
+                {
+                    e.Graphics.FillRectangle(
+                        brush,
+                        Width - 5,
+                        thumbTop,
+                        2,
+                        thumbHeight);
+                }
             }
             using (var pen = new Pen(colors.ControlBorder))
             {

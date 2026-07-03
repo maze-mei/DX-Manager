@@ -70,14 +70,17 @@ namespace DexManager.Forms
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            e.Graphics.Clear(Parent == null ? BackColor : Parent.BackColor);
+            var background = NavigationStyle
+                ? BackColor
+                : (Parent == null ? BackColor : Parent.BackColor);
+            e.Graphics.Clear(background);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             var bounds = ClientRectangle;
             bounds.Width--;
             bounds.Height--;
             var colors = ThemeColors.Current;
             var fill = NavigationStyle
-                ? (Primary ? colors.AccentSoft : Parent.BackColor)
+                ? (Primary ? colors.AccentSoft : background)
                 : (Primary
                     ? (_hovered ? colors.AccentHover : colors.Accent)
                     : (_hovered ? colors.AccentSoft : colors.CardSoft));

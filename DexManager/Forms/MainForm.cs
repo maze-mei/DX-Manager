@@ -65,7 +65,7 @@ namespace DexManager.Forms
         private readonly CheckBox _reuseDisplayBox;
         private readonly CheckBox _flexDisplayBox;
         private readonly TextBox _additionalArgumentsBox;
-        private readonly ComboBox _startAppBox;
+        private readonly ThemedSelectControl _startAppBox;
         private readonly Button _loadAppsButton;
         private readonly LinkLabel _advancedToggle;
         private readonly Label _modeHintLabel;
@@ -249,8 +249,7 @@ namespace DexManager.Forms
                 392,
                 463);
 
-            _startAppBox = CreateStyledCombo(132, 502, 313);
-            _startAppBox.DropDownStyle = ComboBoxStyle.DropDown;
+            _startAppBox = CreateCustomSelect(132, 502, 313);
             _startAppBox.SelectionChangeCommitted +=
                 StartAppBox_SelectionChangeCommitted;
             AddNoStartAppItem();
@@ -1295,11 +1294,10 @@ namespace DexManager.Forms
                 var selectedPackage = GetSelectedAppPackage();
                 var selectedName = GetSelectedAppName(selectedPackage);
 
-                _startAppBox.BeginUpdate();
+                _startAppBox.SelectedIndex = -1;
                 _startAppBox.Items.Clear();
                 AddNoStartAppItem();
                 foreach (var app in apps) _startAppBox.Items.Add(app);
-                _startAppBox.EndUpdate();
 
                 var selected = false;
                 if (string.IsNullOrWhiteSpace(selectedPackage))
@@ -1425,11 +1423,7 @@ namespace DexManager.Forms
         {
             var app = _startAppBox.SelectedItem as ScrcpyAppInfo;
             if (app != null) return app.PackageName ?? string.Empty;
-
-            var text = _startAppBox.Text.Trim();
-            return string.Equals(text, NoStartAppText, StringComparison.OrdinalIgnoreCase)
-                ? string.Empty
-                : text;
+            return string.Empty;
         }
 
         private string GetSelectedAppName(string packageName)
@@ -1562,6 +1556,8 @@ namespace DexManager.Forms
                 Name = NoStartAppText,
                 PackageName = string.Empty
             });
+            if (_startAppBox.SelectedIndex < 0)
+                _startAppBox.SelectedIndex = 0;
         }
 
         private static CheckBox CreateOption(string text, int x, int y)
@@ -1753,8 +1749,8 @@ namespace DexManager.Forms
                 option.Size = new Size(284, 30);
             }
             MoveToCard(_startAppLabel, _optionsCard, 20, 168);
-            MoveToCard(_startAppBox, _optionsCard, 20, 190);
-            _startAppBox.Size = new Size(470, 28);
+            MoveToCard(_startAppBox, _optionsCard, 20, 189);
+            _startAppBox.Size = new Size(470, 32);
             MoveToCard(_loadAppsButton, _optionsCard, 500, 189);
             _loadAppsButton.Size = new Size(146, 32);
             MoveToCard(_advancedToggle, _optionsCard, 20, 238);
@@ -1883,6 +1879,7 @@ namespace DexManager.Forms
                 Location = new Point(14, 14),
                 Size = new Size(188, 587),
                 Radius = 14,
+                BackColor = _theme.NavigationBackground,
                 FillColor = _theme.NavigationBackground,
                 BorderColor = _theme.CardBorder
             };
@@ -1963,6 +1960,7 @@ namespace DexManager.Forms
                 TabStop = false,
                 Location = new Point(10, y),
                 Size = new Size(168, 34),
+                BackColor = _theme.NavigationBackground,
                 ForeColor = _theme.TextSecondary
             };
         }
@@ -2087,7 +2085,6 @@ namespace DexManager.Forms
             _reuseDisplayBox.CheckedChanged += changed;
             _flexDisplayBox.CheckedChanged += changed;
             _additionalArgumentsBox.TextChanged += changed;
-            _startAppBox.TextChanged += changed;
             _startAppBox.SelectedIndexChanged += changed;
         }
 
