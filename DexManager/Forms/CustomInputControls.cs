@@ -432,41 +432,58 @@ namespace DexManager.Forms
                 Math.Min(_selectionLength, value.Length - selectionStart));
             var textY = (Height - Font.Height) / 2;
             var textColor = Enabled ? colors.TextPrimary : colors.DisabledText;
-            DrawText(e.Graphics, value, 10, textY, textColor);
-
-            if (Focused && selectionLength > 0)
+            using (var format = CreateTextFormat())
             {
-                var prefix = value.Substring(0, selectionStart);
-                var selected = value.Substring(
-                    selectionStart,
-                    selectionLength);
-                var selectionX = 10 + MeasureText(prefix);
-                var selectionWidth = Math.Max(MeasureText(selected), 2);
-                var selectionBounds = new Rectangle(
-                    selectionX,
-                    textY - 2,
-                    selectionWidth,
-                    Font.Height + 4);
-                using (var brush = new SolidBrush(colors.Accent))
-                    e.Graphics.FillRectangle(brush, selectionBounds);
                 DrawText(
                     e.Graphics,
-                    selected,
-                    selectionX,
+                    value,
+                    10,
                     textY,
-                    Color.White);
-            }
-            else if (Focused)
-            {
-                var caretX = 10 + MeasureText(
-                    value.Substring(0, selectionStart));
-                using (var pen = new Pen(colors.TextPrimary))
-                    e.Graphics.DrawLine(
-                        pen,
-                        caretX,
-                        textY - 1,
-                        caretX,
-                        textY + Font.Height + 1);
+                    textColor,
+                    format);
+
+                if (Focused && selectionLength > 0)
+                {
+                    var prefix = value.Substring(0, selectionStart);
+                    var selected = value.Substring(
+                        selectionStart,
+                        selectionLength);
+                    var selectionX = 10F + MeasureText(
+                        e.Graphics,
+                        prefix,
+                        format);
+                    var selectionWidth = Math.Max(
+                        MeasureText(e.Graphics, selected, format),
+                        2F);
+                    var selectionBounds = new RectangleF(
+                        selectionX,
+                        textY - 2,
+                        selectionWidth,
+                        Font.Height + 4);
+                    using (var brush = new SolidBrush(colors.Accent))
+                        e.Graphics.FillRectangle(brush, selectionBounds);
+                    DrawText(
+                        e.Graphics,
+                        selected,
+                        selectionX,
+                        textY,
+                        Color.White,
+                        format);
+                }
+                else if (Focused)
+                {
+                    var caretX = 10F + MeasureText(
+                        e.Graphics,
+                        value.Substring(0, selectionStart),
+                        format);
+                    using (var pen = new Pen(colors.TextPrimary))
+                        e.Graphics.DrawLine(
+                            pen,
+                            caretX,
+                            textY - 1,
+                            caretX,
+                            textY + Font.Height + 1);
+                }
             }
 
             DrawAdornment(e.Graphics);
@@ -586,38 +603,60 @@ namespace DexManager.Forms
         private int FindCharacterIndex(int targetX)
         {
             if (targetX <= 0) return 0;
-            for (var index = 1; index <= Text.Length; index++)
+            using (var graphics = CreateGraphics())
+            using (var format = CreateTextFormat())
             {
-                if (MeasureText(Text.Substring(0, index)) >= targetX)
-                    return index;
+                var previousWidth = 0F;
+                for (var index = 1; index <= Text.Length; index++)
+                {
+                    var currentWidth = MeasureText(
+                        graphics,
+                        Text.Substring(0, index),
+                        format);
+                    if (targetX < (previousWidth + currentWidth) / 2F)
+                        return index - 1;
+                    previousWidth = currentWidth;
+                }
             }
             return Text.Length;
         }
 
-        private int MeasureText(string value)
+        private float MeasureText(
+            Graphics graphics,
+            string value,
+            StringFormat format)
         {
-            if (string.IsNullOrEmpty(value)) return 0;
-            return TextRenderer.MeasureText(
+            if (string.IsNullOrEmpty(value)) return 0F;
+            return graphics.MeasureString(
                 value,
                 Font,
-                new Size(int.MaxValue, Font.Height),
-                TextFormatFlags.NoPadding | TextFormatFlags.SingleLine).Width;
+                int.MaxValue,
+                format).Width;
         }
 
         private void DrawText(
             Graphics graphics,
             string value,
-            int x,
-            int y,
-            Color color)
+            float x,
+            float y,
+            Color color,
+            StringFormat format)
         {
-            TextRenderer.DrawText(
-                graphics,
-                value ?? string.Empty,
-                Font,
-                new Point(x, y),
-                color,
-                TextFormatFlags.NoPadding | TextFormatFlags.SingleLine);
+            using (var brush = new SolidBrush(color))
+                graphics.DrawString(
+                    value ?? string.Empty,
+                    Font,
+                    brush,
+                    new PointF(x, y),
+                    format);
+        }
+
+        private static StringFormat CreateTextFormat()
+        {
+            var format = (StringFormat)StringFormat.GenericTypographic.Clone();
+            format.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces |
+                StringFormatFlags.NoWrap;
+            return format;
         }
     }
 
