@@ -2063,8 +2063,9 @@ namespace DexManager.Forms
             {
                 _autoHideService.ResetIdleHideState();
                 if (_logForm == null || _logForm.IsDisposed) _logForm = new LogForm(_logService);
-                _logForm.Show();
+                if (!_logForm.Visible) _logForm.Show();
                 _logForm.WindowState = FormWindowState.Normal;
+                _logForm.BringToFront();
                 _logForm.Activate();
             });
         }
@@ -2085,8 +2086,9 @@ namespace DexManager.Forms
                         ShowEnvironmentCheck);
                     _settingsForm.FormClosed += delegate { _settingsForm = null; };
                 }
-                _settingsForm.Show(this);
+                if (!_settingsForm.Visible) _settingsForm.Show(this);
                 _settingsForm.WindowState = FormWindowState.Normal;
+                _settingsForm.BringToFront();
                 _settingsForm.Activate();
             });
         }
@@ -2101,8 +2103,9 @@ namespace DexManager.Forms
                     _environmentCheckForm = new EnvironmentCheckForm(_environmentCheckService);
                     _environmentCheckForm.FormClosed += delegate { _environmentCheckForm = null; };
                 }
-                _environmentCheckForm.Show(this);
+                if (!_environmentCheckForm.Visible) _environmentCheckForm.Show(this);
                 _environmentCheckForm.WindowState = FormWindowState.Normal;
+                _environmentCheckForm.BringToFront();
                 _environmentCheckForm.Activate();
             });
         }
