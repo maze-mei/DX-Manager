@@ -74,6 +74,12 @@ namespace DexManager.Forms
         private RoundedPanel _statusCard;
         private RoundedPanel _displayCard;
         private RoundedPanel _optionsCard;
+        private ThemedFieldHost _resolutionHost;
+        private ThemedFieldHost _widthHost;
+        private ThemedFieldHost _heightHost;
+        private ThemedFieldHost _dpiHost;
+        private ThemedFieldHost _bitRateHost;
+        private ThemedFieldHost _maxFpsHost;
         private readonly Timer _phoneScreenWakeTimer;
         private ThemedButton _dexModeButton;
         private ThemedButton _singleModeButton1;
@@ -1013,11 +1019,14 @@ namespace DexManager.Forms
         {
             var preset = _resolutionBox.SelectedItem as ResolutionPreset;
             var custom = preset == null || preset.Width == 0;
-            _resolutionBox.Width = custom ? 130 : 304;
+            if (_resolutionHost != null)
+                _resolutionHost.Width = custom ? 130 : 304;
             _widthBox.Enabled = custom;
             _heightBox.Enabled = custom;
             _widthBox.Visible = custom;
             _heightBox.Visible = custom;
+            if (_widthHost != null) _widthHost.Visible = custom;
+            if (_heightHost != null) _heightHost.Visible = custom;
             _widthLabel.Visible = custom;
             _heightLabel.Visible = custom;
             if (custom)
@@ -1691,21 +1700,53 @@ namespace DexManager.Forms
 
             MoveToCard(_displaySettingsTitle, _displayCard, 20, 13);
             MoveToCard(_resolutionLabel, _displayCard, 20, 51);
-            MoveToCard(_resolutionBox, _displayCard, 20, 72);
-            _resolutionBox.Size = new Size(304, 32);
+            _resolutionHost = CreateFieldHost(
+                _resolutionBox,
+                FieldChromeKind.Combo,
+                _displayCard,
+                20,
+                72,
+                304);
             MoveToCard(_widthLabel, _displayCard, 158, 78);
-            MoveToCard(_widthBox, _displayCard, 196, 72);
+            _widthHost = CreateFieldHost(
+                _widthBox,
+                FieldChromeKind.Text,
+                _displayCard,
+                196,
+                72,
+                55);
             MoveToCard(_heightLabel, _displayCard, 257, 78);
-            MoveToCard(_heightBox, _displayCard, 305, 72);
+            _heightHost = CreateFieldHost(
+                _heightBox,
+                FieldChromeKind.Text,
+                _displayCard,
+                305,
+                72,
+                55);
             MoveToCard(_dpiLabel, _displayCard, 362, 51);
-            MoveToCard(_dpiBox, _displayCard, 362, 72);
-            _dpiBox.Size = new Size(304, 32);
+            _dpiHost = CreateFieldHost(
+                _dpiBox,
+                FieldChromeKind.Number,
+                _displayCard,
+                362,
+                72,
+                304);
             MoveToCard(_bitRateLabel, _displayCard, 20, 108);
-            MoveToCard(_bitRateBox, _displayCard, 20, 129);
-            _bitRateBox.Size = new Size(304, 32);
+            _bitRateHost = CreateFieldHost(
+                _bitRateBox,
+                FieldChromeKind.Text,
+                _displayCard,
+                20,
+                129,
+                304);
             MoveToCard(_maxFpsLabel, _displayCard, 362, 108);
-            MoveToCard(_maxFpsBox, _displayCard, 362, 129);
-            _maxFpsBox.Size = new Size(304, 32);
+            _maxFpsHost = CreateFieldHost(
+                _maxFpsBox,
+                FieldChromeKind.Combo,
+                _displayCard,
+                362,
+                129,
+                304);
 
             MoveToCard(_optionsTitle, _optionsCard, 20, 13);
             MoveToCard(_turnScreenOffBox, _optionsCard, 20, 49);
@@ -1760,6 +1801,24 @@ namespace DexManager.Forms
             Controls.Add(card);
             card.SendToBack();
             return card;
+        }
+
+        private static ThemedFieldHost CreateFieldHost(
+            Control editor,
+            FieldChromeKind kind,
+            Control parent,
+            int x,
+            int y,
+            int width)
+        {
+            var host = new ThemedFieldHost(editor, kind)
+            {
+                Parent = parent,
+                Location = new Point(x, y),
+                Size = new Size(width, 32)
+            };
+            host.BringToFront();
+            return host;
         }
 
         private static void MoveToCard(
