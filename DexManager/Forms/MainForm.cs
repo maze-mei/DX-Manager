@@ -2277,24 +2277,28 @@ namespace DexManager.Forms
             if (comboBox == null) return;
 
             var colors = ThemeColors.Current;
+            var selected =
+                comboBox.DroppedDown &&
+                (e.State & DrawItemState.Selected) ==
+                    DrawItemState.Selected;
             using (var background = new SolidBrush(
-                (e.State & DrawItemState.Selected) == DrawItemState.Selected
+                selected
                     ? colors.Accent
                     : colors.CardSoft))
             {
                 e.Graphics.FillRectangle(background, e.Bounds);
             }
             var text = comboBox.GetItemText(comboBox.Items[e.Index]);
-            var color = (e.State & DrawItemState.Selected) == DrawItemState.Selected
+            var color = selected
                 ? Color.White
                 : colors.TextPrimary;
             var centered = comboBox.Tag is bool && (bool)comboBox.Tag;
             var textBounds = centered
                 ? e.Bounds
                 : new Rectangle(
-                    e.Bounds.Left + 10,
+                    e.Bounds.Left,
                     e.Bounds.Top,
-                    System.Math.Max(e.Bounds.Width - 14, 0),
+                    System.Math.Max(e.Bounds.Width - 4, 0),
                     e.Bounds.Height);
             TextRenderer.DrawText(
                 e.Graphics,
@@ -2307,7 +2311,6 @@ namespace DexManager.Forms
                     : TextFormatFlags.Left) |
                 TextFormatFlags.VerticalCenter |
                 TextFormatFlags.EndEllipsis);
-            e.DrawFocusRectangle();
         }
 
         private static string GetDeviceStatusText(DeviceState state)
