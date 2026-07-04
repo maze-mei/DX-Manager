@@ -53,7 +53,7 @@ namespace DexManager.Models
                 {
                     BitRate = "20M",
                     MaxFps = 60,
-                    WindowTitle = "DX Manager - Scrcpy",
+                    WindowTitle = "DX Manager - DeX Station",
                     TurnScreenOff = true,
                     UseHidKeyboard = true,
                     UseHidMouse = true,

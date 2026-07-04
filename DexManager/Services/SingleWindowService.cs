@@ -410,9 +410,12 @@ namespace DexManager.Services
             int slot,
             SingleWindowSlotSettings settings)
         {
-            return string.IsNullOrWhiteSpace(settings.StartAppName)
+            var appName = string.IsNullOrWhiteSpace(settings.StartAppName)
                 ? settings.StartAppPackage.Trim()
                 : settings.StartAppName.Trim();
+            if (string.IsNullOrWhiteSpace(appName))
+                appName = "Single Window " + slot;
+            return "DX Manager - " + appName;
         }
 
         private static void StopProcess(Process process)

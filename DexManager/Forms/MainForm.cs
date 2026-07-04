@@ -64,7 +64,7 @@ namespace DexManager.Forms
         private readonly CheckBox _forceStopAppBox;
         private readonly CheckBox _reuseDisplayBox;
         private readonly CheckBox _flexDisplayBox;
-        private readonly TextBox _additionalArgumentsBox;
+        private readonly ThemedTextControl _additionalArgumentsBox;
         private readonly ThemedSelectControl _startAppBox;
         private readonly Button _loadAppsButton;
         private readonly LinkLabel _advancedToggle;
@@ -263,7 +263,7 @@ namespace DexManager.Forms
             _startAppLabel = AddFieldLabel(
                 LocalizationService.Get("Main.StartApp"), 32, 508);
 
-            _additionalArgumentsBox = CreateStyledTextBox(32, 577, 440);
+            _additionalArgumentsBox = CreateCustomText(32, 577, 440);
             _additionalArgumentsBox.Visible = false;
             _advancedToggle = new LinkLabel
             {
@@ -1621,50 +1621,6 @@ namespace DexManager.Forms
             };
         }
 
-        private ComboBox CreateStyledCombo(
-            int x,
-            int y,
-            int width,
-            bool centerText = false)
-        {
-            var box = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = _theme.CardSoft,
-                ForeColor = _theme.TextPrimary,
-                Font = new Font("Segoe UI", 9F),
-                Location = new Point(x, y),
-                Size = new Size(width, 32),
-                DrawMode = DrawMode.OwnerDrawFixed,
-                ItemHeight = 24,
-                Tag = centerText
-            };
-            box.DrawItem += CenteredComboBox_DrawItem;
-            return box;
-        }
-
-        private TextBox CreateStyledTextBox(
-            int x,
-            int y,
-            int width,
-            bool centerText = false)
-        {
-            return new TextBox
-            {
-                BorderStyle = BorderStyle.FixedSingle,
-                BackColor = _theme.CardSoft,
-                ForeColor = _theme.TextPrimary,
-                Font = new Font("Segoe UI", 9F),
-                TextAlign = centerText
-                    ? HorizontalAlignment.Center
-                    : HorizontalAlignment.Left,
-                AutoSize = false,
-                Location = new Point(x, y),
-                Size = new Size(width, 32)
-            };
-        }
-
         private ThemedButton CreateThemedButton(
             string text,
             bool primary,
@@ -1760,7 +1716,7 @@ namespace DexManager.Forms
             _loadAppsButton.Size = new Size(146, 32);
             MoveToCard(_advancedToggle, _optionsCard, 20, 238);
             MoveToCard(_additionalArgumentsBox, _optionsCard, 190, 232);
-            _additionalArgumentsBox.Size = new Size(456, 28);
+            _additionalArgumentsBox.Size = new Size(456, 32);
 
             _startButton.Location = new Point(754, 630);
             _stopButton.Location = _startButton.Location;
@@ -2278,52 +2234,6 @@ namespace DexManager.Forms
                 Location = new Point(32, y),
                 Size = new Size(573, 1)
             });
-        }
-
-        private static void CenteredComboBox_DrawItem(
-            object sender,
-            DrawItemEventArgs e)
-        {
-            if (e.Index < 0) return;
-
-            var comboBox = sender as ComboBox;
-            if (comboBox == null) return;
-
-            var colors = ThemeColors.Current;
-            var selected =
-                comboBox.DroppedDown &&
-                (e.State & DrawItemState.Selected) ==
-                    DrawItemState.Selected;
-            using (var background = new SolidBrush(
-                selected
-                    ? colors.Accent
-                    : colors.CardSoft))
-            {
-                e.Graphics.FillRectangle(background, e.Bounds);
-            }
-            var text = comboBox.GetItemText(comboBox.Items[e.Index]);
-            var color = selected
-                ? Color.White
-                : colors.TextPrimary;
-            var centered = comboBox.Tag is bool && (bool)comboBox.Tag;
-            var textBounds = centered
-                ? e.Bounds
-                : new Rectangle(
-                    e.Bounds.Left,
-                    e.Bounds.Top,
-                    System.Math.Max(e.Bounds.Width - 4, 0),
-                    e.Bounds.Height);
-            TextRenderer.DrawText(
-                e.Graphics,
-                text,
-                comboBox.Font,
-                textBounds,
-                color,
-                (centered
-                    ? TextFormatFlags.HorizontalCenter
-                    : TextFormatFlags.Left) |
-                TextFormatFlags.VerticalCenter |
-                TextFormatFlags.EndEllipsis);
         }
 
         private static string GetDeviceStatusText(DeviceState state)

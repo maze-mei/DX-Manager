@@ -162,11 +162,8 @@ namespace DexManager.Services
                 arguments.Add(settings.MaxFps.ToString(CultureInfo.InvariantCulture));
             }
 
-            if (!string.IsNullOrWhiteSpace(settings.WindowTitle))
-            {
-                arguments.Add("--window-title");
-                arguments.Add(Quote(settings.WindowTitle));
-            }
+            arguments.Add("--window-title");
+            arguments.Add(Quote("DX Manager - DeX Station"));
 
             if (settings.UseHidKeyboard) arguments.Add("-K");
             if (settings.UseHidMouse) arguments.Add("-M");
