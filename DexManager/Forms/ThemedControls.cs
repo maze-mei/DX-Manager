@@ -16,7 +16,7 @@ namespace DexManager.Forms
             UseVisualStyleBackColor = false;
             BackColor = ThemeColors.Current.CardBackground;
             ForeColor = ThemeColors.Current.TextSecondary;
-            Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
             CornerRadius = 7;
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
                 ControlStyles.OptimizedDoubleBuffer, true);
@@ -35,6 +35,7 @@ namespace DexManager.Forms
         public int CornerRadius { get; set; }
         public bool NavigationStyle { get; set; }
         public bool ShowNavigationDot { get; set; }
+        public bool ShowSettingsIcon { get; set; }
 
         protected override void OnMouseEnter(System.EventArgs e)
         {
@@ -70,9 +71,12 @@ namespace DexManager.Forms
 
         protected override void OnPaint(PaintEventArgs e)
         {
+            var roundedParent = Parent as RoundedPanel;
             var background = NavigationStyle
                 ? BackColor
-                : (Parent == null ? BackColor : Parent.BackColor);
+                : (roundedParent != null
+                    ? roundedParent.FillColor
+                    : (Parent == null ? BackColor : Parent.BackColor));
             e.Graphics.Clear(background);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             var bounds = ClientRectangle;
@@ -89,7 +93,7 @@ namespace DexManager.Forms
                 : (Primary ? fill : colors.ControlBorder);
             var text = NavigationStyle
                 ? (Primary ? colors.TextPrimary : colors.TextSecondary)
-                : (Primary ? Color.White : ForeColor);
+                : (Primary ? Color.White : colors.TextPrimary);
             if (!Enabled)
             {
                 fill = colors.DisabledBackground;
@@ -130,11 +134,14 @@ namespace DexManager.Forms
                 }
             }
 
+            if (NavigationStyle && ShowSettingsIcon)
+                DrawSettingsIcon(e.Graphics, text);
+
             var textBounds = NavigationStyle
                 ? new Rectangle(
-                    ShowNavigationDot ? 30 : 14,
+                    ShowNavigationDot || ShowSettingsIcon ? 30 : 14,
                     0,
-                    Width - (ShowNavigationDot ? 38 : 28),
+                    Width - (ShowNavigationDot || ShowSettingsIcon ? 38 : 28),
                     Height)
                 : bounds;
             TextRenderer.DrawText(
@@ -149,6 +156,41 @@ namespace DexManager.Forms
                     : TextFormatFlags.HorizontalCenter |
                         TextFormatFlags.VerticalCenter |
                         TextFormatFlags.EndEllipsis);
+        }
+
+        private void DrawSettingsIcon(Graphics graphics, Color color)
+        {
+            var center = new PointF(18.5F, Height / 2F);
+            using (var pen = new Pen(color, 1.3F)
+            {
+                StartCap = LineCap.Round,
+                EndCap = LineCap.Round
+            })
+            {
+                for (var index = 0; index < 8; index++)
+                {
+                    var angle = index * System.Math.PI / 4D;
+                    var inner = new PointF(
+                        center.X + (float)System.Math.Cos(angle) * 5F,
+                        center.Y + (float)System.Math.Sin(angle) * 5F);
+                    var outer = new PointF(
+                        center.X + (float)System.Math.Cos(angle) * 7F,
+                        center.Y + (float)System.Math.Sin(angle) * 7F);
+                    graphics.DrawLine(pen, inner, outer);
+                }
+                graphics.DrawEllipse(
+                    pen,
+                    center.X - 5F,
+                    center.Y - 5F,
+                    10F,
+                    10F);
+                graphics.DrawEllipse(
+                    pen,
+                    center.X - 1.8F,
+                    center.Y - 1.8F,
+                    3.6F,
+                    3.6F);
+            }
         }
 
         private static GraphicsPath RoundedPath(Rectangle rectangle, int radius)
@@ -172,7 +214,7 @@ namespace DexManager.Forms
         {
             AutoSize = false;
             BackColor = ThemeColors.Current.CardBackground;
-            Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
             ForeColor = ThemeColors.Current.TextPrimary;
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
                 ControlStyles.OptimizedDoubleBuffer | ControlStyles.Opaque |

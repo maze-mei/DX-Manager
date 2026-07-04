@@ -17,7 +17,7 @@ namespace DexManager.Forms
             Items = new List<object>();
             TabStop = true;
             Cursor = Cursors.Hand;
-            Font = new Font("Segoe UI", 9F);
+            Font = new Font("Segoe UI", 9.5F);
             Size = new Size(200, 32);
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
                 ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw |
@@ -258,7 +258,7 @@ namespace DexManager.Forms
         {
             TabStop = true;
             Cursor = Cursors.IBeam;
-            Font = new Font("Segoe UI", 9F);
+            Font = new Font("Segoe UI", 9.5F);
             Size = new Size(200, 32);
             MaxLength = 256;
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
@@ -1018,7 +1018,7 @@ namespace DexManager.Forms
                 : (items.Count > 0 ? 0 : -1);
             _topIndex = Math.Max(0, _hoverIndex - 3);
             TabStop = true;
-            Font = new Font("Segoe UI", 9F);
+            Font = new Font("Segoe UI", 9.5F);
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
                 ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw,
                 true);

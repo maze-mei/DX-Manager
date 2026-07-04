@@ -135,7 +135,7 @@ namespace DexManager.Forms
             Text = LocalizationService.Get("App.Name");
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = _theme.WindowBackground;
-            Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
             ClientSize = new Size(920, 680);
             MinimumSize = Size;
             AutoScroll = false;
@@ -1018,7 +1018,7 @@ namespace DexManager.Forms
         {
             var preset = _resolutionBox.SelectedItem as ResolutionPreset;
             var custom = preset == null || preset.Width == 0;
-            _resolutionBox.Width = custom ? 130 : 304;
+            LayoutResolutionControls(custom);
             _widthBox.Enabled = custom;
             _heightBox.Enabled = custom;
             _widthBox.Visible = custom;
@@ -1042,6 +1042,57 @@ namespace DexManager.Forms
 
             _resolutionWasCustom = custom;
             _resolutionSelectionInitialized = true;
+        }
+
+        private void LayoutResolutionControls(bool custom)
+        {
+            if (!custom)
+            {
+                _resolutionBox.Width = 304;
+                return;
+            }
+
+            const int fieldTop = 72;
+            const int labelGap = 6;
+            const int groupGap = 10;
+            const int dpiGap = 12;
+
+            _resolutionBox.Width = 110;
+            _heightBox.Left = _dpiBox.Left - dpiGap - _heightBox.Width;
+            var heightLabelWidth = MeasureInlineLabel(_heightLabel);
+            _heightLabel.Left =
+                _heightBox.Left - labelGap - heightLabelWidth;
+            _widthBox.Left =
+                _heightLabel.Left - groupGap - _widthBox.Width;
+            var widthLabelWidth = MeasureInlineLabel(_widthLabel);
+            _widthLabel.Left =
+                _widthBox.Left - labelGap - widthLabelWidth;
+
+            _widthBox.Top = fieldTop;
+            _heightBox.Top = fieldTop;
+            _widthLabel.Top = GetInlineLabelTop(_widthLabel, fieldTop);
+            _heightLabel.Top = GetInlineLabelTop(_heightLabel, fieldTop);
+        }
+
+        private static int MeasureInlineLabel(Label label)
+        {
+            return TextRenderer.MeasureText(
+                label.Text,
+                label.Font,
+                Size.Empty,
+                TextFormatFlags.NoPadding).Width;
+        }
+
+        private static int GetInlineLabelTop(
+            Label label,
+            int fieldTop)
+        {
+            var labelHeight = TextRenderer.MeasureText(
+                label.Text,
+                label.Font,
+                Size.Empty,
+                TextFormatFlags.NoPadding).Height;
+            return fieldTop + (32 - labelHeight) / 2 + 1;
         }
 
         private void LoadRunSettings()
@@ -1894,7 +1945,7 @@ namespace DexManager.Forms
             _sidebar.Controls.Add(new Label
             {
                 AutoSize = true,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = _theme.TextTertiary,
                 BackColor = _theme.NavigationBackground,
                 Location = new Point(20, 18),
@@ -1942,6 +1993,7 @@ namespace DexManager.Forms
                 _sidebar.Height - 48,
                 false,
                 false);
+            settingsButton.ShowSettingsIcon = true;
             settingsButton.Anchor =
                 AnchorStyles.Left | AnchorStyles.Bottom;
             settingsButton.Click += delegate { ShowSettingsForm(); };

@@ -101,7 +101,7 @@ namespace DexManager.Forms
             StartPosition = FormStartPosition.CenterParent;
             ClientSize = new Size(940, 700);
             MinimumSize = new Size(860, 640);
-            Font = new Font("Segoe UI", 9F);
+            Font = new Font("Segoe UI", 9.5F);
             BackColor = _theme.WindowBackground;
 
             _titleLabel = new Label
@@ -1048,7 +1048,7 @@ namespace DexManager.Forms
             _sidebar.Controls.Add(new Label
             {
                 AutoSize = true,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = _theme.TextTertiary,
                 BackColor = _theme.NavigationBackground,
                 Location = new Point(20, 18),
