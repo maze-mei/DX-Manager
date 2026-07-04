@@ -247,4 +247,15 @@
   <data name="Tray.Exit" xml:space="preserve"><value>프로그램 종료</value></data>
   <data name="Program.AlreadyRunning" xml:space="preserve"><value>DX Manager가 이미 실행 중입니다.{0}시스템 트레이를 확인하십시오.</value></data>
   <data name="Program.InitFailed" xml:space="preserve"><value>DX Manager 초기화에 실패했습니다.{0}{0}{1}</value></data>
+  <data name="Settings.GroupAppearance" xml:space="preserve"><value>화면 및 언어</value></data>
+  <data name="Settings.GroupStartup" xml:space="preserve"><value>시작 및 자동 실행</value></data>
+  <data name="Settings.GroupShutdown" xml:space="preserve"><value>중지 및 종료 동작</value></data>
+  <data name="Settings.GroupAdb" xml:space="preserve"><value>ADB 환경</value></data>
+  <data name="Settings.GroupStorage" xml:space="preserve"><value>프로그램 및 저장 경로</value></data>
+  <data name="Settings.GroupWireless" xml:space="preserve"><value>무선 연결</value></data>
+  <data name="Settings.GroupPairing" xml:space="preserve"><value>무선 페어링</value></data>
+  <data name="Settings.GroupHotkeys" xml:space="preserve"><value>단축키</value></data>
+  <data name="Settings.GroupInput" xml:space="preserve"><value>입력 보정</value></data>
+  <data name="Settings.GroupMonitoring" xml:space="preserve"><value>감시 및 프로세스 시간</value></data>
+  <data name="Settings.GroupCapture" xml:space="preserve"><value>자동 숨김 및 캡처</value></data>
 </root>

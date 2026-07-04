@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -16,6 +17,11 @@ namespace DexManager.Forms
         private readonly WirelessAdbService _wirelessAdbService;
         private readonly Action _showLogs;
         private readonly Action _showEnvironmentCheck;
+        private readonly ThemePalette _theme;
+        private readonly List<Control> _pages = new List<Control>();
+        private readonly List<ThemedButton> _navigationButtons =
+            new List<ThemedButton>();
+        private Panel _contentHost;
 
         private RadioButton _automaticAdbBox;
         private RadioButton _manualAdbBox;
@@ -27,43 +33,43 @@ namespace DexManager.Forms
         private TextBox _logFolderBox;
         private CheckBox _startWithWindowsBox;
         private CheckBox _startMinimizedBox;
-        private ComboBox _wakeUpModeBox;
+        private ThemedSelectControl _wakeUpModeBox;
         private CheckBox _autoHideBox;
         private CheckBox _pushCaptureBox;
         private CheckBox _resetDisplayOnStopBox;
         private CheckBox _disableStayAwakeBox;
         private CheckBox _autoStartDexBox;
-        private NumericUpDown _deviceMonitorIntervalBox;
-        private NumericUpDown _disconnectMonitorIntervalBox;
-        private NumericUpDown _connectedStartDelayBox;
-        private NumericUpDown _adbWakeUpDelayBox;
-        private NumericUpDown _autoHideSecondsBox;
-        private NumericUpDown _captureWaitSecondsBox;
-        private NumericUpDown _processTimeoutBox;
+        private ThemedNumberControl _deviceMonitorIntervalBox;
+        private ThemedNumberControl _disconnectMonitorIntervalBox;
+        private ThemedNumberControl _connectedStartDelayBox;
+        private ThemedNumberControl _adbWakeUpDelayBox;
+        private ThemedNumberControl _autoHideSecondsBox;
+        private ThemedNumberControl _captureWaitSecondsBox;
+        private ThemedNumberControl _processTimeoutBox;
         private TextBox _captureHotkeyBox;
         private TextBox _exitHotkeyBox;
         private CheckBox _lowLevelHotkeyBox;
         private CheckBox _keyboardDiagnosticsBox;
         private CheckBox _convertHangulBox;
-        private ComboBox _hangulInputModeBox;
+        private ThemedSelectControl _hangulInputModeBox;
         private CheckBox _rightWindowsBox;
         private CheckBox _convertEnterBox;
-        private ComboBox _enterInputModeBox;
+        private ThemedSelectControl _enterInputModeBox;
         private CheckBox _ignoreShiftSpaceBox;
         private RadioButton _usbConnectionBox;
         private RadioButton _wirelessConnectionBox;
         private TextBox _wirelessHostBox;
-        private NumericUpDown _wirelessPortBox;
+        private ThemedNumberControl _wirelessPortBox;
         private CheckBox _wirelessAutoReconnectBox;
         private Label _wirelessStatusLabel;
-        private NumericUpDown _pairingPortBox;
+        private ThemedNumberControl _pairingPortBox;
         private TextBox _pairingCodeBox;
         private Button _wirelessPrepareButton;
         private Button _wirelessConnectButton;
         private Button _wirelessDisconnectButton;
         private Button _pairButton;
-        private ComboBox _languageBox;
-        private ComboBox _themeBox;
+        private ThemedSelectControl _languageBox;
+        private ThemedSelectControl _themeBox;
         private Label _saveStatusLabel;
         private Timer _saveStatusTimer;
 
@@ -81,65 +87,91 @@ namespace DexManager.Forms
             _wirelessAdbService = wirelessAdbService;
             _showLogs = showLogs;
             _showEnvironmentCheck = showEnvironmentCheck;
+            _theme = ThemeColors.Current;
 
             Text = LocalizationService.Get("Settings.Title");
             StartPosition = FormStartPosition.CenterParent;
-            ClientSize = new Size(820, 610);
-            MinimumSize = new Size(760, 540);
+            ClientSize = new Size(940, 700);
+            MinimumSize = new Size(860, 640);
+            Font = new Font("Segoe UI", 9F);
+            BackColor = _theme.WindowBackground;
 
+            var title = new Label
+            {
+                AutoSize = false,
+                Font = new Font("Segoe UI", 20F, FontStyle.Bold),
+                ForeColor = _theme.TextPrimary,
+                Location = new Point(224, 22),
+                Size = new Size(690, 40),
+                Text = LocalizationService.Get("Main.Settings")
+            };
             var description = new Label
             {
-                Dock = DockStyle.Top,
-                Height = 44,
-                Padding = new Padding(10),
+                AutoEllipsis = true,
+                ForeColor = _theme.TextTertiary,
+                Location = new Point(226, 62),
+                Size = new Size(690, 34),
                 Text = LocalizationService.Get("Settings.Description")
             };
 
-            var tabs = new TabControl { Dock = DockStyle.Fill };
-            tabs.TabPages.Add(BuildGeneralTab());
-            tabs.TabPages.Add(BuildConnectionTab());
-            tabs.TabPages.Add(BuildPathTab());
-            tabs.TabPages.Add(BuildKeyboardTab());
-            tabs.TabPages.Add(BuildTimingTab());
-            tabs.TabPages.Add(BuildDiagnosticsTab());
+            _contentHost = new Panel
+            {
+                Location = new Point(220, 104),
+                Size = new Size(704, 514),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom |
+                    AnchorStyles.Left | AnchorStyles.Right,
+                BackColor = _theme.WindowBackground
+            };
+            _pages.Add(BuildGeneralPage());
+            _pages.Add(BuildConnectionPage());
+            _pages.Add(BuildPathPage());
+            _pages.Add(BuildKeyboardPage());
+            _pages.Add(BuildTimingPage());
+            _pages.Add(BuildDiagnosticsPage());
+            foreach (var page in _pages)
+            {
+                page.Dock = DockStyle.Fill;
+                page.Visible = false;
+                _contentHost.Controls.Add(page);
+            }
 
             var bottomPanel = new Panel
             {
-                Dock = DockStyle.Bottom,
-                Height = 76
+                Location = new Point(220, 624),
+                Size = new Size(704, 62),
+                Anchor = AnchorStyles.Left | AnchorStyles.Right |
+                    AnchorStyles.Bottom,
+                BackColor = _theme.WindowBackground
             };
             _saveStatusLabel = new Label
             {
-                Dock = DockStyle.Top,
-                Height = 24,
-                Padding = new Padding(8, 0, 12, 0),
+                ForeColor = _theme.TextTertiary,
+                Location = new Point(0, 2),
+                Size = new Size(470, 24),
                 TextAlign = ContentAlignment.MiddleRight,
                 AutoEllipsis = true,
                 Visible = false
             };
-            var buttons = new FlowLayoutPanel
+            var saveButton = new ThemedButton
             {
-                Dock = DockStyle.Bottom,
-                Height = 52,
-                FlowDirection = FlowDirection.RightToLeft,
-                Padding = new Padding(8)
-            };
-            var saveButton = new Button
-            {
+                Primary = true,
                 Text = LocalizationService.Get("Common.Save"),
-                Size = new Size(96, 32)
+                Location = new Point(492, 14),
+                Size = new Size(100, 36),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
             saveButton.Click += SaveButton_Click;
-            var closeButton = new Button
+            var closeButton = new ThemedButton
             {
                 Text = LocalizationService.Get("Common.Close"),
-                Size = new Size(96, 32)
+                Location = new Point(602, 14),
+                Size = new Size(100, 36),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
             closeButton.Click += delegate { Close(); };
-            buttons.Controls.Add(saveButton);
-            buttons.Controls.Add(closeButton);
             bottomPanel.Controls.Add(_saveStatusLabel);
-            bottomPanel.Controls.Add(buttons);
+            bottomPanel.Controls.Add(saveButton);
+            bottomPanel.Controls.Add(closeButton);
             _saveStatusTimer = new Timer { Interval = 2800 };
             _saveStatusTimer.Tick += delegate
             {
@@ -148,111 +180,91 @@ namespace DexManager.Forms
             };
             FormClosed += delegate { _saveStatusTimer.Dispose(); };
 
-            Controls.Add(tabs);
+            Controls.Add(BuildSidebar());
+            Controls.Add(_contentHost);
+            Controls.Add(title);
             Controls.Add(description);
             Controls.Add(bottomPanel);
             LoadValues();
+            ShowPage(0);
         }
 
-        private TabPage BuildGeneralTab()
+        private Control BuildGeneralPage()
         {
-            var page = new TabPage(LocalizationService.Get("Settings.General"));
-            var table = CreateTable();
-            _languageBox = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Dock = DockStyle.Left,
-                Width = 210
-            };
+            var page = CreatePage();
+            var appearance = CreateTable();
+            _languageBox = CreateSelect();
             foreach (AppLanguage language in Enum.GetValues(typeof(AppLanguage)))
                 _languageBox.Items.Add(new LanguageOption(language));
-            AddRow(table, LocalizationService.Get("Settings.Language"), _languageBox);
+            AddRow(appearance, LocalizationService.Get("Settings.Language"), _languageBox);
             AddRow(
-                table,
+                appearance,
                 string.Empty,
-                new Label
-                {
-                    AutoSize = true,
-                    ForeColor = Color.DimGray,
-                    Text = LocalizationService.Get("Settings.LanguageRestart")
-                });
-            _themeBox = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Dock = DockStyle.Left,
-                Width = 210
-            };
+                CreateHint(LocalizationService.Get("Settings.LanguageRestart")));
+            _themeBox = CreateSelect();
             foreach (AppTheme theme in Enum.GetValues(typeof(AppTheme)))
                 _themeBox.Items.Add(new ThemeOption(theme));
-            AddRow(table, LocalizationService.Get("Settings.Theme"), _themeBox);
+            AddRow(appearance, LocalizationService.Get("Settings.Theme"), _themeBox);
             AddRow(
-                table,
+                appearance,
                 string.Empty,
-                new Label
-                {
-                    AutoSize = true,
-                    ForeColor = Color.DimGray,
-                    Text = LocalizationService.Get("Settings.ThemeRestart")
-                });
-            _startWithWindowsBox = AddCheck(table, LocalizationService.Get("Settings.StartWithWindows"));
-            _startMinimizedBox = AddCheck(table, LocalizationService.Get("Settings.StartMinimized"));
-            _wakeUpModeBox = AddCombo<ScrcpyWakeUpMode>(table, LocalizationService.Get("Settings.WakeUpMode"));
-            _autoHideBox = AddCheck(table, LocalizationService.Get("Settings.AutoHide"));
-            _autoStartDexBox = AddCheck(table, LocalizationService.Get("Settings.AutoStartDex"));
-            _resetDisplayOnStopBox = AddCheck(table, LocalizationService.Get("Settings.ResetDisplay"));
-            _disableStayAwakeBox = AddCheck(table, LocalizationService.Get("Settings.DisableStayAwake"));
-            page.Controls.Add(Wrap(table));
+                CreateHint(LocalizationService.Get("Settings.ThemeRestart")));
+            AddCard(page, LocalizationService.Get("Settings.GroupAppearance"), appearance);
+
+            var startup = CreateTable();
+            _startWithWindowsBox = AddCheck(startup, LocalizationService.Get("Settings.StartWithWindows"));
+            _startMinimizedBox = AddCheck(startup, LocalizationService.Get("Settings.StartMinimized"));
+            _wakeUpModeBox = AddCombo<ScrcpyWakeUpMode>(startup, LocalizationService.Get("Settings.WakeUpMode"));
+            _autoHideBox = AddCheck(startup, LocalizationService.Get("Settings.AutoHide"));
+            _autoStartDexBox = AddCheck(startup, LocalizationService.Get("Settings.AutoStartDex"));
+            AddCard(page, LocalizationService.Get("Settings.GroupStartup"), startup);
+
+            var shutdown = CreateTable();
+            _resetDisplayOnStopBox = AddCheck(shutdown, LocalizationService.Get("Settings.ResetDisplay"));
+            _disableStayAwakeBox = AddCheck(shutdown, LocalizationService.Get("Settings.DisableStayAwake"));
+            AddCard(page, LocalizationService.Get("Settings.GroupShutdown"), shutdown);
             return page;
         }
 
-        private TabPage BuildPathTab()
+        private Control BuildPathPage()
         {
-            var page = new TabPage(LocalizationService.Get("Settings.Paths"));
-            var table = CreateTable();
+            var page = CreatePage();
+            var adbTable = CreateTable();
 
-            _automaticAdbBox = new RadioButton
-            {
-                Text = LocalizationService.Get("Settings.AdbAuto"),
-                AutoSize = true
-            };
-            _manualAdbBox = new RadioButton
-            {
-                Text = LocalizationService.Get("Settings.AdbManual"),
-                AutoSize = true
-            };
+            _automaticAdbBox = CreateRadio(
+                LocalizationService.Get("Settings.AdbAuto"));
+            _manualAdbBox = CreateRadio(
+                LocalizationService.Get("Settings.AdbManual"));
             _automaticAdbBox.CheckedChanged += delegate { UpdateManualAdbControls(); };
             _manualAdbBox.CheckedChanged += delegate { UpdateManualAdbControls(); };
-            AddRow(table, LocalizationService.Get("Settings.AdbMode"), _automaticAdbBox);
-            AddRow(table, string.Empty, _manualAdbBox);
-            AddReadOnly(table, LocalizationService.Get("Settings.CurrentOs"), WindowsVersionHelper.GetDisplayName());
-            AddReadOnly(table, LocalizationService.Get("Settings.CurrentAdb"), _adbService.AdbPath);
-            AddReadOnly(table, LocalizationService.Get("Settings.AdbVersion"), GetAdbVersionText());
+            AddRow(adbTable, LocalizationService.Get("Settings.AdbMode"), _automaticAdbBox);
+            AddRow(adbTable, string.Empty, _manualAdbBox);
+            AddReadOnly(adbTable, LocalizationService.Get("Settings.CurrentOs"), WindowsVersionHelper.GetDisplayName());
+            AddReadOnly(adbTable, LocalizationService.Get("Settings.CurrentAdb"), _adbService.AdbPath);
+            AddReadOnly(adbTable, LocalizationService.Get("Settings.AdbVersion"), GetAdbVersionText());
 
             _manualAdbPanel = CreatePathPanel(out _manualAdbPathBox, true);
-            AddRow(table, LocalizationService.Get("Settings.ManualAdbPath"), _manualAdbPanel);
-            _scrcpyPathBox = AddPath(table, LocalizationService.Get("Settings.ScrcpyPath"), true);
-            _screenshotFolderBox = AddPath(table, LocalizationService.Get("Settings.ScreenshotFolder"), false);
-            _deviceScreenshotFolderBox = AddText(table, LocalizationService.Get("Settings.DeviceFolder"));
-            _logFolderBox = AddPath(table, LocalizationService.Get("Settings.LogFolder"), false);
-            page.Controls.Add(Wrap(table));
+            AddRow(adbTable, LocalizationService.Get("Settings.ManualAdbPath"), _manualAdbPanel);
+            AddCard(page, LocalizationService.Get("Settings.GroupAdb"), adbTable);
+
+            var paths = CreateTable();
+            _scrcpyPathBox = AddPath(paths, LocalizationService.Get("Settings.ScrcpyPath"), true);
+            _screenshotFolderBox = AddPath(paths, LocalizationService.Get("Settings.ScreenshotFolder"), false);
+            _deviceScreenshotFolderBox = AddText(paths, LocalizationService.Get("Settings.DeviceFolder"));
+            _logFolderBox = AddPath(paths, LocalizationService.Get("Settings.LogFolder"), false);
+            AddCard(page, LocalizationService.Get("Settings.GroupStorage"), paths);
             return page;
         }
 
-        private TabPage BuildConnectionTab()
+        private Control BuildConnectionPage()
         {
-            var page = new TabPage(LocalizationService.Get("Settings.Connection"));
-            var table = CreateTable();
+            var page = CreatePage();
+            var connection = CreateTable();
 
-            _usbConnectionBox = new RadioButton
-            {
-                Text = LocalizationService.Get("Settings.Usb"),
-                AutoSize = true
-            };
-            _wirelessConnectionBox = new RadioButton
-            {
-                Text = LocalizationService.Get("Settings.Wireless"),
-                AutoSize = true
-            };
+            _usbConnectionBox = CreateRadio(
+                LocalizationService.Get("Settings.Usb"));
+            _wirelessConnectionBox = CreateRadio(
+                LocalizationService.Get("Settings.Wireless"));
             _usbConnectionBox.CheckedChanged += delegate
             {
                 UpdateWirelessControls();
@@ -261,17 +273,17 @@ namespace DexManager.Forms
             {
                 UpdateWirelessControls();
             };
-            AddRow(table, LocalizationService.Get("Settings.ConnectionMode"), _usbConnectionBox);
-            AddRow(table, string.Empty, _wirelessConnectionBox);
+            AddRow(connection, LocalizationService.Get("Settings.ConnectionMode"), _usbConnectionBox);
+            AddRow(connection, string.Empty, _wirelessConnectionBox);
 
-            _wirelessHostBox = AddText(table, LocalizationService.Get("Settings.PhoneIp"));
+            _wirelessHostBox = AddText(connection, LocalizationService.Get("Settings.PhoneIp"));
             _wirelessPortBox = AddNumber(
-                table,
+                connection,
                 LocalizationService.Get("Settings.ConnectPort"),
                 1,
                 65535);
             _wirelessAutoReconnectBox = AddCheck(
-                table,
+                connection,
                 LocalizationService.Get("Settings.AutoReconnect"));
 
             var connectionButtons = new FlowLayoutPanel
@@ -280,44 +292,34 @@ namespace DexManager.Forms
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false
             };
-            _wirelessPrepareButton = new Button
-            {
-                Text = LocalizationService.Get("Settings.PrepareWireless"),
-                AutoSize = true,
-                Height = 30
-            };
+            _wirelessPrepareButton = CreateActionButton(
+                LocalizationService.Get("Settings.PrepareWireless"), 130);
             _wirelessPrepareButton.Click +=
                 WirelessPrepareButton_Click;
-            _wirelessConnectButton = new Button
-            {
-                Text = LocalizationService.Get("Settings.ConnectWireless"),
-                AutoSize = true,
-                Height = 30
-            };
+            _wirelessConnectButton = CreateActionButton(
+                LocalizationService.Get("Settings.ConnectWireless"), 130);
             _wirelessConnectButton.Click +=
                 WirelessConnectButton_Click;
-            _wirelessDisconnectButton = new Button
-            {
-                Text = LocalizationService.Get("Settings.Disconnect"),
-                AutoSize = true,
-                Height = 30
-            };
+            _wirelessDisconnectButton = CreateActionButton(
+                LocalizationService.Get("Settings.Disconnect"), 100);
             _wirelessDisconnectButton.Click +=
                 WirelessDisconnectButton_Click;
             connectionButtons.Controls.Add(_wirelessPrepareButton);
             connectionButtons.Controls.Add(_wirelessConnectButton);
             connectionButtons.Controls.Add(_wirelessDisconnectButton);
-            AddRow(table, LocalizationService.Get("Settings.WirelessActions"), connectionButtons);
+            AddRow(connection, LocalizationService.Get("Settings.WirelessActions"), connectionButtons);
 
             _wirelessStatusLabel = new Label
             {
                 AutoSize = true,
                 MaximumSize = new Size(570, 0)
             };
-            AddRow(table, LocalizationService.Get("Settings.CurrentStatus"), _wirelessStatusLabel);
+            AddRow(connection, LocalizationService.Get("Settings.CurrentStatus"), _wirelessStatusLabel);
+            AddCard(page, LocalizationService.Get("Settings.GroupWireless"), connection);
 
+            var pairing = CreateTable();
             AddRow(
-                table,
+                pairing,
                 "Android 11+",
                 new Label
                 {
@@ -326,68 +328,68 @@ namespace DexManager.Forms
                     Text = LocalizationService.Get("Settings.PairGuide")
                 });
             _pairingPortBox = AddNumber(
-                table,
+                pairing,
                 LocalizationService.Get("Settings.PairingPort"),
                 1,
                 65535);
-            _pairingCodeBox = AddText(table, LocalizationService.Get("Settings.PairingCode"));
+            _pairingCodeBox = AddText(pairing, LocalizationService.Get("Settings.PairingCode"));
             _pairingCodeBox.UseSystemPasswordChar = true;
-            _pairButton = new Button
-            {
-                Text = LocalizationService.Get("Settings.Pair"),
-                AutoSize = true,
-                Height = 30
-            };
+            _pairButton = CreateActionButton(
+                LocalizationService.Get("Settings.Pair"), 100);
             _pairButton.Click += PairButton_Click;
-            AddRow(table, string.Empty, _pairButton);
-
-            page.Controls.Add(Wrap(table));
+            AddRow(pairing, string.Empty, _pairButton);
+            AddCard(page, LocalizationService.Get("Settings.GroupPairing"), pairing);
             return page;
         }
 
-        private TabPage BuildKeyboardTab()
+        private Control BuildKeyboardPage()
         {
-            var page = new TabPage(LocalizationService.Get("Settings.Keyboard"));
-            var table = CreateTable();
-            _captureHotkeyBox = AddText(table, LocalizationService.Get("Settings.CaptureHotkey"));
-            _exitHotkeyBox = AddText(table, LocalizationService.Get("Settings.ExitHotkey"));
-            _lowLevelHotkeyBox = AddCheck(table, LocalizationService.Get("Settings.LowLevelHotkey"));
-            _keyboardDiagnosticsBox = AddCheck(table, LocalizationService.Get("Settings.KeyDiagnostics"));
-            _convertHangulBox = AddCheck(table, LocalizationService.Get("Settings.HangulCorrection"));
-            _hangulInputModeBox = AddCombo<KeyInputMode>(table, LocalizationService.Get("Settings.HangulMode"));
-            _rightWindowsBox = AddCheck(table, LocalizationService.Get("Settings.RightWindows"));
-            _convertEnterBox = AddCheck(table, LocalizationService.Get("Settings.EnterConversion"));
-            _enterInputModeBox = AddCombo<KeyInputMode>(table, LocalizationService.Get("Settings.EnterMode"));
-            _ignoreShiftSpaceBox = AddCheck(table, LocalizationService.Get("Settings.IgnoreShiftSpace"));
-            page.Controls.Add(Wrap(table));
+            var page = CreatePage();
+            var hotkeys = CreateTable();
+            _captureHotkeyBox = AddText(hotkeys, LocalizationService.Get("Settings.CaptureHotkey"));
+            _exitHotkeyBox = AddText(hotkeys, LocalizationService.Get("Settings.ExitHotkey"));
+            _lowLevelHotkeyBox = AddCheck(hotkeys, LocalizationService.Get("Settings.LowLevelHotkey"));
+            _keyboardDiagnosticsBox = AddCheck(hotkeys, LocalizationService.Get("Settings.KeyDiagnostics"));
+            AddCard(page, LocalizationService.Get("Settings.GroupHotkeys"), hotkeys);
+
+            var correction = CreateTable();
+            _convertHangulBox = AddCheck(correction, LocalizationService.Get("Settings.HangulCorrection"));
+            _hangulInputModeBox = AddCombo<KeyInputMode>(correction, LocalizationService.Get("Settings.HangulMode"));
+            _rightWindowsBox = AddCheck(correction, LocalizationService.Get("Settings.RightWindows"));
+            _convertEnterBox = AddCheck(correction, LocalizationService.Get("Settings.EnterConversion"));
+            _enterInputModeBox = AddCombo<KeyInputMode>(correction, LocalizationService.Get("Settings.EnterMode"));
+            _ignoreShiftSpaceBox = AddCheck(correction, LocalizationService.Get("Settings.IgnoreShiftSpace"));
+            AddCard(page, LocalizationService.Get("Settings.GroupInput"), correction);
             return page;
         }
 
-        private TabPage BuildTimingTab()
+        private Control BuildTimingPage()
         {
-            var page = new TabPage(LocalizationService.Get("Settings.Timing"));
-            var table = CreateTable();
-            _deviceMonitorIntervalBox = AddNumber(table, LocalizationService.Get("Settings.DeviceInterval"), 200, 60000);
-            _disconnectMonitorIntervalBox = AddNumber(table, LocalizationService.Get("Settings.DisconnectInterval"), 200, 60000);
-            _connectedStartDelayBox = AddNumber(table, LocalizationService.Get("Settings.StartDelay"), 0, 60000);
-            _adbWakeUpDelayBox = AddNumber(table, LocalizationService.Get("Settings.WakeDelay"), 0, 60000);
-            _autoHideSecondsBox = AddNumber(table, LocalizationService.Get("Settings.HideDelay"), 1, 3600);
-            _captureWaitSecondsBox = AddNumber(table, LocalizationService.Get("Settings.CaptureDelay"), 1, 60);
-            _processTimeoutBox = AddNumber(table, LocalizationService.Get("Settings.ProcessTimeout"), 1000, 120000);
-            _pushCaptureBox = AddCheck(table, LocalizationService.Get("Settings.PushCapture"));
-            page.Controls.Add(Wrap(table));
+            var page = CreatePage();
+            var monitoring = CreateTable();
+            _deviceMonitorIntervalBox = AddNumber(monitoring, LocalizationService.Get("Settings.DeviceInterval"), 200, 60000);
+            _disconnectMonitorIntervalBox = AddNumber(monitoring, LocalizationService.Get("Settings.DisconnectInterval"), 200, 60000);
+            _connectedStartDelayBox = AddNumber(monitoring, LocalizationService.Get("Settings.StartDelay"), 0, 60000);
+            _adbWakeUpDelayBox = AddNumber(monitoring, LocalizationService.Get("Settings.WakeDelay"), 0, 60000);
+            _processTimeoutBox = AddNumber(monitoring, LocalizationService.Get("Settings.ProcessTimeout"), 1000, 120000);
+            AddCard(page, LocalizationService.Get("Settings.GroupMonitoring"), monitoring);
+
+            var capture = CreateTable();
+            _autoHideSecondsBox = AddNumber(capture, LocalizationService.Get("Settings.HideDelay"), 1, 3600);
+            _captureWaitSecondsBox = AddNumber(capture, LocalizationService.Get("Settings.CaptureDelay"), 1, 60);
+            _pushCaptureBox = AddCheck(capture, LocalizationService.Get("Settings.PushCapture"));
+            AddCard(page, LocalizationService.Get("Settings.GroupCapture"), capture);
             return page;
         }
 
-        private TabPage BuildDiagnosticsTab()
+        private Control BuildDiagnosticsPage()
         {
-            var page = new TabPage(
-                LocalizationService.Get("Settings.Diagnostics"));
+            var page = CreatePage();
             var panel = new FlowLayoutPanel
             {
-                Dock = DockStyle.Fill,
+                AutoSize = true,
+                Width = 620,
                 FlowDirection = FlowDirection.TopDown,
-                Padding = new Padding(24),
                 WrapContents = false
             };
             panel.Controls.Add(new Label
@@ -397,21 +399,15 @@ namespace DexManager.Forms
                 Margin = new Padding(0, 0, 0, 18),
                 Text = LocalizationService.Get("Settings.DiagnosticsGuide")
             });
-            var logButton = new Button
-            {
-                Text = LocalizationService.Get("Settings.OpenLogs"),
-                Size = new Size(220, 36),
-                Margin = new Padding(0, 0, 0, 10)
-            };
+            var logButton = CreateActionButton(
+                LocalizationService.Get("Settings.OpenLogs"), 220);
+            logButton.Margin = new Padding(0, 0, 0, 10);
             logButton.Click += delegate
             {
                 if (_showLogs != null) _showLogs();
             };
-            var environmentButton = new Button
-            {
-                Text = LocalizationService.Get("Settings.OpenEnvironment"),
-                Size = new Size(220, 36)
-            };
+            var environmentButton = CreateActionButton(
+                LocalizationService.Get("Settings.OpenEnvironment"), 220);
             environmentButton.Click += delegate
             {
                 if (_showEnvironmentCheck != null)
@@ -419,7 +415,7 @@ namespace DexManager.Forms
             };
             panel.Controls.Add(logButton);
             panel.Controls.Add(environmentButton);
-            page.Controls.Add(panel);
+            AddCard(page, LocalizationService.Get("Settings.Diagnostics"), panel);
             return page;
         }
 
@@ -787,25 +783,156 @@ namespace DexManager.Forms
             }
         }
 
-        private static TableLayoutPanel CreateTable()
+        private Control BuildSidebar()
         {
-            return new TableLayoutPanel
+            var sidebar = new RoundedPanel
             {
-                Dock = DockStyle.Top,
+                Location = new Point(16, 16),
+                Size = new Size(188, 668),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom |
+                    AnchorStyles.Left,
+                Radius = 14,
+                BackColor = _theme.NavigationBackground,
+                FillColor = _theme.NavigationBackground,
+                BorderColor = _theme.CardBorder
+            };
+            sidebar.Controls.Add(new Label
+            {
                 AutoSize = true,
-                ColumnCount = 2,
-                Padding = new Padding(12)
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = _theme.TextTertiary,
+                BackColor = _theme.NavigationBackground,
+                Location = new Point(20, 18),
+                Text = LocalizationService.Get("Main.Settings")
+            });
+
+            var labels = new[]
+            {
+                LocalizationService.Get("Settings.General"),
+                LocalizationService.Get("Settings.Connection"),
+                LocalizationService.Get("Settings.Paths"),
+                LocalizationService.Get("Settings.Keyboard"),
+                LocalizationService.Get("Settings.Timing"),
+                LocalizationService.Get("Settings.Diagnostics")
+            };
+            for (var index = 0; index < labels.Length; index++)
+            {
+                var pageIndex = index;
+                var button = new ThemedButton
+                {
+                    Text = labels[index],
+                    Primary = index == 0,
+                    CornerRadius = 18,
+                    NavigationStyle = true,
+                    ShowNavigationDot = true,
+                    TabStop = true,
+                    Location = new Point(10, 52 + index * 42),
+                    Size = new Size(168, 34),
+                    BackColor = _theme.NavigationBackground,
+                    ForeColor = _theme.TextSecondary
+                };
+                button.Click += delegate { ShowPage(pageIndex); };
+                _navigationButtons.Add(button);
+                sidebar.Controls.Add(button);
+            }
+            return sidebar;
+        }
+
+        private void ShowPage(int index)
+        {
+            if (index < 0 || index >= _pages.Count) return;
+            for (var i = 0; i < _pages.Count; i++)
+            {
+                _pages[i].Visible = i == index;
+                _navigationButtons[i].Primary = i == index;
+                _navigationButtons[i].Invalidate();
+            }
+            _pages[index].BringToFront();
+        }
+
+        private Control CreatePage()
+        {
+            return new FlowLayoutPanel
+            {
+                AutoScroll = true,
+                BackColor = _theme.WindowBackground,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                Padding = new Padding(0, 0, 8, 16)
             };
         }
 
-        private static Control Wrap(Control content)
+        private void AddCard(
+            Control page,
+            string title,
+            Control content)
         {
-            return new Panel { Dock = DockStyle.Fill, AutoScroll = true, Controls = { content } };
+            content.Location = new Point(18, 44);
+            content.Width = 630;
+            content.BackColor = _theme.CardBackground;
+            var preferred = content.GetPreferredSize(
+                new Size(630, 0));
+            content.Height = Math.Max(preferred.Height, 32);
+
+            var card = new RoundedPanel
+            {
+                Size = new Size(
+                    670,
+                    Math.Max(content.Height + 58, 94)),
+                Margin = new Padding(0, 0, 0, 14),
+                Radius = 14,
+                BackColor = _theme.WindowBackground,
+                FillColor = _theme.CardBackground,
+                BorderColor = _theme.CardBorder
+            };
+            card.Controls.Add(new Label
+            {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                ForeColor = _theme.TextSecondary,
+                BackColor = _theme.CardBackground,
+                Location = new Point(20, 15),
+                Text = title
+            });
+            card.Controls.Add(content);
+            page.Controls.Add(card);
+        }
+
+        private static TableLayoutPanel CreateTable()
+        {
+            var table = new TableLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 2,
+                Width = 630,
+                BackColor = ThemeColors.Current.CardBackground,
+                Padding = new Padding(0, 0, 0, 2)
+            };
+            table.ColumnStyles.Add(new ColumnStyle(
+                SizeType.Absolute,
+                205F));
+            table.ColumnStyles.Add(new ColumnStyle(
+                SizeType.Percent,
+                100F));
+            return table;
+        }
+
+        private static Label CreateHint(string text)
+        {
+            return new Label
+            {
+                AutoSize = true,
+                MaximumSize = new Size(400, 0),
+                ForeColor = ThemeColors.Current.TextTertiary,
+                BackColor = ThemeColors.Current.CardBackground,
+                Text = text
+            };
         }
 
         private static TextBox AddText(TableLayoutPanel table, string label)
         {
-            var box = new TextBox { Dock = DockStyle.Fill };
+            var box = CreateTextBox();
             AddRow(table, label, box);
             return box;
         }
@@ -820,13 +947,13 @@ namespace DexManager.Forms
 
         private static Panel CreatePathPanel(out TextBox box, bool file)
         {
-            var textBox = new TextBox { Dock = DockStyle.Fill };
+            var textBox = CreateTextBox();
             box = textBox;
-            var button = new Button
+            var button = new ThemedButton
             {
                 Text = LocalizationService.Get("Common.Browse"),
                 Dock = DockStyle.Right,
-                Width = 86
+                Width = 92
             };
             button.Click += delegate
             {
@@ -849,49 +976,141 @@ namespace DexManager.Forms
                     }
                 }
             };
-            var panel = new Panel { Dock = DockStyle.Fill, Height = 28 };
+            var panel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Height = 32,
+                BackColor = ThemeColors.Current.CardBackground
+            };
             panel.Controls.Add(textBox);
             panel.Controls.Add(button);
             return panel;
         }
 
-        private static NumericUpDown AddNumber(TableLayoutPanel table, string label, int min, int max)
+        private static TextBox CreateTextBox()
         {
-            var box = new NumericUpDown { Minimum = min, Maximum = max, Dock = DockStyle.Left, Width = 120 };
+            return new TextBox
+            {
+                Dock = DockStyle.Fill,
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = ThemeColors.Current.CardSoft,
+                ForeColor = ThemeColors.Current.TextPrimary,
+                Font = new Font("Segoe UI", 9F)
+            };
+        }
+
+        private static ThemedNumberControl AddNumber(
+            TableLayoutPanel table,
+            string label,
+            int min,
+            int max)
+        {
+            var box = new ThemedNumberControl
+            {
+                Minimum = min,
+                Maximum = max,
+                Increment = 1,
+                ShowStepButtons = true,
+                Dock = DockStyle.Left,
+                Width = 150,
+                Height = 32
+            };
+            box.Value = min;
             AddRow(table, label, box);
             return box;
         }
 
         private static CheckBox AddCheck(TableLayoutPanel table, string label)
         {
-            var box = new CheckBox { Text = label, AutoSize = true };
-            AddRow(table, string.Empty, box);
+            var box = new ThemedCheckBox
+            {
+                Text = label,
+                Dock = DockStyle.Fill,
+                Height = 30,
+                BackColor = ThemeColors.Current.CardBackground
+            };
+            var row = table.RowCount++;
+            table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            table.Controls.Add(box, 0, row);
+            table.SetColumnSpan(box, 2);
+            box.Margin = new Padding(3, 4, 3, 5);
             return box;
         }
 
-        private static ComboBox AddCombo<T>(TableLayoutPanel table, string label)
+        private static ThemedSelectControl AddCombo<T>(
+            TableLayoutPanel table,
+            string label)
         {
-            var box = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Left, Width = 210 };
+            var box = CreateSelect();
             foreach (var value in Enum.GetValues(typeof(T))) box.Items.Add(value);
             AddRow(table, label, box);
             return box;
         }
 
+        private static ThemedSelectControl CreateSelect()
+        {
+            return new ThemedSelectControl
+            {
+                Dock = DockStyle.Left,
+                Width = 240,
+                Height = 32
+            };
+        }
+
+        private static RadioButton CreateRadio(string text)
+        {
+            return new RadioButton
+            {
+                Text = text,
+                AutoSize = true,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = ThemeColors.Current.CardBackground,
+                ForeColor = ThemeColors.Current.TextPrimary
+            };
+        }
+
+        private static Button CreateActionButton(
+            string text,
+            int width)
+        {
+            return new ThemedButton
+            {
+                Text = text,
+                Size = new Size(width, 34),
+                Margin = new Padding(0, 0, 8, 0)
+            };
+        }
+
         private static void AddReadOnly(TableLayoutPanel table, string label, string value)
         {
-            AddRow(table, label, new Label { AutoSize = true, MaximumSize = new Size(570, 0), Text = value });
+            AddRow(table, label, new Label
+            {
+                AutoSize = true,
+                MaximumSize = new Size(400, 0),
+                ForeColor = ThemeColors.Current.TextSecondary,
+                BackColor = ThemeColors.Current.CardBackground,
+                Text = value
+            });
         }
 
         private static void AddRow(TableLayoutPanel table, string label, Control control)
         {
             var row = table.RowCount++;
             table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            table.Controls.Add(new Label { Text = label, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(3, 8, 12, 8) }, 0, row);
+            table.Controls.Add(new Label
+            {
+                Text = label,
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                ForeColor = ThemeColors.Current.TextTertiary,
+                BackColor = ThemeColors.Current.CardBackground,
+                Margin = new Padding(3, 9, 12, 9)
+            }, 0, row);
             table.Controls.Add(control, 1, row);
-            control.Margin = new Padding(3, 5, 3, 5);
+            control.Margin = new Padding(3, 5, 3, 6);
         }
 
-        private static decimal Clamp(int value, NumericUpDown box)
+        private static decimal Clamp(int value, ThemedNumberControl box)
         {
             if (value < box.Minimum) return box.Minimum;
             if (value > box.Maximum) return box.Maximum;
