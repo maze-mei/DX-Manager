@@ -13,7 +13,7 @@ namespace DexManager.Forms
     public sealed class SettingsForm : Form
     {
         private const int CardContentTop = 44;
-        private const int CardContentBottom = 20;
+        private const int CardContentBottom = 18;
 
         private readonly SettingsService _settingsService;
         private readonly AppSettings _settings;
@@ -1210,6 +1210,7 @@ namespace DexManager.Forms
             content.Location = new Point(18, CardContentTop);
             content.Width = 630;
             content.BackColor = _theme.CardBackground;
+            NormalizeLastRowMargin(content);
             content.PerformLayout();
             var preferred = content.GetPreferredSize(
                 new Size(630, 0));
@@ -1251,7 +1252,7 @@ namespace DexManager.Forms
             var table = new TableLayoutPanel
             {
                 AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowOnly,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 ColumnCount = 2,
                 Width = 630,
                 MinimumSize = new Size(630, 0),
@@ -1266,6 +1267,57 @@ namespace DexManager.Forms
                 SizeType.Percent,
                 100F));
             return table;
+        }
+
+        private static void NormalizeLastRowMargin(Control content)
+        {
+            var table = content as TableLayoutPanel;
+            if (table != null)
+            {
+                var lastRow = -1;
+                foreach (Control control in table.Controls)
+                {
+                    if (!control.Visible) continue;
+                    lastRow = Math.Max(
+                        lastRow,
+                        table.GetRow(control));
+                }
+
+                foreach (Control control in table.Controls)
+                {
+                    if (!control.Visible ||
+                        table.GetRow(control) != lastRow)
+                    {
+                        continue;
+                    }
+                    var margin = control.Margin;
+                    control.Margin = new Padding(
+                        margin.Left,
+                        margin.Top,
+                        margin.Right,
+                        0);
+                }
+                return;
+            }
+
+            Control lastControl = null;
+            foreach (Control control in content.Controls)
+            {
+                if (!control.Visible) continue;
+                if (lastControl == null ||
+                    control.Bottom + control.Margin.Bottom >
+                    lastControl.Bottom + lastControl.Margin.Bottom)
+                {
+                    lastControl = control;
+                }
+            }
+            if (lastControl == null) return;
+            var lastMargin = lastControl.Margin;
+            lastControl.Margin = new Padding(
+                lastMargin.Left,
+                lastMargin.Top,
+                lastMargin.Right,
+                0);
         }
 
         private static Label CreateHint(string text)
