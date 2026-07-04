@@ -57,10 +57,9 @@ namespace DexManager.Forms
         private CheckBox _lowLevelHotkeyBox;
         private CheckBox _keyboardDiagnosticsBox;
         private CheckBox _convertHangulBox;
-        private ThemedSelectControl _hangulInputModeBox;
+        private ThemedSelectControl _keyInputModeBox;
         private CheckBox _rightWindowsBox;
         private CheckBox _convertEnterBox;
-        private ThemedSelectControl _enterInputModeBox;
         private CheckBox _ignoreShiftSpaceBox;
         private RadioButton _usbConnectionBox;
         private RadioButton _wirelessConnectionBox;
@@ -248,7 +247,7 @@ namespace DexManager.Forms
             AddRow(adbTable, LocalizationService.Get("Settings.AdbMode"), _automaticAdbBox);
             AddRow(adbTable, string.Empty, _manualAdbBox);
             AddReadOnly(adbTable, LocalizationService.Get("Settings.CurrentOs"), WindowsVersionHelper.GetDisplayName());
-            AddReadOnly(adbTable, LocalizationService.Get("Settings.CurrentAdb"), _adbService.AdbPath);
+            AddReadOnly(adbTable, LocalizationService.Get("Settings.CurrentAdb"), GetAdbDisplayName());
             AddReadOnly(adbTable, LocalizationService.Get("Settings.AdbVersion"), GetAdbVersionText());
 
             _manualAdbPanel = CreatePathPanel(out _manualAdbPathBox, true);
@@ -400,11 +399,12 @@ namespace DexManager.Forms
             AddCard(page, LocalizationService.Get("Settings.GroupHotkeys"), hotkeys);
 
             var correction = CreateTable();
+            _keyInputModeBox = AddCombo<KeyInputMode>(
+                correction,
+                LocalizationService.Get("Settings.KeyInputMode"));
             _convertHangulBox = AddCheck(correction, LocalizationService.Get("Settings.HangulCorrection"));
-            _hangulInputModeBox = AddCombo<KeyInputMode>(correction, LocalizationService.Get("Settings.HangulMode"));
             _rightWindowsBox = AddCheck(correction, LocalizationService.Get("Settings.RightWindows"));
             _convertEnterBox = AddCheck(correction, LocalizationService.Get("Settings.EnterConversion"));
-            _enterInputModeBox = AddCombo<KeyInputMode>(correction, LocalizationService.Get("Settings.EnterMode"));
             _ignoreShiftSpaceBox = AddCheck(correction, LocalizationService.Get("Settings.IgnoreShiftSpace"));
             AddCard(page, LocalizationService.Get("Settings.GroupInput"), correction);
             return page;
@@ -443,6 +443,8 @@ namespace DexManager.Forms
             {
                 AutoSize = true,
                 MaximumSize = new Size(700, 0),
+                ForeColor = _theme.TextTertiary,
+                BackColor = _theme.CardBackground,
                 Margin = new Padding(0, 0, 0, 18),
                 Text = LocalizationService.Get("Settings.DiagnosticsGuide")
             });
@@ -475,6 +477,7 @@ namespace DexManager.Forms
             var resetButton = CreateActionButton(
                 LocalizationService.Get("Settings.ResetDefaults"),
                 220);
+            resetButton.Margin = new Padding(0, 0, 0, 12);
             resetButton.Click += ResetDefaultsButton_Click;
             panel.Controls.Add(resetButton);
             AddCard(page, LocalizationService.Get("Settings.Diagnostics"), panel);
@@ -535,11 +538,10 @@ namespace DexManager.Forms
             _exitHotkeyBox.Text = _settings.KeyMappings.ExitHotkey;
             _lowLevelHotkeyBox.Checked = _settings.KeyMappings.UseLowLevelHotkeys;
             _keyboardDiagnosticsBox.Checked = _settings.KeyMappings.LogKeyboardDiagnostics;
+            _keyInputModeBox.SelectedItem = _settings.KeyMappings.KoreanEnglishInputMode;
             _convertHangulBox.Checked = _settings.KeyMappings.ConvertKoreanEnglishKey;
-            _hangulInputModeBox.SelectedItem = _settings.KeyMappings.KoreanEnglishInputMode;
             _rightWindowsBox.Checked = _settings.KeyMappings.HandleRightWindowsKey;
             _convertEnterBox.Checked = _settings.KeyMappings.ConvertEnterToShiftEnter;
-            _enterInputModeBox.SelectedItem = _settings.KeyMappings.EnterInputMode;
             _ignoreShiftSpaceBox.Checked = _settings.KeyMappings.IgnoreShiftSpace;
             _usbConnectionBox.Checked =
                 _settings.Connection.Mode == AdbConnectionMode.Usb;
@@ -686,11 +688,12 @@ namespace DexManager.Forms
             _settings.KeyMappings.ExitHotkey = _exitHotkeyBox.Text.Trim();
             _settings.KeyMappings.UseLowLevelHotkeys = _lowLevelHotkeyBox.Checked;
             _settings.KeyMappings.LogKeyboardDiagnostics = _keyboardDiagnosticsBox.Checked;
+            var keyInputMode = (KeyInputMode)_keyInputModeBox.SelectedItem;
+            _settings.KeyMappings.KoreanEnglishInputMode = keyInputMode;
+            _settings.KeyMappings.EnterInputMode = keyInputMode;
             _settings.KeyMappings.ConvertKoreanEnglishKey = _convertHangulBox.Checked;
-            _settings.KeyMappings.KoreanEnglishInputMode = (KeyInputMode)_hangulInputModeBox.SelectedItem;
             _settings.KeyMappings.HandleRightWindowsKey = _rightWindowsBox.Checked;
             _settings.KeyMappings.ConvertEnterToShiftEnter = _convertEnterBox.Checked;
-            _settings.KeyMappings.EnterInputMode = (KeyInputMode)_enterInputModeBox.SelectedItem;
             _settings.KeyMappings.IgnoreShiftSpace = _ignoreShiftSpaceBox.Checked;
             SaveConnectionValues();
         }
@@ -939,6 +942,77 @@ namespace DexManager.Forms
                 return LocalizationService.Format(
                     "Settings.CheckFailed",
                     ex.Message);
+            }
+        }
+
+        private string GetAdbDisplayName()
+        {
+            if (_settings.Paths.AdbSelectionMode == AdbSelectionMode.Manual)
+                return LocalizationService.Get("Settings.AdbTypeManual");
+
+            var selectedPath = NormalizePath(_adbService.AdbPath);
+            if (PathsEqual(
+                selectedPath,
+                ResolveConfiguredPath(_settings.Paths.Win7AdbPath)))
+            {
+                return LocalizationService.Get("Settings.AdbTypeLegacy");
+            }
+            if (PathsEqual(
+                selectedPath,
+                ResolveConfiguredPath(_settings.Paths.ModernAdbPath)))
+            {
+                return LocalizationService.Get("Settings.AdbTypeModern");
+            }
+
+            var scrcpyPath = ResolveConfiguredPath(
+                _settings.Paths.ScrcpyPath);
+            var scrcpyAdbPath = string.IsNullOrWhiteSpace(scrcpyPath)
+                ? string.Empty
+                : Path.Combine(
+                    Path.GetDirectoryName(scrcpyPath) ?? string.Empty,
+                    "adb.exe");
+            if (PathsEqual(selectedPath, scrcpyAdbPath))
+                return LocalizationService.Get("Settings.AdbTypeScrcpy");
+
+            return LocalizationService.Get("Settings.AdbTypeExternal");
+        }
+
+        private string ResolveConfiguredPath(string configuredPath)
+        {
+            try
+            {
+                return NormalizePath(
+                    _settingsService.ResolvePath(configuredPath));
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static bool PathsEqual(string left, string right)
+        {
+            return !string.IsNullOrWhiteSpace(left) &&
+                !string.IsNullOrWhiteSpace(right) &&
+                string.Equals(
+                    NormalizePath(left),
+                    NormalizePath(right),
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return string.Empty;
+            try
+            {
+                return Path.GetFullPath(path)
+                    .TrimEnd(
+                        Path.DirectorySeparatorChar,
+                        Path.AltDirectorySeparatorChar);
+            }
+            catch
+            {
+                return path.Trim();
             }
         }
 

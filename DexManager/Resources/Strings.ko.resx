@@ -142,12 +142,17 @@
   <data name="Settings.AutoHide" xml:space="preserve"><value>자동 숨김 사용</value></data>
   <data name="Settings.AutoStartDex" xml:space="preserve"><value>기기 연결 시 DeX 자동 시작</value></data>
   <data name="Settings.ResetDisplay" xml:space="preserve"><value>중지/종료 시 가상화면 제거</value></data>
-  <data name="Settings.DisableStayAwake" xml:space="preserve"><value>중지/종료 시 keep-active 해제</value></data>
+  <data name="Settings.DisableStayAwake" xml:space="preserve"><value>중지/종료 시 잠자기 방지 해제</value></data>
   <data name="Settings.AdbAuto" xml:space="preserve"><value>자동 선택 (Windows 버전과 Scrcpy 경로 기준)</value></data>
   <data name="Settings.AdbManual" xml:space="preserve"><value>수동 지정</value></data>
   <data name="Settings.AdbMode" xml:space="preserve"><value>ADB 모드</value></data>
   <data name="Settings.CurrentOs" xml:space="preserve"><value>현재 OS</value></data>
   <data name="Settings.CurrentAdb" xml:space="preserve"><value>현재 사용 중인 ADB</value></data>
+  <data name="Settings.AdbTypeModern" xml:space="preserve"><value>Modern ADB</value></data>
+  <data name="Settings.AdbTypeLegacy" xml:space="preserve"><value>Legacy ADB</value></data>
+  <data name="Settings.AdbTypeManual" xml:space="preserve"><value>수동 지정 ADB</value></data>
+  <data name="Settings.AdbTypeScrcpy" xml:space="preserve"><value>Scrcpy 폴더 ADB</value></data>
+  <data name="Settings.AdbTypeExternal" xml:space="preserve"><value>외부 ADB</value></data>
   <data name="Settings.AdbVersion" xml:space="preserve"><value>ADB 버전</value></data>
   <data name="Settings.ManualAdbPath" xml:space="preserve"><value>수동 ADB 경로</value></data>
   <data name="Settings.ScrcpyPath" xml:space="preserve"><value>Scrcpy 실행 파일</value></data>
@@ -176,6 +181,7 @@
   <data name="Settings.KeyDiagnostics" xml:space="preserve"><value>키 진단 로그 남기기</value></data>
   <data name="Settings.HangulCorrection" xml:space="preserve"><value>한영키를 Shift+Space로 보정</value></data>
   <data name="Settings.HangulMode" xml:space="preserve"><value>한영키 전송 방식</value></data>
+  <data name="Settings.KeyInputMode" xml:space="preserve"><value>키 입력 전송 방식</value></data>
   <data name="Settings.RightWindows" xml:space="preserve"><value>오른쪽 Windows 키 보정</value></data>
   <data name="Settings.EnterConversion" xml:space="preserve"><value>Scroll Lock으로 Enter/Shift+Enter 모드 전환</value></data>
   <data name="Settings.EnterMode" xml:space="preserve"><value>Enter 전송 방식</value></data>

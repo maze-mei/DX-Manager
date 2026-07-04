@@ -142,12 +142,17 @@
   <data name="Settings.AutoHide" xml:space="preserve"><value>Enable automatic hiding</value></data>
   <data name="Settings.AutoStartDex" xml:space="preserve"><value>Start DeX when a device connects</value></data>
   <data name="Settings.ResetDisplay" xml:space="preserve"><value>Remove virtual display on stop/exit</value></data>
-  <data name="Settings.DisableStayAwake" xml:space="preserve"><value>Disable keep-active on stop/exit</value></data>
+  <data name="Settings.DisableStayAwake" xml:space="preserve"><value>Disable stay-awake on stop/exit</value></data>
   <data name="Settings.AdbAuto" xml:space="preserve"><value>Automatic (Windows version and Scrcpy path)</value></data>
   <data name="Settings.AdbManual" xml:space="preserve"><value>Manual</value></data>
   <data name="Settings.AdbMode" xml:space="preserve"><value>ADB mode</value></data>
   <data name="Settings.CurrentOs" xml:space="preserve"><value>Current OS</value></data>
   <data name="Settings.CurrentAdb" xml:space="preserve"><value>ADB in use</value></data>
+  <data name="Settings.AdbTypeModern" xml:space="preserve"><value>Modern ADB</value></data>
+  <data name="Settings.AdbTypeLegacy" xml:space="preserve"><value>Legacy ADB</value></data>
+  <data name="Settings.AdbTypeManual" xml:space="preserve"><value>Custom ADB</value></data>
+  <data name="Settings.AdbTypeScrcpy" xml:space="preserve"><value>Scrcpy ADB</value></data>
+  <data name="Settings.AdbTypeExternal" xml:space="preserve"><value>External ADB</value></data>
   <data name="Settings.AdbVersion" xml:space="preserve"><value>ADB version</value></data>
   <data name="Settings.ManualAdbPath" xml:space="preserve"><value>Manual ADB path</value></data>
   <data name="Settings.ScrcpyPath" xml:space="preserve"><value>Scrcpy executable</value></data>
@@ -176,6 +181,7 @@
   <data name="Settings.KeyDiagnostics" xml:space="preserve"><value>Write keyboard diagnostic logs</value></data>
   <data name="Settings.HangulCorrection" xml:space="preserve"><value>Convert Korean/English key to Shift+Space</value></data>
   <data name="Settings.HangulMode" xml:space="preserve"><value>Korean/English input method</value></data>
+  <data name="Settings.KeyInputMode" xml:space="preserve"><value>Key input method</value></data>
   <data name="Settings.RightWindows" xml:space="preserve"><value>Correct the right Windows key</value></data>
   <data name="Settings.EnterConversion" xml:space="preserve"><value>Toggle Enter/Shift+Enter with Scroll Lock</value></data>
   <data name="Settings.EnterMode" xml:space="preserve"><value>Enter input method</value></data>
