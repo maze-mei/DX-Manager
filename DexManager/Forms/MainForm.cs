@@ -136,7 +136,7 @@ namespace DexManager.Forms
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = _theme.WindowBackground;
             Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
-            ClientSize = new Size(920, 680);
+            ClientSize = new Size(920, 696);
             MinimumSize = Size;
             AutoScroll = false;
 
@@ -1707,8 +1707,8 @@ namespace DexManager.Forms
             }
 
             _statusCard = CreateCard(new Point(220, 64), new Size(686, 84));
-            _displayCard = CreateCard(new Point(220, 164), new Size(686, 166));
-            _optionsCard = CreateCard(new Point(220, 346), new Size(686, 270));
+            _displayCard = CreateCard(new Point(220, 164), new Size(686, 182));
+            _optionsCard = CreateCard(new Point(220, 362), new Size(686, 270));
 
             _pageTitle.Location = new Point(220, 14);
 
@@ -1732,11 +1732,11 @@ namespace DexManager.Forms
             MoveToCard(_dpiLabel, _displayCard, 362, 51);
             MoveToCard(_dpiBox, _displayCard, 362, 72);
             _dpiBox.Size = new Size(304, 32);
-            MoveToCard(_bitRateLabel, _displayCard, 20, 108);
-            MoveToCard(_bitRateBox, _displayCard, 20, 129);
+            MoveToCard(_bitRateLabel, _displayCard, 20, 113);
+            MoveToCard(_bitRateBox, _displayCard, 20, 134);
             _bitRateBox.Size = new Size(304, 32);
-            MoveToCard(_maxFpsLabel, _displayCard, 362, 108);
-            MoveToCard(_maxFpsBox, _displayCard, 362, 129);
+            MoveToCard(_maxFpsLabel, _displayCard, 362, 113);
+            MoveToCard(_maxFpsBox, _displayCard, 362, 134);
             _maxFpsBox.Size = new Size(304, 32);
 
             MoveToCard(_optionsTitle, _optionsCard, 20, 13);
@@ -1769,13 +1769,13 @@ namespace DexManager.Forms
             MoveToCard(_additionalArgumentsBox, _optionsCard, 190, 232);
             _additionalArgumentsBox.Size = new Size(456, 32);
 
-            _startButton.Location = new Point(754, 630);
+            _startButton.Location = new Point(754, 646);
             _stopButton.Location = _startButton.Location;
-            _applySettingsLink.Location = new Point(638, 639);
+            _applySettingsLink.Location = new Point(638, 655);
             _modeHintLabel.Visible = false;
 
             _sidebar.Location = new Point(14, 14);
-            _sidebar.Size = new Size(188, 602);
+            _sidebar.Size = new Size(188, 618);
             _sidebar.BringToFront();
         }
 
@@ -2404,6 +2404,7 @@ namespace DexManager.Forms
             if (InvokeRequired) { BeginInvoke((Action)ExitApplication); return; }
             if (_exitInProgress) return;
             _exitInProgress = true;
+            _captureCoordinator.Stop();
             BeginPhoneScreenWakeSuppression();
             _dexStatusValue.Text =
                 LocalizationService.Get("Status.ShuttingDown");

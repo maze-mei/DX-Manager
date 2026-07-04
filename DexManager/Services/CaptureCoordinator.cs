@@ -68,10 +68,18 @@ namespace DexManager.Services
             _hotkeyService.ExitHotkeyPressed += HotkeyService_ExitHotkeyPressed;
         }
 
+        public void Stop()
+        {
+            EndCaptureMode();
+            _hotkeyService.ExitHotkeyPressed -=
+                HotkeyService_ExitHotkeyPressed;
+            _hotkeyService.UnregisterCaptureHotkey();
+        }
+
         public void Dispose()
         {
+            Stop();
             _hintOverlay.Dispose();
-            _hotkeyService.ExitHotkeyPressed -= HotkeyService_ExitHotkeyPressed;
             _pollTimer.Dispose();
             _timeoutTimer.Dispose();
             _hotkeyService.Dispose();

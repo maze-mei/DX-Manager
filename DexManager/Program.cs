@@ -23,13 +23,6 @@ namespace DexManager
                 out createdNew);
             if (!createdNew)
             {
-                MessageBox.Show(
-                    LocalizationService.Format(
-                        "Program.AlreadyRunning",
-                        Environment.NewLine),
-                    LocalizationService.Get("App.Name"),
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
                 _singleInstanceMutex.Dispose();
                 return;
             }

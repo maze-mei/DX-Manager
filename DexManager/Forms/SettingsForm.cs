@@ -12,6 +12,10 @@ namespace DexManager.Forms
 {
     public sealed class SettingsForm : Form
     {
+        private const int CardContentTop = 44;
+        private const int CardContentBottom = 20;
+        private const int TableBottomPadding = 10;
+
         private readonly SettingsService _settingsService;
         private readonly AppSettings _settings;
         private readonly AdbService _adbService;
@@ -1190,7 +1194,7 @@ namespace DexManager.Forms
             string title,
             Control content)
         {
-            content.Location = new Point(18, 44);
+            content.Location = new Point(18, CardContentTop);
             content.Width = 630;
             content.BackColor = _theme.CardBackground;
             var preferred = content.GetPreferredSize(
@@ -1201,7 +1205,11 @@ namespace DexManager.Forms
             {
                 Size = new Size(
                     670,
-                    Math.Max(content.Height + 58, 94)),
+                    Math.Max(
+                        CardContentTop +
+                        content.Height +
+                        CardContentBottom,
+                        94)),
                 Margin = new Padding(0, 0, 0, 14),
                 Radius = 14,
                 BackColor = _theme.WindowBackground,
@@ -1232,7 +1240,11 @@ namespace DexManager.Forms
                 MinimumSize = new Size(630, 0),
                 MaximumSize = new Size(630, 0),
                 BackColor = ThemeColors.Current.CardBackground,
-                Padding = new Padding(0, 0, 0, 2)
+                Padding = new Padding(
+                    0,
+                    0,
+                    0,
+                    TableBottomPadding)
             };
             table.ColumnStyles.Add(new ColumnStyle(
                 SizeType.Absolute,
