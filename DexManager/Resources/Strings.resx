@@ -186,13 +186,13 @@
   <data name="Settings.EnterConversion" xml:space="preserve"><value>Toggle Enter/Shift+Enter with Scroll Lock</value></data>
   <data name="Settings.EnterMode" xml:space="preserve"><value>Enter input method</value></data>
   <data name="Settings.IgnoreShiftSpace" xml:space="preserve"><value>Ignore direct Shift+Space input</value></data>
-  <data name="Settings.DeviceInterval" xml:space="preserve"><value>Device polling interval (ms)</value></data>
-  <data name="Settings.DisconnectInterval" xml:space="preserve"><value>Disconnect polling interval (ms)</value></data>
-  <data name="Settings.StartDelay" xml:space="preserve"><value>Delay after connection (ms)</value></data>
-  <data name="Settings.WakeDelay" xml:space="preserve"><value>ADB wake-up delay (ms)</value></data>
+  <data name="Settings.DeviceInterval" xml:space="preserve"><value>Device polling interval (sec)</value></data>
+  <data name="Settings.DisconnectInterval" xml:space="preserve"><value>Disconnect polling interval (sec)</value></data>
+  <data name="Settings.StartDelay" xml:space="preserve"><value>Delay after connection (sec)</value></data>
+  <data name="Settings.WakeDelay" xml:space="preserve"><value>ADB wake-up delay (sec)</value></data>
   <data name="Settings.HideDelay" xml:space="preserve"><value>Auto-hide delay (seconds)</value></data>
   <data name="Settings.CaptureDelay" xml:space="preserve"><value>Capture selection timeout (seconds)</value></data>
-  <data name="Settings.ProcessTimeout" xml:space="preserve"><value>Process timeout (ms)</value></data>
+  <data name="Settings.ProcessTimeout" xml:space="preserve"><value>Process timeout (sec)</value></data>
   <data name="Settings.PushCapture" xml:space="preserve"><value>Send captures to the phone</value></data>
   <data name="Settings.WirelessRequiresIp" xml:space="preserve"><value>Enter the phone IP address when using wireless mode.</value></data>
   <data name="Settings.WirelessOperationFailed" xml:space="preserve"><value>Wireless operation failed: {0}</value></data>

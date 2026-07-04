@@ -186,13 +186,13 @@
   <data name="Settings.EnterConversion" xml:space="preserve"><value>Scroll Lock으로 Enter/Shift+Enter 모드 전환</value></data>
   <data name="Settings.EnterMode" xml:space="preserve"><value>Enter 전송 방식</value></data>
   <data name="Settings.IgnoreShiftSpace" xml:space="preserve"><value>직접 Shift+Space 입력 무시</value></data>
-  <data name="Settings.DeviceInterval" xml:space="preserve"><value>기기 감시 주기(ms)</value></data>
-  <data name="Settings.DisconnectInterval" xml:space="preserve"><value>분리 감시 주기(ms)</value></data>
-  <data name="Settings.StartDelay" xml:space="preserve"><value>연결 후 시작 대기(ms)</value></data>
-  <data name="Settings.WakeDelay" xml:space="preserve"><value>ADB Wake-up 대기(ms)</value></data>
+  <data name="Settings.DeviceInterval" xml:space="preserve"><value>기기 감시 주기(초)</value></data>
+  <data name="Settings.DisconnectInterval" xml:space="preserve"><value>분리 감시 주기(초)</value></data>
+  <data name="Settings.StartDelay" xml:space="preserve"><value>연결 후 시작 대기(초)</value></data>
+  <data name="Settings.WakeDelay" xml:space="preserve"><value>ADB Wake-up 대기(초)</value></data>
   <data name="Settings.HideDelay" xml:space="preserve"><value>자동 숨김 대기(초)</value></data>
   <data name="Settings.CaptureDelay" xml:space="preserve"><value>캡처 선택 대기(초)</value></data>
-  <data name="Settings.ProcessTimeout" xml:space="preserve"><value>프로세스 제한시간(ms)</value></data>
+  <data name="Settings.ProcessTimeout" xml:space="preserve"><value>프로세스 제한시간(초)</value></data>
   <data name="Settings.PushCapture" xml:space="preserve"><value>캡처 후 폰으로 전송</value></data>
   <data name="Settings.WirelessRequiresIp" xml:space="preserve"><value>무선 연결을 사용할 때는 휴대폰 IP 주소를 입력하세요.</value></data>
   <data name="Settings.WirelessOperationFailed" xml:space="preserve"><value>무선 연결 작업 실패: {0}</value></data>

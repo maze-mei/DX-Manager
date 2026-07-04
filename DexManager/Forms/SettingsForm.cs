@@ -14,7 +14,6 @@ namespace DexManager.Forms
     {
         private const int CardContentTop = 44;
         private const int CardContentBottom = 20;
-        private const int TableBottomPadding = 10;
 
         private readonly SettingsService _settingsService;
         private readonly AppSettings _settings;
@@ -418,11 +417,11 @@ namespace DexManager.Forms
         {
             var page = CreatePage();
             var monitoring = CreateTable();
-            _deviceMonitorIntervalBox = AddNumber(monitoring, LocalizationService.Get("Settings.DeviceInterval"), 200, 60000);
-            _disconnectMonitorIntervalBox = AddNumber(monitoring, LocalizationService.Get("Settings.DisconnectInterval"), 200, 60000);
-            _connectedStartDelayBox = AddNumber(monitoring, LocalizationService.Get("Settings.StartDelay"), 0, 60000);
-            _adbWakeUpDelayBox = AddNumber(monitoring, LocalizationService.Get("Settings.WakeDelay"), 0, 60000);
-            _processTimeoutBox = AddNumber(monitoring, LocalizationService.Get("Settings.ProcessTimeout"), 1000, 120000);
+            _deviceMonitorIntervalBox = AddNumber(monitoring, LocalizationService.Get("Settings.DeviceInterval"), 1, 60);
+            _disconnectMonitorIntervalBox = AddNumber(monitoring, LocalizationService.Get("Settings.DisconnectInterval"), 1, 60);
+            _connectedStartDelayBox = AddNumber(monitoring, LocalizationService.Get("Settings.StartDelay"), 0, 60);
+            _adbWakeUpDelayBox = AddNumber(monitoring, LocalizationService.Get("Settings.WakeDelay"), 0, 60);
+            _processTimeoutBox = AddNumber(monitoring, LocalizationService.Get("Settings.ProcessTimeout"), 1, 120);
             AddCard(page, LocalizationService.Get("Settings.GroupMonitoring"), monitoring);
 
             var capture = CreateTable();
@@ -481,7 +480,6 @@ namespace DexManager.Forms
             var resetButton = CreateActionButton(
                 LocalizationService.Get("Settings.ResetDefaults"),
                 220);
-            resetButton.Margin = new Padding(0, 0, 0, 12);
             resetButton.Click += ResetDefaultsButton_Click;
             panel.Controls.Add(resetButton);
             AddCard(page, LocalizationService.Get("Settings.Diagnostics"), panel);
@@ -530,13 +528,23 @@ namespace DexManager.Forms
             _disableStayAwakeBox.Checked = _settings.Features.DisableStayAwakeOnStop;
             _pushCaptureBox.Checked = _settings.Features.PushCaptureToDevice;
 
-            _deviceMonitorIntervalBox.Value = Clamp(_settings.Timing.DeviceMonitorIntervalMs, _deviceMonitorIntervalBox);
-            _disconnectMonitorIntervalBox.Value = Clamp(_settings.Timing.DisconnectMonitorIntervalMs, _disconnectMonitorIntervalBox);
-            _connectedStartDelayBox.Value = Clamp(_settings.Timing.ConnectedStartDelayMs, _connectedStartDelayBox);
-            _adbWakeUpDelayBox.Value = Clamp(_settings.Timing.AdbWakeUpDelayMs, _adbWakeUpDelayBox);
+            _deviceMonitorIntervalBox.Value = MillisecondsToSeconds(
+                _settings.Timing.DeviceMonitorIntervalMs,
+                _deviceMonitorIntervalBox);
+            _disconnectMonitorIntervalBox.Value = MillisecondsToSeconds(
+                _settings.Timing.DisconnectMonitorIntervalMs,
+                _disconnectMonitorIntervalBox);
+            _connectedStartDelayBox.Value = MillisecondsToSeconds(
+                _settings.Timing.ConnectedStartDelayMs,
+                _connectedStartDelayBox);
+            _adbWakeUpDelayBox.Value = MillisecondsToSeconds(
+                _settings.Timing.AdbWakeUpDelayMs,
+                _adbWakeUpDelayBox);
             _autoHideSecondsBox.Value = Clamp(_settings.Timing.AutoHideIdleSeconds, _autoHideSecondsBox);
             _captureWaitSecondsBox.Value = Clamp(_settings.Timing.CaptureWaitSeconds, _captureWaitSecondsBox);
-            _processTimeoutBox.Value = Clamp(_settings.Timing.ProcessTimeoutMs, _processTimeoutBox);
+            _processTimeoutBox.Value = MillisecondsToSeconds(
+                _settings.Timing.ProcessTimeoutMs,
+                _processTimeoutBox);
 
             _captureHotkeyBox.Text = _settings.KeyMappings.CaptureHotkey;
             _exitHotkeyBox.Text = _settings.KeyMappings.ExitHotkey;
@@ -680,13 +688,18 @@ namespace DexManager.Forms
             _settings.Features.DisableStayAwakeOnStop = _disableStayAwakeBox.Checked;
             _settings.Features.PushCaptureToDevice = _pushCaptureBox.Checked;
 
-            _settings.Timing.DeviceMonitorIntervalMs = (int)_deviceMonitorIntervalBox.Value;
-            _settings.Timing.DisconnectMonitorIntervalMs = (int)_disconnectMonitorIntervalBox.Value;
-            _settings.Timing.ConnectedStartDelayMs = (int)_connectedStartDelayBox.Value;
-            _settings.Timing.AdbWakeUpDelayMs = (int)_adbWakeUpDelayBox.Value;
+            _settings.Timing.DeviceMonitorIntervalMs =
+                SecondsToMilliseconds(_deviceMonitorIntervalBox);
+            _settings.Timing.DisconnectMonitorIntervalMs =
+                SecondsToMilliseconds(_disconnectMonitorIntervalBox);
+            _settings.Timing.ConnectedStartDelayMs =
+                SecondsToMilliseconds(_connectedStartDelayBox);
+            _settings.Timing.AdbWakeUpDelayMs =
+                SecondsToMilliseconds(_adbWakeUpDelayBox);
             _settings.Timing.AutoHideIdleSeconds = (int)_autoHideSecondsBox.Value;
             _settings.Timing.CaptureWaitSeconds = (int)_captureWaitSecondsBox.Value;
-            _settings.Timing.ProcessTimeoutMs = (int)_processTimeoutBox.Value;
+            _settings.Timing.ProcessTimeoutMs =
+                SecondsToMilliseconds(_processTimeoutBox);
 
             _settings.KeyMappings.CaptureHotkey = _captureHotkeyBox.Text.Trim();
             _settings.KeyMappings.ExitHotkey = _exitHotkeyBox.Text.Trim();
@@ -1197,19 +1210,23 @@ namespace DexManager.Forms
             content.Location = new Point(18, CardContentTop);
             content.Width = 630;
             content.BackColor = _theme.CardBackground;
+            content.PerformLayout();
             var preferred = content.GetPreferredSize(
                 new Size(630, 0));
-            content.Height = Math.Max(preferred.Height, 32);
+            content.Size = new Size(
+                630,
+                Math.Max(preferred.Height, 32));
 
             var card = new RoundedPanel
             {
-                Size = new Size(
-                    670,
-                    Math.Max(
-                        CardContentTop +
-                        content.Height +
-                        CardContentBottom,
-                        94)),
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(670, 94),
+                Padding = new Padding(
+                    0,
+                    0,
+                    0,
+                    CardContentBottom),
                 Margin = new Padding(0, 0, 0, 14),
                 Radius = 14,
                 BackColor = _theme.WindowBackground,
@@ -1240,11 +1257,7 @@ namespace DexManager.Forms
                 MinimumSize = new Size(630, 0),
                 MaximumSize = new Size(630, 0),
                 BackColor = ThemeColors.Current.CardBackground,
-                Padding = new Padding(
-                    0,
-                    0,
-                    0,
-                    TableBottomPadding)
+                Padding = Padding.Empty
             };
             table.ColumnStyles.Add(new ColumnStyle(
                 SizeType.Absolute,
@@ -1479,6 +1492,21 @@ namespace DexManager.Forms
             if (value < box.Minimum) return box.Minimum;
             if (value > box.Maximum) return box.Maximum;
             return value;
+        }
+
+        private static decimal MillisecondsToSeconds(
+            int milliseconds,
+            ThemedNumberControl box)
+        {
+            var seconds = (int)Math.Ceiling(
+                Math.Max(milliseconds, 0) / 1000M);
+            return Clamp(seconds, box);
+        }
+
+        private static int SecondsToMilliseconds(
+            ThemedNumberControl box)
+        {
+            return checked((int)box.Value * 1000);
         }
 
         private sealed class LanguageOption

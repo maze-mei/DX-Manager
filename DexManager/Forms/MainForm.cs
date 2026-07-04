@@ -2367,7 +2367,7 @@ namespace DexManager.Forms
                         ApplyThemeSelection);
                     _settingsForm.FormClosed += delegate { _settingsForm = null; };
                 }
-                if (!_settingsForm.Visible) _settingsForm.Show(this);
+                if (!_settingsForm.Visible) _settingsForm.Show();
                 _settingsForm.WindowState = FormWindowState.Normal;
                 _settingsForm.BringToFront();
                 _settingsForm.Activate();

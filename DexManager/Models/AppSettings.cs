@@ -51,7 +51,7 @@ namespace DexManager.Models
                 },
                 Scrcpy = new ScrcpySettings
                 {
-                    BitRate = "20M",
+                    BitRate = "8M",
                     MaxFps = 60,
                     WindowTitle = "DX Manager - DeX Station",
                     TurnScreenOff = true,
@@ -353,7 +353,7 @@ namespace DexManager.Models
                 Width = 1600,
                 Height = 900,
                 Dpi = 150,
-                BitRate = "20M",
+                BitRate = "8M",
                 MaxFps = 60,
                 TurnScreenOff = true,
                 StayAwake = true,
