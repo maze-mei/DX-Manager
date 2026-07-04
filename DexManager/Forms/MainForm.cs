@@ -978,7 +978,13 @@ namespace DexManager.Forms
                 argb == Color.Green.ToArgb() ||
                 argb == Color.DarkGreen.ToArgb();
             _indicatorStatus.Text = status;
-            _indicatorDetail.Text = detail;
+            var device = _lastDeviceState;
+            _indicatorDetail.Text =
+                device != null &&
+                device.Status == AdbDeviceStatus.Device &&
+                !string.IsNullOrWhiteSpace(_deviceInfoLabel.Text)
+                    ? detail + "  ·  " + _deviceInfoLabel.Text
+                    : detail;
         }
 
         private void ShowError(string message, Exception exception)
@@ -1697,15 +1703,14 @@ namespace DexManager.Forms
             _displayCard = CreateCard(new Point(220, 164), new Size(686, 166));
             _optionsCard = CreateCard(new Point(220, 346), new Size(686, 270));
 
-            _pageTitle.Location = new Point(238, 22);
+            _pageTitle.Location = new Point(220, 14);
 
             MoveToCard(_indicatorDot, _statusCard, 18, 20);
-            MoveToCard(_indicatorStatus, _statusCard, 70, 10);
+            MoveToCard(_indicatorStatus, _statusCard, 70, 11);
             _indicatorStatus.Size = new Size(360, 28);
-            MoveToCard(_indicatorDetail, _statusCard, 70, 38);
+            MoveToCard(_indicatorDetail, _statusCard, 70, 43);
             _indicatorDetail.Size = new Size(580, 18);
-            MoveToCard(_deviceInfoLabel, _statusCard, 70, 59);
-            _deviceInfoLabel.Size = new Size(580, 18);
+            _deviceInfoLabel.Visible = false;
 
             MoveToCard(_displaySettingsTitle, _displayCard, 20, 13);
             MoveToCard(_resolutionLabel, _displayCard, 20, 51);

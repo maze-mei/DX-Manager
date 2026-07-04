@@ -25,12 +25,12 @@ namespace DexManager.Forms
 
         private RadioButton _automaticAdbBox;
         private RadioButton _manualAdbBox;
-        private TextBox _manualAdbPathBox;
+        private ThemedTextControl _manualAdbPathBox;
         private Panel _manualAdbPanel;
-        private TextBox _scrcpyPathBox;
-        private TextBox _screenshotFolderBox;
-        private TextBox _deviceScreenshotFolderBox;
-        private TextBox _logFolderBox;
+        private ThemedTextControl _scrcpyPathBox;
+        private ThemedTextControl _screenshotFolderBox;
+        private ThemedTextControl _deviceScreenshotFolderBox;
+        private ThemedTextControl _logFolderBox;
         private CheckBox _startWithWindowsBox;
         private CheckBox _startMinimizedBox;
         private ThemedSelectControl _wakeUpModeBox;
@@ -46,8 +46,8 @@ namespace DexManager.Forms
         private ThemedNumberControl _autoHideSecondsBox;
         private ThemedNumberControl _captureWaitSecondsBox;
         private ThemedNumberControl _processTimeoutBox;
-        private TextBox _captureHotkeyBox;
-        private TextBox _exitHotkeyBox;
+        private ThemedHotkeyControl _captureHotkeyBox;
+        private ThemedHotkeyControl _exitHotkeyBox;
         private CheckBox _lowLevelHotkeyBox;
         private CheckBox _keyboardDiagnosticsBox;
         private CheckBox _convertHangulBox;
@@ -58,12 +58,12 @@ namespace DexManager.Forms
         private CheckBox _ignoreShiftSpaceBox;
         private RadioButton _usbConnectionBox;
         private RadioButton _wirelessConnectionBox;
-        private TextBox _wirelessHostBox;
+        private ThemedTextControl _wirelessHostBox;
         private ThemedNumberControl _wirelessPortBox;
         private CheckBox _wirelessAutoReconnectBox;
         private Label _wirelessStatusLabel;
         private ThemedNumberControl _pairingPortBox;
-        private TextBox _pairingCodeBox;
+        private ThemedTextControl _pairingCodeBox;
         private Button _wirelessPrepareButton;
         private Button _wirelessConnectButton;
         private Button _wirelessDisconnectButton;
@@ -156,7 +156,7 @@ namespace DexManager.Forms
             {
                 Primary = true,
                 Text = LocalizationService.Get("Common.Save"),
-                Location = new Point(492, 14),
+                Location = new Point(460, 14),
                 Size = new Size(100, 36),
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
@@ -164,7 +164,7 @@ namespace DexManager.Forms
             var closeButton = new ThemedButton
             {
                 Text = LocalizationService.Get("Common.Close"),
-                Location = new Point(602, 14),
+                Location = new Point(570, 14),
                 Size = new Size(100, 36),
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
@@ -288,9 +288,11 @@ namespace DexManager.Forms
 
             var connectionButtons = new FlowLayoutPanel
             {
-                AutoSize = true,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false
+                Dock = DockStyle.Fill,
+                Height = 34,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                Margin = Padding.Empty
             };
             _wirelessPrepareButton = CreateActionButton(
                 LocalizationService.Get("Settings.PrepareWireless"), 130);
@@ -304,15 +306,17 @@ namespace DexManager.Forms
                 LocalizationService.Get("Settings.Disconnect"), 100);
             _wirelessDisconnectButton.Click +=
                 WirelessDisconnectButton_Click;
-            connectionButtons.Controls.Add(_wirelessPrepareButton);
-            connectionButtons.Controls.Add(_wirelessConnectButton);
             connectionButtons.Controls.Add(_wirelessDisconnectButton);
+            connectionButtons.Controls.Add(_wirelessConnectButton);
+            connectionButtons.Controls.Add(_wirelessPrepareButton);
             AddRow(connection, LocalizationService.Get("Settings.WirelessActions"), connectionButtons);
 
             _wirelessStatusLabel = new Label
             {
                 AutoSize = true,
-                MaximumSize = new Size(570, 0)
+                MaximumSize = new Size(410, 0),
+                ForeColor = _theme.TextSecondary,
+                BackColor = _theme.CardBackground
             };
             AddRow(connection, LocalizationService.Get("Settings.CurrentStatus"), _wirelessStatusLabel);
             AddCard(page, LocalizationService.Get("Settings.GroupWireless"), connection);
@@ -324,7 +328,9 @@ namespace DexManager.Forms
                 new Label
                 {
                     AutoSize = true,
-                    MaximumSize = new Size(570, 0),
+                    MaximumSize = new Size(410, 0),
+                    ForeColor = _theme.TextSecondary,
+                    BackColor = _theme.CardBackground,
                     Text = LocalizationService.Get("Settings.PairGuide")
                 });
             _pairingPortBox = AddNumber(
@@ -333,11 +339,21 @@ namespace DexManager.Forms
                 1,
                 65535);
             _pairingCodeBox = AddText(pairing, LocalizationService.Get("Settings.PairingCode"));
-            _pairingCodeBox.UseSystemPasswordChar = true;
+            _pairingCodeBox.MaxLength = 6;
+            _pairingCodeBox.UsePasswordMask = true;
             _pairButton = CreateActionButton(
                 LocalizationService.Get("Settings.Pair"), 100);
             _pairButton.Click += PairButton_Click;
-            AddRow(pairing, string.Empty, _pairButton);
+            var pairButtons = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                Height = 34,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                Margin = Padding.Empty
+            };
+            pairButtons.Controls.Add(_pairButton);
+            AddRow(pairing, string.Empty, pairButtons);
             AddCard(page, LocalizationService.Get("Settings.GroupPairing"), pairing);
             return page;
         }
@@ -346,8 +362,17 @@ namespace DexManager.Forms
         {
             var page = CreatePage();
             var hotkeys = CreateTable();
-            _captureHotkeyBox = AddText(hotkeys, LocalizationService.Get("Settings.CaptureHotkey"));
-            _exitHotkeyBox = AddText(hotkeys, LocalizationService.Get("Settings.ExitHotkey"));
+            _captureHotkeyBox = AddHotkey(
+                hotkeys,
+                LocalizationService.Get("Settings.CaptureHotkey"));
+            _exitHotkeyBox = AddHotkey(
+                hotkeys,
+                LocalizationService.Get("Settings.ExitHotkey"));
+            AddRow(
+                hotkeys,
+                string.Empty,
+                CreateHint(LocalizationService.Get(
+                    "Settings.HotkeyCaptureGuide")));
             _lowLevelHotkeyBox = AddCheck(hotkeys, LocalizationService.Get("Settings.LowLevelHotkey"));
             _keyboardDiagnosticsBox = AddCheck(hotkeys, LocalizationService.Get("Settings.KeyDiagnostics"));
             AddCard(page, LocalizationService.Get("Settings.GroupHotkeys"), hotkeys);
@@ -903,9 +928,11 @@ namespace DexManager.Forms
             var table = new TableLayoutPanel
             {
                 AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                AutoSizeMode = AutoSizeMode.GrowOnly,
                 ColumnCount = 2,
                 Width = 630,
+                MinimumSize = new Size(630, 0),
+                MaximumSize = new Size(630, 0),
                 BackColor = ThemeColors.Current.CardBackground,
                 Padding = new Padding(0, 0, 0, 2)
             };
@@ -930,30 +957,50 @@ namespace DexManager.Forms
             };
         }
 
-        private static TextBox AddText(TableLayoutPanel table, string label)
+        private static ThemedTextControl AddText(
+            TableLayoutPanel table,
+            string label)
         {
             var box = CreateTextBox();
             AddRow(table, label, box);
             return box;
         }
 
-        private static TextBox AddPath(TableLayoutPanel table, string label, bool file)
+        private static ThemedHotkeyControl AddHotkey(
+            TableLayoutPanel table,
+            string label)
         {
-            TextBox box;
+            var box = new ThemedHotkeyControl
+            {
+                Dock = DockStyle.Fill,
+                Height = 32
+            };
+            AddRow(table, label, box);
+            return box;
+        }
+
+        private static ThemedTextControl AddPath(
+            TableLayoutPanel table,
+            string label,
+            bool file)
+        {
+            ThemedTextControl box;
             var panel = CreatePathPanel(out box, file);
             AddRow(table, label, panel);
             return box;
         }
 
-        private static Panel CreatePathPanel(out TextBox box, bool file)
+        private static Panel CreatePathPanel(
+            out ThemedTextControl box,
+            bool file)
         {
             var textBox = CreateTextBox();
             box = textBox;
             var button = new ThemedButton
             {
                 Text = LocalizationService.Get("Common.Browse"),
-                Dock = DockStyle.Right,
-                Width = 92
+                Dock = DockStyle.Fill,
+                Margin = new Padding(8, 0, 0, 0)
             };
             button.Click += delegate
             {
@@ -976,26 +1023,34 @@ namespace DexManager.Forms
                     }
                 }
             };
-            var panel = new Panel
+            var panel = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 Height = 32,
+                ColumnCount = 2,
+                RowCount = 1,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty,
                 BackColor = ThemeColors.Current.CardBackground
             };
-            panel.Controls.Add(textBox);
-            panel.Controls.Add(button);
+            panel.ColumnStyles.Add(new ColumnStyle(
+                SizeType.Percent,
+                100F));
+            panel.ColumnStyles.Add(new ColumnStyle(
+                SizeType.Absolute,
+                100F));
+            panel.Controls.Add(textBox, 0, 0);
+            panel.Controls.Add(button, 1, 0);
             return panel;
         }
 
-        private static TextBox CreateTextBox()
+        private static ThemedTextControl CreateTextBox()
         {
-            return new TextBox
+            return new ThemedTextControl
             {
                 Dock = DockStyle.Fill,
-                BorderStyle = BorderStyle.FixedSingle,
-                BackColor = ThemeColors.Current.CardSoft,
-                ForeColor = ThemeColors.Current.TextPrimary,
-                Font = new Font("Segoe UI", 9F)
+                Height = 32,
+                Margin = Padding.Empty
             };
         }
 
@@ -1011,8 +1066,7 @@ namespace DexManager.Forms
                 Maximum = max,
                 Increment = 1,
                 ShowStepButtons = true,
-                Dock = DockStyle.Left,
-                Width = 150,
+                Dock = DockStyle.Fill,
                 Height = 32
             };
             box.Value = min;
@@ -1051,8 +1105,7 @@ namespace DexManager.Forms
         {
             return new ThemedSelectControl
             {
-                Dock = DockStyle.Left,
-                Width = 240,
+                Dock = DockStyle.Fill,
                 Height = 32
             };
         }
@@ -1086,7 +1139,7 @@ namespace DexManager.Forms
             AddRow(table, label, new Label
             {
                 AutoSize = true,
-                MaximumSize = new Size(400, 0),
+                MaximumSize = new Size(410, 0),
                 ForeColor = ThemeColors.Current.TextSecondary,
                 BackColor = ThemeColors.Current.CardBackground,
                 Text = value
@@ -1107,7 +1160,7 @@ namespace DexManager.Forms
                 Margin = new Padding(3, 9, 12, 9)
             }, 0, row);
             table.Controls.Add(control, 1, row);
-            control.Margin = new Padding(3, 5, 3, 6);
+            control.Margin = new Padding(3, 5, 0, 6);
         }
 
         private static decimal Clamp(int value, ThemedNumberControl box)

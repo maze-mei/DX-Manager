@@ -80,7 +80,7 @@ namespace DexManager.Forms
             bounds.Height--;
             var colors = ThemeColors.Current;
             var fill = NavigationStyle
-                ? (Primary ? colors.AccentSoft : background)
+                ? (Primary || _hovered ? colors.AccentSoft : background)
                 : (Primary
                     ? (_hovered ? colors.AccentHover : colors.Accent)
                     : (_hovered ? colors.AccentSoft : colors.CardSoft));

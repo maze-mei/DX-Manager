@@ -167,6 +167,7 @@
   <data name="Settings.Pair" xml:space="preserve"><value>페어링</value></data>
   <data name="Settings.CaptureHotkey" xml:space="preserve"><value>캡처 단축키</value></data>
   <data name="Settings.ExitHotkey" xml:space="preserve"><value>종료 단축키</value></data>
+  <data name="Settings.HotkeyCaptureGuide" xml:space="preserve"><value>입력란을 선택한 뒤 원하는 키 또는 키 조합을 누르세요. Delete/Backspace: 해제, Esc: 취소</value></data>
   <data name="Settings.LowLevelHotkey" xml:space="preserve"><value>저수준 키보드 후크로 단축키 처리</value></data>
   <data name="Settings.KeyDiagnostics" xml:space="preserve"><value>키 진단 로그 남기기</value></data>
   <data name="Settings.HangulCorrection" xml:space="preserve"><value>한영키를 Shift+Space로 보정</value></data>

@@ -222,7 +222,9 @@ namespace DexManager.Services
                 data.VirtualKey == (uint)NativeMethods.VkLControl ||
                 data.VirtualKey == (uint)NativeMethods.VkRControl ||
                 data.VirtualKey == (uint)NativeMethods.VkLShift ||
-                data.VirtualKey == (uint)NativeMethods.VkRShift;
+                data.VirtualKey == (uint)NativeMethods.VkRShift ||
+                data.VirtualKey == (uint)NativeMethods.VkLwin ||
+                data.VirtualKey == (uint)NativeMethods.VkRwin;
         }
 
         private void LogKeyboardEvent(LowLevelKeyboardInput data, int message)
@@ -256,6 +258,8 @@ namespace DexManager.Services
             public bool RightCtrl;
             public bool LeftShift;
             public bool RightShift;
+            public bool LeftWindows;
+            public bool RightWindows;
 
             public static ModifierState Read()
             {
@@ -266,7 +270,9 @@ namespace DexManager.Services
                     LeftCtrl = IsDown(NativeMethods.VkLControl),
                     RightCtrl = IsDown(NativeMethods.VkRControl),
                     LeftShift = IsDown(NativeMethods.VkLShift),
-                    RightShift = IsDown(NativeMethods.VkRShift)
+                    RightShift = IsDown(NativeMethods.VkRShift),
+                    LeftWindows = IsDown(NativeMethods.VkLwin),
+                    RightWindows = IsDown(NativeMethods.VkRwin)
                 };
             }
 
@@ -277,7 +283,9 @@ namespace DexManager.Services
                     ",LCtrl=" + LeftCtrl +
                     ",RCtrl=" + RightCtrl +
                     ",LShift=" + LeftShift +
-                    ",RShift=" + RightShift;
+                    ",RShift=" + RightShift +
+                    ",LWin=" + LeftWindows +
+                    ",RWin=" + RightWindows;
             }
 
             private static bool IsDown(int virtualKey)
@@ -303,6 +311,9 @@ namespace DexManager.Services
             public bool LeftShift { get; set; }
             public bool RightShift { get; set; }
             public bool AnyShift { get; set; }
+            public bool LeftWindows { get; set; }
+            public bool RightWindows { get; set; }
+            public bool AnyWindows { get; set; }
 
             public static KeyShortcut Parse(string text, KeyShortcut fallback)
             {
@@ -338,6 +349,17 @@ namespace DexManager.Services
                         result.RightShift = true;
                     else if (part.Equals("Shift", StringComparison.OrdinalIgnoreCase))
                         result.AnyShift = true;
+                    else if (part.Equals("LeftWindows", StringComparison.OrdinalIgnoreCase) ||
+                        part.Equals("LeftWin", StringComparison.OrdinalIgnoreCase) ||
+                        part.Equals("LWin", StringComparison.OrdinalIgnoreCase))
+                        result.LeftWindows = true;
+                    else if (part.Equals("RightWindows", StringComparison.OrdinalIgnoreCase) ||
+                        part.Equals("RightWin", StringComparison.OrdinalIgnoreCase) ||
+                        part.Equals("RWin", StringComparison.OrdinalIgnoreCase))
+                        result.RightWindows = true;
+                    else if (part.Equals("Windows", StringComparison.OrdinalIgnoreCase) ||
+                        part.Equals("Win", StringComparison.OrdinalIgnoreCase))
+                        result.AnyWindows = true;
                     else
                     {
                         Keys key;
@@ -358,6 +380,13 @@ namespace DexManager.Services
                     return false;
                 if (!MatchesSide(LeftShift, RightShift, AnyShift, state.LeftShift, state.RightShift))
                     return false;
+                if (!MatchesSide(
+                    LeftWindows,
+                    RightWindows,
+                    AnyWindows,
+                    state.LeftWindows,
+                    state.RightWindows))
+                    return false;
                 return true;
             }
 
@@ -366,10 +395,13 @@ namespace DexManager.Services
                 const uint modAlt = 0x0001;
                 const uint modControl = 0x0002;
                 const uint modShift = 0x0004;
+                const uint modWindows = 0x0008;
                 modifiers = 0;
                 if (LeftAlt || RightAlt || AnyAlt) modifiers |= modAlt;
                 if (LeftCtrl || RightCtrl || AnyCtrl) modifiers |= modControl;
                 if (LeftShift || RightShift || AnyShift) modifiers |= modShift;
+                if (LeftWindows || RightWindows || AnyWindows)
+                    modifiers |= modWindows;
                 key = (uint)Key;
             }
 
@@ -385,6 +417,9 @@ namespace DexManager.Services
                 Append(ref value, LeftShift, "LeftShift");
                 Append(ref value, RightShift, "RightShift");
                 Append(ref value, AnyShift, "Shift");
+                Append(ref value, LeftWindows, "LeftWindows");
+                Append(ref value, RightWindows, "RightWindows");
+                Append(ref value, AnyWindows, "Windows");
                 return value + Key;
             }
 

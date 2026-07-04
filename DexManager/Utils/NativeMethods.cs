@@ -19,6 +19,7 @@ namespace DexManager.Utils
         internal const int HwndBroadcast = 0xFFFF;
         internal const int SmtoAbortIfHung = 0x0002;
         internal const int LlkhfInjected = 0x00000010;
+        internal const int LlkhfExtended = 0x00000001;
         internal const byte KeyeventfKeyup = 0x0002;
         internal const byte KeyeventfScancode = 0x0008;
         internal const int VkShift = 0x10;
@@ -33,12 +34,14 @@ namespace DexManager.Utils
         internal const int VkSpace = 0x20;
         internal const int VkReturn = 0x0D;
         internal const int VkScroll = 0x91;
+        internal const int VkLwin = 0x5B;
         internal const int VkRwin = 0x5C;
         internal const int VkF24 = 0x87;
         internal const int VkHangul = 0x15;
         internal const int HangulScanCode = 0xF2;
         internal const int LeftAltScanCode = 0x38;
         internal const ushort LeftShiftScanCode = 0x2A;
+        internal const ushort RightShiftScanCode = 0x36;
         internal const ushort SpaceScanCode = 0x39;
         internal const ushort EnterScanCode = 0x1C;
         internal const uint InputKeyboard = 1;

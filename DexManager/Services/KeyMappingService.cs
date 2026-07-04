@@ -22,6 +22,8 @@ namespace DexManager.Services
         private bool _hangulHeld;
         private bool _scrollLockHeld;
         private bool _enterShiftMode;
+        private bool _normalizingRightShift;
+        private bool _rightShiftNormalizationLogged;
 
         public KeyMappingService(
             ScrcpyService scrcpyService,
@@ -115,6 +117,29 @@ namespace DexManager.Services
                 IsKeyboardDiagnosticTarget(data))
             {
                 LogKeyboardDiagnostic(data, message);
+            }
+
+            if (data.VirtualKey == NativeMethods.VkRShift &&
+                data.ScanCode == NativeMethods.RightShiftScanCode &&
+                (data.Flags & NativeMethods.LlkhfExtended) != 0)
+            {
+                if (keyDown)
+                {
+                    if (SendNormalizedRightShift(false))
+                    {
+                        _normalizingRightShift = true;
+                        LogRightShiftNormalization();
+                        return new IntPtr(1);
+                    }
+                }
+                else if (keyUp && _normalizingRightShift)
+                {
+                    if (SendNormalizedRightShift(true))
+                    {
+                        _normalizingRightShift = false;
+                        return new IntPtr(1);
+                    }
+                }
             }
 
             if (_settings.ConvertEnterToShiftEnter &&
@@ -244,6 +269,7 @@ namespace DexManager.Services
                 data.VirtualKey == NativeMethods.VkSpace ||
                 data.VirtualKey == NativeMethods.VkScroll ||
                 data.VirtualKey == NativeMethods.VkReturn ||
+                data.VirtualKey == NativeMethods.VkRShift ||
                 data.ScanCode == NativeMethods.HangulScanCode ||
                 data.ScanCode == NativeMethods.LeftAltScanCode;
         }
@@ -368,6 +394,29 @@ namespace DexManager.Services
             if (sent != inputs.Length)
                 LogSendInputFailure(description, "ScanCode", sent, inputs.Length, inputSize);
             return sent == inputs.Length;
+        }
+
+        private bool SendNormalizedRightShift(bool keyUp)
+        {
+            var inputs = new[]
+            {
+                CreateScanCodeInput(
+                    NativeMethods.RightShiftScanCode,
+                    keyUp)
+            };
+            var sent = NativeMethods.SendInput(
+                1,
+                inputs,
+                Marshal.SizeOf(typeof(Input)));
+            return sent == 1;
+        }
+
+        private void LogRightShiftNormalization()
+        {
+            if (_rightShiftNormalizationLogged) return;
+            _rightShiftNormalizationLogged = true;
+            _logService.Info(
+                "Scrcpy 입력용 오른쪽 Shift 스캔코드를 정상 형식으로 보정합니다.");
         }
 
         private void LogSendInputFailure(

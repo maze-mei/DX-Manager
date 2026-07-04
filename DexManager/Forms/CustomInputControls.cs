@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
+using DexManager.Utils;
 
 namespace DexManager.Forms
 {
@@ -266,12 +267,18 @@ namespace DexManager.Forms
         }
 
         public int MaxLength { get; set; }
+        public bool UsePasswordMask { get; set; }
 
         public void SelectAll()
         {
             _selectionStart = 0;
             _selectionLength = Text.Length;
             Invalidate();
+        }
+
+        public void Clear()
+        {
+            Text = string.Empty;
         }
 
         protected override void OnTextChanged(EventArgs e)
@@ -424,6 +431,9 @@ namespace DexManager.Forms
                 Enabled);
 
             var value = Text ?? string.Empty;
+            var displayValue = UsePasswordMask
+                ? new string('\u2022', value.Length)
+                : value;
             var selectionStart = Math.Max(
                 0,
                 Math.Min(_selectionStart, value.Length));
@@ -436,7 +446,7 @@ namespace DexManager.Forms
             {
                 DrawText(
                     e.Graphics,
-                    value,
+                    displayValue,
                     10,
                     textY,
                     textColor,
@@ -444,8 +454,8 @@ namespace DexManager.Forms
 
                 if (Focused && selectionLength > 0)
                 {
-                    var prefix = value.Substring(0, selectionStart);
-                    var selected = value.Substring(
+                    var prefix = displayValue.Substring(0, selectionStart);
+                    var selected = displayValue.Substring(
                         selectionStart,
                         selectionLength);
                     var selectionX = 10F + MeasureText(
@@ -474,7 +484,7 @@ namespace DexManager.Forms
                 {
                     var caretX = 10F + MeasureText(
                         e.Graphics,
-                        value.Substring(0, selectionStart),
+                        displayValue.Substring(0, selectionStart),
                         format);
                     using (var pen = new Pen(colors.TextPrimary))
                         e.Graphics.DrawLine(
@@ -657,6 +667,129 @@ namespace DexManager.Forms
             format.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces |
                 StringFormatFlags.NoWrap;
             return format;
+        }
+    }
+
+    internal sealed class ThemedHotkeyControl : ThemedTextControl
+    {
+        private string _valueBeforeCapture = string.Empty;
+
+        public ThemedHotkeyControl()
+        {
+            MaxLength = 80;
+        }
+
+        protected override void OnEnter(EventArgs e)
+        {
+            _valueBeforeCapture = Text;
+            base.OnEnter(e);
+        }
+
+        protected override bool ProcessCmdKey(
+            ref Message message,
+            Keys keyData)
+        {
+            var key = keyData & Keys.KeyCode;
+            if (key == Keys.Tab)
+                return base.ProcessCmdKey(ref message, keyData);
+
+            if (key == Keys.Escape)
+            {
+                Text = _valueBeforeCapture;
+                SelectAll();
+                return true;
+            }
+
+            if (key == Keys.Delete || key == Keys.Back)
+            {
+                Text = string.Empty;
+                SelectAll();
+                return true;
+            }
+
+            if (IsModifierKey(key))
+                return true;
+
+            Text = BuildShortcut(key, keyData);
+            _valueBeforeCapture = Text;
+            SelectAll();
+            return true;
+        }
+
+        protected override void OnKeyPress(KeyPressEventArgs e)
+        {
+            e.Handled = true;
+        }
+
+        private static string BuildShortcut(Keys key, Keys keyData)
+        {
+            var parts = new List<string>();
+            AppendModifier(
+                parts,
+                NativeMethods.VkLControl,
+                NativeMethods.VkRControl,
+                (keyData & Keys.Control) == Keys.Control,
+                "LeftCtrl",
+                "RightCtrl",
+                "Ctrl");
+            AppendModifier(
+                parts,
+                NativeMethods.VkLMenu,
+                NativeMethods.VkRMenu,
+                (keyData & Keys.Alt) == Keys.Alt,
+                "LeftAlt",
+                "RightAlt",
+                "Alt");
+            AppendModifier(
+                parts,
+                NativeMethods.VkLShift,
+                NativeMethods.VkRShift,
+                (keyData & Keys.Shift) == Keys.Shift,
+                "LeftShift",
+                "RightShift",
+                "Shift");
+
+            if (IsDown(Keys.LWin)) parts.Add("LeftWindows");
+            if (IsDown(Keys.RWin)) parts.Add("RightWindows");
+            parts.Add(key.ToString());
+            return string.Join("+", parts.ToArray());
+        }
+
+        private static void AppendModifier(
+            ICollection<string> parts,
+            int leftKey,
+            int rightKey,
+            bool genericDown,
+            string leftName,
+            string rightName,
+            string genericName)
+        {
+            var leftDown = IsDown((Keys)leftKey);
+            var rightDown = IsDown((Keys)rightKey);
+            if (leftDown) parts.Add(leftName);
+            if (rightDown) parts.Add(rightName);
+            if (!leftDown && !rightDown && genericDown)
+                parts.Add(genericName);
+        }
+
+        private static bool IsDown(Keys key)
+        {
+            return (NativeMethods.GetAsyncKeyState((int)key) & 0x8000) != 0;
+        }
+
+        private static bool IsModifierKey(Keys key)
+        {
+            return key == Keys.ShiftKey ||
+                key == Keys.LShiftKey ||
+                key == Keys.RShiftKey ||
+                key == Keys.ControlKey ||
+                key == Keys.LControlKey ||
+                key == Keys.RControlKey ||
+                key == Keys.Menu ||
+                key == Keys.LMenu ||
+                key == Keys.RMenu ||
+                key == Keys.LWin ||
+                key == Keys.RWin;
         }
     }
 

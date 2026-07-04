@@ -167,6 +167,7 @@
   <data name="Settings.Pair" xml:space="preserve"><value>Pair</value></data>
   <data name="Settings.CaptureHotkey" xml:space="preserve"><value>Capture hotkey</value></data>
   <data name="Settings.ExitHotkey" xml:space="preserve"><value>Exit hotkey</value></data>
+  <data name="Settings.HotkeyCaptureGuide" xml:space="preserve"><value>Select a field, then press the desired key or key combination. Delete/Backspace: clear, Esc: cancel</value></data>
   <data name="Settings.LowLevelHotkey" xml:space="preserve"><value>Use low-level keyboard hook for hotkeys</value></data>
   <data name="Settings.KeyDiagnostics" xml:space="preserve"><value>Write keyboard diagnostic logs</value></data>
   <data name="Settings.HangulCorrection" xml:space="preserve"><value>Convert Korean/English key to Shift+Space</value></data>
