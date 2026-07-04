@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DexManager.Models;
@@ -251,6 +252,7 @@ namespace DexManager.Forms
             _scrcpyPathBox = AddPath(paths, LocalizationService.Get("Settings.ScrcpyPath"), true);
             _screenshotFolderBox = AddPath(paths, LocalizationService.Get("Settings.ScreenshotFolder"), false);
             _deviceScreenshotFolderBox = AddText(paths, LocalizationService.Get("Settings.DeviceFolder"));
+            _deviceScreenshotFolderBox.UseMiddleEllipsis = true;
             _logFolderBox = AddPath(paths, LocalizationService.Get("Settings.LogFolder"), false);
             AddCard(page, LocalizationService.Get("Settings.GroupStorage"), paths);
             return page;
@@ -286,14 +288,21 @@ namespace DexManager.Forms
                 connection,
                 LocalizationService.Get("Settings.AutoReconnect"));
 
-            var connectionButtons = new FlowLayoutPanel
+            var connectionButtons = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 Height = 34,
-                FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = false,
-                Margin = Padding.Empty
+                ColumnCount = 3,
+                RowCount = 1,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty
             };
+            connectionButtons.ColumnStyles.Add(
+                new ColumnStyle(SizeType.Percent, 33.333F));
+            connectionButtons.ColumnStyles.Add(
+                new ColumnStyle(SizeType.Percent, 33.334F));
+            connectionButtons.ColumnStyles.Add(
+                new ColumnStyle(SizeType.Percent, 33.333F));
             _wirelessPrepareButton = CreateActionButton(
                 LocalizationService.Get("Settings.PrepareWireless"), 130);
             _wirelessPrepareButton.Click +=
@@ -306,9 +315,15 @@ namespace DexManager.Forms
                 LocalizationService.Get("Settings.Disconnect"), 100);
             _wirelessDisconnectButton.Click +=
                 WirelessDisconnectButton_Click;
-            connectionButtons.Controls.Add(_wirelessDisconnectButton);
-            connectionButtons.Controls.Add(_wirelessConnectButton);
-            connectionButtons.Controls.Add(_wirelessPrepareButton);
+            _wirelessPrepareButton.Dock = DockStyle.Fill;
+            _wirelessPrepareButton.Margin = new Padding(0, 0, 5, 0);
+            _wirelessConnectButton.Dock = DockStyle.Fill;
+            _wirelessConnectButton.Margin = new Padding(3, 0, 3, 0);
+            _wirelessDisconnectButton.Dock = DockStyle.Fill;
+            _wirelessDisconnectButton.Margin = new Padding(5, 0, 0, 0);
+            connectionButtons.Controls.Add(_wirelessPrepareButton, 0, 0);
+            connectionButtons.Controls.Add(_wirelessConnectButton, 1, 0);
+            connectionButtons.Controls.Add(_wirelessDisconnectButton, 2, 0);
             AddRow(connection, LocalizationService.Get("Settings.WirelessActions"), connectionButtons);
 
             _wirelessStatusLabel = new Label
@@ -467,11 +482,15 @@ namespace DexManager.Forms
             _automaticAdbBox.Checked =
                 _settings.Paths.AdbSelectionMode == AdbSelectionMode.Auto;
             _manualAdbBox.Checked = !_automaticAdbBox.Checked;
-            _manualAdbPathBox.Text = _settings.Paths.AdbPath;
-            _scrcpyPathBox.Text = _settings.Paths.ScrcpyPath;
-            _screenshotFolderBox.Text = _settings.Paths.ScreenshotFolder;
+            _manualAdbPathBox.Text = ResolveDisplayPath(
+                _settings.Paths.AdbPath);
+            _scrcpyPathBox.Text = ResolveDisplayPath(
+                _settings.Paths.ScrcpyPath);
+            _screenshotFolderBox.Text = ResolveDisplayPath(
+                _settings.Paths.ScreenshotFolder);
             _deviceScreenshotFolderBox.Text = _settings.Paths.DeviceScreenshotFolder;
-            _logFolderBox.Text = _settings.Paths.LogFolder;
+            _logFolderBox.Text = ResolveDisplayPath(
+                _settings.Paths.LogFolder);
 
             _startWithWindowsBox.Checked = _settings.Features.StartWithWindows;
             _startMinimizedBox.Checked = _settings.Features.StartMinimizedToTray;
@@ -565,11 +584,15 @@ namespace DexManager.Forms
             _settings.Paths.AdbSelectionMode = _manualAdbBox.Checked
                 ? AdbSelectionMode.Manual
                 : AdbSelectionMode.Auto;
-            _settings.Paths.AdbPath = _manualAdbPathBox.Text.Trim();
-            _settings.Paths.ScrcpyPath = _scrcpyPathBox.Text.Trim();
-            _settings.Paths.ScreenshotFolder = _screenshotFolderBox.Text.Trim();
+            _settings.Paths.AdbPath = ToConfiguredPath(
+                _manualAdbPathBox.Text);
+            _settings.Paths.ScrcpyPath = ToConfiguredPath(
+                _scrcpyPathBox.Text);
+            _settings.Paths.ScreenshotFolder = ToConfiguredPath(
+                _screenshotFolderBox.Text);
             _settings.Paths.DeviceScreenshotFolder = _deviceScreenshotFolderBox.Text.Trim();
-            _settings.Paths.LogFolder = _logFolderBox.Text.Trim();
+            _settings.Paths.LogFolder = ToConfiguredPath(
+                _logFolderBox.Text);
 
             _settings.Features.StartWithWindows = _startWithWindowsBox.Checked;
             _settings.Features.StartMinimizedToTray = _startMinimizedBox.Checked;
@@ -614,6 +637,46 @@ namespace DexManager.Forms
                 ? AdbConnectionMode.Wireless
                 : AdbConnectionMode.Usb;
             SaveConnectionDetails();
+        }
+
+        private string ResolveDisplayPath(string configuredPath)
+        {
+            try
+            {
+                return _settingsService.ResolvePath(configuredPath);
+            }
+            catch
+            {
+                return configuredPath ?? string.Empty;
+            }
+        }
+
+        private string ToConfiguredPath(string displayedPath)
+        {
+            var value = (displayedPath ?? string.Empty).Trim();
+            if (value.Length == 0) return string.Empty;
+
+            try
+            {
+                var fullPath = _settingsService.ResolvePath(value);
+                var basePath = Path.GetFullPath(
+                    _settingsService.BaseDirectory)
+                    .TrimEnd(
+                        Path.DirectorySeparatorChar,
+                        Path.AltDirectorySeparatorChar) +
+                    Path.DirectorySeparatorChar;
+                if (fullPath.StartsWith(
+                    basePath,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return fullPath.Substring(basePath.Length);
+                }
+                return fullPath;
+            }
+            catch
+            {
+                return value;
+            }
         }
 
         private void SaveConnectionDetails()
@@ -995,6 +1058,7 @@ namespace DexManager.Forms
             bool file)
         {
             var textBox = CreateTextBox();
+            textBox.UseMiddleEllipsis = true;
             box = textBox;
             var button = new ThemedButton
             {

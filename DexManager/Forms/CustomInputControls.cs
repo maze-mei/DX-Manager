@@ -268,6 +268,7 @@ namespace DexManager.Forms
 
         public int MaxLength { get; set; }
         public bool UsePasswordMask { get; set; }
+        public bool UseMiddleEllipsis { get; set; }
 
         public void SelectAll()
         {
@@ -444,6 +445,14 @@ namespace DexManager.Forms
             var textColor = Enabled ? colors.TextPrimary : colors.DisabledText;
             using (var format = CreateTextFormat())
             {
+                if (UseMiddleEllipsis && !Focused)
+                {
+                    displayValue = FitMiddleEllipsis(
+                        e.Graphics,
+                        displayValue,
+                        Math.Max(Width - 20, 0),
+                        format);
+                }
                 DrawText(
                     e.Graphics,
                     displayValue,
@@ -497,6 +506,43 @@ namespace DexManager.Forms
             }
 
             DrawAdornment(e.Graphics);
+        }
+
+        private string FitMiddleEllipsis(
+            Graphics graphics,
+            string value,
+            float maximumWidth,
+            StringFormat format)
+        {
+            if (string.IsNullOrEmpty(value) ||
+                MeasureText(graphics, value, format) <= maximumWidth)
+            {
+                return value;
+            }
+
+            const string ellipsis = "...";
+            var low = 0;
+            var high = value.Length;
+            var best = ellipsis;
+            while (low <= high)
+            {
+                var keep = (low + high) / 2;
+                var left = (keep + 1) / 2;
+                var right = keep / 2;
+                var candidate = value.Substring(0, left) +
+                    ellipsis +
+                    value.Substring(value.Length - right);
+                if (MeasureText(graphics, candidate, format) <= maximumWidth)
+                {
+                    best = candidate;
+                    low = keep + 1;
+                }
+                else
+                {
+                    high = keep - 1;
+                }
+            }
+            return best;
         }
 
         protected virtual bool AcceptCharacter(char value)

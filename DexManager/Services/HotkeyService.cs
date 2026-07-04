@@ -30,6 +30,7 @@ namespace DexManager.Services
 
         public event EventHandler CaptureHotkeyPressed;
         public event EventHandler ExitHotkeyPressed;
+        public Func<bool> CaptureContextActive { get; set; }
 
         public void RegisterCaptureHotkey(Keys fallbackKey)
         {
@@ -114,6 +115,15 @@ namespace DexManager.Services
                     _captureShortcut +
                     ", Modifiers=" + modifiers +
                     ", Key=" + key);
+                if (_settings.UseLowLevelHotkeys)
+                {
+                    NativeMethods.UnregisterHotKey(
+                        Handle,
+                        CaptureHotkeyId);
+                    _registered = false;
+                    _logService.Info(
+                        "저수준 후크 사용을 위해 진단용 RegisterHotKey 등록을 해제했습니다.");
+                }
                 return;
             }
 
@@ -201,8 +211,13 @@ namespace DexManager.Services
 
                     if (_captureShortcut.Matches((Keys)data.VirtualKey, state))
                     {
-                        RaiseCapture();
-                        return new IntPtr(1);
+                        var contextActive = CaptureContextActive == null ||
+                            CaptureContextActive();
+                        if (contextActive)
+                        {
+                            RaiseCapture();
+                            return new IntPtr(1);
+                        }
                     }
                 }
             }

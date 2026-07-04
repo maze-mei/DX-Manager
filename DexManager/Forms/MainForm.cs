@@ -1705,10 +1705,10 @@ namespace DexManager.Forms
 
             _pageTitle.Location = new Point(220, 14);
 
-            MoveToCard(_indicatorDot, _statusCard, 18, 20);
-            MoveToCard(_indicatorStatus, _statusCard, 70, 11);
+            MoveToCard(_indicatorDot, _statusCard, 18, 22);
+            MoveToCard(_indicatorStatus, _statusCard, 70, 16);
             _indicatorStatus.Size = new Size(360, 28);
-            MoveToCard(_indicatorDetail, _statusCard, 70, 43);
+            MoveToCard(_indicatorDetail, _statusCard, 70, 48);
             _indicatorDetail.Size = new Size(580, 18);
             _deviceInfoLabel.Visible = false;
 

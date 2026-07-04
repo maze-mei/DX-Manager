@@ -49,6 +49,8 @@ namespace DexManager.Services
             };
             _timeoutTimer.Tick += delegate { CancelCaptureMode("시간 초과"); };
             _hotkeyService.CaptureHotkeyPressed += HotkeyService_CaptureHotkeyPressed;
+            _hotkeyService.CaptureContextActive =
+                IsCaptureHotkeyContextActive;
             _hintOverlay = new CaptureHintOverlayForm();
         }
 
@@ -159,6 +161,15 @@ namespace DexManager.Services
             foreach (var handle in _singleWindowService.GetWindowHandles())
                 return handle;
             return IntPtr.Zero;
+        }
+
+        private bool IsCaptureHotkeyContextActive()
+        {
+            if (_waitingForCaptureChoice) return true;
+            var foreground = NativeMethods.GetForegroundWindow();
+            if (foreground == IntPtr.Zero) return false;
+            return foreground == _scrcpyService.MainWindowHandle ||
+                _singleWindowService.ContainsWindowHandle(foreground);
         }
 
         private void PollTimer_Tick(object sender, EventArgs e)
