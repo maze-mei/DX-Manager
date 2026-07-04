@@ -18,11 +18,16 @@ namespace DexManager.Forms
         private readonly WirelessAdbService _wirelessAdbService;
         private readonly Action _showLogs;
         private readonly Action _showEnvironmentCheck;
-        private readonly ThemePalette _theme;
+        private readonly Action<AppTheme> _applyTheme;
+        private ThemePalette _theme;
         private readonly List<Control> _pages = new List<Control>();
         private readonly List<ThemedButton> _navigationButtons =
             new List<ThemedButton>();
         private Panel _contentHost;
+        private Panel _bottomPanel;
+        private RoundedPanel _sidebar;
+        private Label _titleLabel;
+        private Label _descriptionLabel;
 
         private RadioButton _automaticAdbBox;
         private RadioButton _manualAdbBox;
@@ -80,7 +85,8 @@ namespace DexManager.Forms
             AdbService adbService,
             WirelessAdbService wirelessAdbService,
             Action showLogs,
-            Action showEnvironmentCheck)
+            Action showEnvironmentCheck,
+            Action<AppTheme> applyTheme)
         {
             _settingsService = settingsService;
             _settings = settings;
@@ -88,6 +94,7 @@ namespace DexManager.Forms
             _wirelessAdbService = wirelessAdbService;
             _showLogs = showLogs;
             _showEnvironmentCheck = showEnvironmentCheck;
+            _applyTheme = applyTheme;
             _theme = ThemeColors.Current;
 
             Text = LocalizationService.Get("Settings.Title");
@@ -97,7 +104,7 @@ namespace DexManager.Forms
             Font = new Font("Segoe UI", 9F);
             BackColor = _theme.WindowBackground;
 
-            var title = new Label
+            _titleLabel = new Label
             {
                 AutoSize = false,
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -106,7 +113,7 @@ namespace DexManager.Forms
                 Size = new Size(690, 40),
                 Text = LocalizationService.Get("Main.Settings")
             };
-            var description = new Label
+            _descriptionLabel = new Label
             {
                 AutoEllipsis = true,
                 ForeColor = _theme.TextTertiary,
@@ -136,7 +143,7 @@ namespace DexManager.Forms
                 _contentHost.Controls.Add(page);
             }
 
-            var bottomPanel = new Panel
+            _bottomPanel = new Panel
             {
                 Location = new Point(220, 624),
                 Size = new Size(704, 62),
@@ -147,9 +154,9 @@ namespace DexManager.Forms
             _saveStatusLabel = new Label
             {
                 ForeColor = _theme.TextTertiary,
-                Location = new Point(0, 2),
-                Size = new Size(470, 24),
-                TextAlign = ContentAlignment.MiddleRight,
+                Location = new Point(0, 14),
+                Size = new Size(440, 36),
+                TextAlign = ContentAlignment.MiddleLeft,
                 AutoEllipsis = true,
                 Visible = false
             };
@@ -170,9 +177,9 @@ namespace DexManager.Forms
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
             closeButton.Click += delegate { Close(); };
-            bottomPanel.Controls.Add(_saveStatusLabel);
-            bottomPanel.Controls.Add(saveButton);
-            bottomPanel.Controls.Add(closeButton);
+            _bottomPanel.Controls.Add(_saveStatusLabel);
+            _bottomPanel.Controls.Add(saveButton);
+            _bottomPanel.Controls.Add(closeButton);
             _saveStatusTimer = new Timer { Interval = 2800 };
             _saveStatusTimer.Tick += delegate
             {
@@ -183,9 +190,9 @@ namespace DexManager.Forms
 
             Controls.Add(BuildSidebar());
             Controls.Add(_contentHost);
-            Controls.Add(title);
-            Controls.Add(description);
-            Controls.Add(bottomPanel);
+            Controls.Add(_titleLabel);
+            Controls.Add(_descriptionLabel);
+            Controls.Add(_bottomPanel);
             LoadValues();
             ShowPage(0);
         }
@@ -455,6 +462,21 @@ namespace DexManager.Forms
             };
             panel.Controls.Add(logButton);
             panel.Controls.Add(environmentButton);
+            panel.Controls.Add(new Label
+            {
+                AutoSize = true,
+                MaximumSize = new Size(610, 0),
+                ForeColor = _theme.TextTertiary,
+                BackColor = _theme.CardBackground,
+                Margin = new Padding(0, 24, 0, 10),
+                Text = LocalizationService.Get(
+                    "Settings.ResetDefaultsGuide")
+            });
+            var resetButton = CreateActionButton(
+                LocalizationService.Get("Settings.ResetDefaults"),
+                220);
+            resetButton.Click += ResetDefaultsButton_Click;
+            panel.Controls.Add(resetButton);
             AddCard(page, LocalizationService.Get("Settings.Diagnostics"), panel);
             return page;
         }
@@ -540,8 +562,14 @@ namespace DexManager.Forms
         {
             try
             {
+                var previousTheme = _settings.Theme;
                 SaveValues();
                 _settingsService.Save(_settings);
+                if (previousTheme != _settings.Theme &&
+                    _applyTheme != null)
+                {
+                    _applyTheme(_settings.Theme);
+                }
                 ShowSaveStatus(
                     LocalizationService.Get("Settings.SavedInline"),
                     Color.DarkGreen,
@@ -556,6 +584,49 @@ namespace DexManager.Forms
                     Color.Firebrick,
                     5000);
             }
+        }
+
+        private void ResetDefaultsButton_Click(
+            object sender,
+            EventArgs e)
+        {
+            var result = MessageBox.Show(
+                this,
+                LocalizationService.Get(
+                    "Settings.ResetDefaultsConfirm"),
+                LocalizationService.Get("App.Name"),
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2);
+            if (result != DialogResult.Yes) return;
+
+            ApplyDefaultSettings();
+            _settingsService.Save(_settings);
+            LoadValues();
+            if (_applyTheme != null)
+                _applyTheme(_settings.Theme);
+            ShowSaveStatus(
+                LocalizationService.Get(
+                    "Settings.ResetDefaultsDone"),
+                Color.DarkGreen,
+                5000);
+        }
+
+        private void ApplyDefaultSettings()
+        {
+            var defaults = AppSettings.CreateDefault();
+            _settings.SchemaVersion = defaults.SchemaVersion;
+            _settings.Paths = defaults.Paths;
+            _settings.VirtualDisplay = defaults.VirtualDisplay;
+            _settings.Scrcpy = defaults.Scrcpy;
+            _settings.Timing = defaults.Timing;
+            _settings.Features = defaults.Features;
+            _settings.KeyMappings = defaults.KeyMappings;
+            _settings.LastSuccess = defaults.LastSuccess;
+            _settings.SingleWindowSlots = defaults.SingleWindowSlots;
+            _settings.Connection = defaults.Connection;
+            _settings.Language = defaults.Language;
+            _settings.Theme = defaults.Theme;
         }
 
         private void ShowSaveStatus(
@@ -871,9 +942,99 @@ namespace DexManager.Forms
             }
         }
 
+        public void ApplyCurrentTheme()
+        {
+            _theme = ThemeColors.Current;
+            BackColor = _theme.WindowBackground;
+            _contentHost.BackColor = _theme.WindowBackground;
+            _bottomPanel.BackColor = _theme.WindowBackground;
+            _titleLabel.ForeColor = _theme.TextPrimary;
+            _titleLabel.BackColor = _theme.WindowBackground;
+            _descriptionLabel.ForeColor = _theme.TextTertiary;
+            _descriptionLabel.BackColor = _theme.WindowBackground;
+            _saveStatusLabel.BackColor = _theme.WindowBackground;
+            if (!_saveStatusLabel.Visible)
+                _saveStatusLabel.ForeColor = _theme.TextTertiary;
+            ApplySurfaceTheme(
+                _bottomPanel,
+                _theme.WindowBackground);
+
+            _sidebar.BackColor = _theme.WindowBackground;
+            _sidebar.FillColor = _theme.NavigationBackground;
+            _sidebar.BorderColor = _theme.CardBorder;
+            ApplySurfaceTheme(
+                _sidebar,
+                _theme.NavigationBackground);
+
+            foreach (var page in _pages)
+            {
+                page.BackColor = _theme.WindowBackground;
+                foreach (Control control in page.Controls)
+                {
+                    var card = control as RoundedPanel;
+                    if (card == null) continue;
+                    card.BackColor = _theme.WindowBackground;
+                    card.FillColor = _theme.CardBackground;
+                    card.BorderColor = _theme.CardBorder;
+                    ApplySurfaceTheme(card, _theme.CardBackground);
+                }
+            }
+
+            Invalidate(true);
+        }
+
+        private void ApplySurfaceTheme(
+            Control parent,
+            Color surface)
+        {
+            foreach (Control control in parent.Controls)
+            {
+                var panel = control as Panel;
+                if (panel != null && !(control is RoundedPanel))
+                    panel.BackColor = surface;
+
+                var label = control as Label;
+                if (label != null)
+                {
+                    label.BackColor = surface;
+                    if (label != _saveStatusLabel)
+                    {
+                        label.ForeColor = label.Font.Bold
+                            ? _theme.TextSecondary
+                            : _theme.TextTertiary;
+                    }
+                }
+
+                var radio = control as RadioButton;
+                if (radio != null)
+                {
+                    radio.BackColor = surface;
+                    radio.ForeColor = _theme.TextPrimary;
+                }
+
+                var check = control as ThemedCheckBox;
+                if (check != null)
+                {
+                    check.BackColor = surface;
+                    check.ForeColor = _theme.TextPrimary;
+                }
+
+                var button = control as ThemedButton;
+                if (button != null)
+                {
+                    button.BackColor = surface;
+                    button.ForeColor = _theme.TextSecondary;
+                }
+
+                if (control.HasChildren)
+                    ApplySurfaceTheme(control, surface);
+                control.Invalidate();
+            }
+        }
+
         private Control BuildSidebar()
         {
-            var sidebar = new RoundedPanel
+            _sidebar = new RoundedPanel
             {
                 Location = new Point(16, 16),
                 Size = new Size(188, 668),
@@ -884,7 +1045,7 @@ namespace DexManager.Forms
                 FillColor = _theme.NavigationBackground,
                 BorderColor = _theme.CardBorder
             };
-            sidebar.Controls.Add(new Label
+            _sidebar.Controls.Add(new Label
             {
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
@@ -921,9 +1082,9 @@ namespace DexManager.Forms
                 };
                 button.Click += delegate { ShowPage(pageIndex); };
                 _navigationButtons.Add(button);
-                sidebar.Controls.Add(button);
+                _sidebar.Controls.Add(button);
             }
-            return sidebar;
+            return _sidebar;
         }
 
         private void ShowPage(int index)

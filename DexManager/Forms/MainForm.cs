@@ -34,7 +34,7 @@ namespace DexManager.Forms
         private readonly Label _deviceStatusValue;
         private readonly Label _scrcpyStatusValue;
         private readonly Label _dexStatusValue;
-        private readonly ThemePalette _theme;
+        private ThemePalette _theme;
         private readonly Label _pageTitle;
         private readonly StatusRing _indicatorDot;
         private readonly Label _indicatorStatus;
@@ -1862,6 +1862,52 @@ namespace DexManager.Forms
             _advancedToggle.ActiveLinkColor = _theme.AccentHover;
             _applySettingsLink.LinkColor = _theme.Accent;
             _applySettingsLink.ActiveLinkColor = _theme.AccentHover;
+
+            _sidebar.BackColor = _theme.WindowBackground;
+            _sidebar.FillColor = _theme.NavigationBackground;
+            _sidebar.BorderColor = _theme.CardBorder;
+            foreach (Control control in _sidebar.Controls)
+            {
+                control.BackColor = _theme.NavigationBackground;
+                var label = control as Label;
+                if (label != null)
+                    label.ForeColor = _theme.TextTertiary;
+                var button = control as ThemedButton;
+                if (button != null)
+                    button.ForeColor = _theme.TextSecondary;
+                control.Invalidate();
+            }
+
+            _indicatorDot.Invalidate();
+            _resolutionBox.Invalidate();
+            _widthBox.Invalidate();
+            _heightBox.Invalidate();
+            _dpiBox.Invalidate();
+            _bitRateBox.Invalidate();
+            _maxFpsBox.Invalidate();
+            _startAppBox.Invalidate();
+            _startButton.Invalidate();
+            _stopButton.Invalidate();
+            _loadAppsButton.Invalidate();
+            Invalidate(true);
+        }
+
+        private void ApplyThemeSelection(AppTheme theme)
+        {
+            _theme = ThemeColors.Use(theme);
+            ApplyTheme();
+            if (_settingsForm != null &&
+                !_settingsForm.IsDisposed)
+            {
+                _settingsForm.ApplyCurrentTheme();
+            }
+            if (_logForm != null && !_logForm.IsDisposed)
+                _logForm.ApplyCurrentTheme();
+            if (_environmentCheckForm != null &&
+                !_environmentCheckForm.IsDisposed)
+            {
+                _environmentCheckForm.ApplyCurrentTheme();
+            }
         }
 
         private void ApplyCardTheme(RoundedPanel card)
@@ -2355,7 +2401,8 @@ namespace DexManager.Forms
                         _adbService,
                         _wirelessAdbService,
                         ShowLogForm,
-                        ShowEnvironmentCheck);
+                        ShowEnvironmentCheck,
+                        ApplyThemeSelection);
                     _settingsForm.FormClosed += delegate { _settingsForm = null; };
                 }
                 if (!_settingsForm.Visible) _settingsForm.Show(this);

@@ -9,6 +9,8 @@ namespace DexManager.Forms
     {
         private readonly LogService _logService;
         private readonly RichTextBox _logTextBox;
+        private readonly FlowLayoutPanel _toolbar;
+        private readonly Button _saveButton;
         private string _lastDisplayedMessage;
 
         public LogForm(LogService logService)
@@ -29,24 +31,25 @@ namespace DexManager.Forms
                 WordWrap = false
             };
 
-            var saveButton = new Button
+            _saveButton = new Button
             {
                 Text = LocalizationService.Get("Log.Save"),
                 AutoSize = true,
                 Margin = new Padding(6)
             };
-            saveButton.Click += SaveButton_Click;
+            _saveButton.Click += SaveButton_Click;
 
-            var toolbar = new FlowLayoutPanel
+            _toolbar = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
                 Height = 42,
                 Padding = new Padding(4)
             };
-            toolbar.Controls.Add(saveButton);
+            _toolbar.Controls.Add(_saveButton);
 
             Controls.Add(_logTextBox);
-            Controls.Add(toolbar);
+            Controls.Add(_toolbar);
+            ApplyCurrentTheme();
             Load += LogForm_Load;
             FormClosed += LogForm_FormClosed;
         }
@@ -145,6 +148,18 @@ namespace DexManager.Forms
         {
             _logTextBox.SelectionStart = _logTextBox.TextLength;
             _logTextBox.ScrollToCaret();
+        }
+
+        public void ApplyCurrentTheme()
+        {
+            var theme = ThemeColors.Current;
+            BackColor = theme.WindowBackground;
+            _toolbar.BackColor = theme.WindowBackground;
+            _saveButton.BackColor = theme.CardSoft;
+            _saveButton.ForeColor = theme.TextPrimary;
+            _logTextBox.BackColor = theme.CardBackground;
+            _logTextBox.ForeColor = theme.TextPrimary;
+            Invalidate(true);
         }
     }
 }

@@ -128,7 +128,11 @@
   <data name="Settings.ThemeAuto" xml:space="preserve"><value>Windows 설정 사용</value></data>
   <data name="Settings.ThemeLight" xml:space="preserve"><value>라이트</value></data>
   <data name="Settings.ThemeDark" xml:space="preserve"><value>다크</value></data>
-  <data name="Settings.ThemeRestart" xml:space="preserve"><value>테마 변경은 DX Manager를 다시 시작한 뒤 적용됩니다.</value></data>
+  <data name="Settings.ThemeRestart" xml:space="preserve"><value>테마 변경은 저장 즉시 적용됩니다.</value></data>
+  <data name="Settings.ResetDefaults" xml:space="preserve"><value>모든 설정 기본값 복원</value></data>
+  <data name="Settings.ResetDefaultsGuide" xml:space="preserve"><value>DeX, 단일창, 연결, 키 입력을 포함한 모든 옵션을 초기 상태로 되돌립니다.</value></data>
+  <data name="Settings.ResetDefaultsConfirm" xml:space="preserve"><value>모든 설정을 기본값으로 되돌릴까요? 현재 저장된 사용자 설정은 삭제되며, 실행 중인 기능에는 다음 시작부터 완전히 적용됩니다.</value></data>
+  <data name="Settings.ResetDefaultsDone" xml:space="preserve"><value>모든 설정을 기본값으로 복원했습니다. 실행 중인 기능은 다시 시작한 뒤 완전히 적용됩니다.</value></data>
   <data name="Settings.OpenLogs" xml:space="preserve"><value>현재 세션 로그 열기</value></data>
   <data name="Settings.OpenEnvironment" xml:space="preserve"><value>환경 점검 실행</value></data>
   <data name="Settings.DiagnosticsGuide" xml:space="preserve"><value>로그를 열거나 ADB, Scrcpy와 장치 연결 상태를 점검합니다.</value></data>

@@ -13,6 +13,9 @@ namespace DexManager.Forms
         private readonly EnvironmentCheckService _checkService;
         private readonly ListView _resultList;
         private readonly Button _checkButton;
+        private readonly Button _closeButton;
+        private readonly Label _guide;
+        private readonly FlowLayoutPanel _buttonPanel;
 
         public EnvironmentCheckForm(EnvironmentCheckService checkService)
         {
@@ -23,7 +26,7 @@ namespace DexManager.Forms
             ClientSize = new Size(820, 430);
             MinimumSize = new Size(680, 360);
 
-            var guide = new Label
+            _guide = new Label
             {
                 Dock = DockStyle.Top,
                 Height = 66,
@@ -44,7 +47,7 @@ namespace DexManager.Forms
             _resultList.Columns.Add(LocalizationService.Get("Environment.Item"), 130);
             _resultList.Columns.Add(LocalizationService.Get("Environment.Result"), 560);
 
-            var panel = new FlowLayoutPanel
+            _buttonPanel = new FlowLayoutPanel
             {
                 Dock = DockStyle.Bottom,
                 Height = 48,
@@ -58,19 +61,36 @@ namespace DexManager.Forms
             };
             _checkButton.Click += async delegate { await RunCheckAsync(); };
 
-            var closeButton = new Button
+            _closeButton = new Button
             {
                 Text = LocalizationService.Get("Common.Close"),
                 Size = new Size(90, 30)
             };
-            closeButton.Click += delegate { Close(); };
+            _closeButton.Click += delegate { Close(); };
 
-            panel.Controls.Add(_checkButton);
-            panel.Controls.Add(closeButton);
+            _buttonPanel.Controls.Add(_checkButton);
+            _buttonPanel.Controls.Add(_closeButton);
             Controls.Add(_resultList);
-            Controls.Add(guide);
-            Controls.Add(panel);
+            Controls.Add(_guide);
+            Controls.Add(_buttonPanel);
+            ApplyCurrentTheme();
             Shown += async delegate { await RunCheckAsync(); };
+        }
+
+        public void ApplyCurrentTheme()
+        {
+            var theme = ThemeColors.Current;
+            BackColor = theme.WindowBackground;
+            _guide.BackColor = theme.WindowBackground;
+            _guide.ForeColor = theme.TextPrimary;
+            _buttonPanel.BackColor = theme.WindowBackground;
+            _checkButton.BackColor = theme.CardSoft;
+            _checkButton.ForeColor = theme.TextPrimary;
+            _closeButton.BackColor = theme.CardSoft;
+            _closeButton.ForeColor = theme.TextPrimary;
+            _resultList.BackColor = theme.CardBackground;
+            _resultList.ForeColor = theme.TextPrimary;
+            Invalidate(true);
         }
 
         private async Task RunCheckAsync()

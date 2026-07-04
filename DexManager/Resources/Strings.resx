@@ -128,7 +128,11 @@
   <data name="Settings.ThemeAuto" xml:space="preserve"><value>Use Windows setting</value></data>
   <data name="Settings.ThemeLight" xml:space="preserve"><value>Light</value></data>
   <data name="Settings.ThemeDark" xml:space="preserve"><value>Dark</value></data>
-  <data name="Settings.ThemeRestart" xml:space="preserve"><value>Theme changes are applied after restarting DX Manager.</value></data>
+  <data name="Settings.ThemeRestart" xml:space="preserve"><value>Theme changes are applied immediately after saving.</value></data>
+  <data name="Settings.ResetDefaults" xml:space="preserve"><value>Restore all defaults</value></data>
+  <data name="Settings.ResetDefaultsGuide" xml:space="preserve"><value>Reset every option, including DeX, single-window, connection, and keyboard settings.</value></data>
+  <data name="Settings.ResetDefaultsConfirm" xml:space="preserve"><value>Restore every setting to its default value? Saved custom settings will be removed, and active services will fully use the defaults after restart.</value></data>
+  <data name="Settings.ResetDefaultsDone" xml:space="preserve"><value>All settings were restored to defaults. Restart DX Manager to fully apply them to active services.</value></data>
   <data name="Settings.OpenLogs" xml:space="preserve"><value>Open session log</value></data>
   <data name="Settings.OpenEnvironment" xml:space="preserve"><value>Run environment check</value></data>
   <data name="Settings.DiagnosticsGuide" xml:space="preserve"><value>Open logs or check ADB, Scrcpy and device connectivity.</value></data>
