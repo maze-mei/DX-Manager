@@ -32,6 +32,27 @@ open up to three additional app-specific virtual displays.
 The application does not depend on an `adb.exe` registered in the system
 `PATH`. It selects and runs a bundled ADB by absolute path.
 
+## Why DX Manager?
+
+After Samsung discontinued DeX for PC, many users were left without an
+official way to use the same desktop workflow from Windows.
+
+DX Manager was created as a practical alternative built around Samsung DeX,
+scrcpy, and ADB. It adds automation and quality-of-life features shaped by
+real daily use.
+
+The goal is not to replace scrcpy. DX Manager makes Samsung DeX and scrcpy
+easier and more convenient to use together on Windows.
+
+## Project Background
+
+DX Manager began as a personal collection of Batch scripts, CMD commands,
+and AutoHotkey automation.
+
+As its features grew through daily use, it was rewritten as a native C#
+Windows application to improve usability, stability, maintainability, and
+distribution.
+
 ## Features
 
 - Start and stop one Samsung DeX virtual display
@@ -43,11 +64,20 @@ The application does not depend on an `adb.exe` registered in the system
 - Korean/English key correction and Enter/Shift+Enter switching
 - Full scrcpy-window and selected-region capture
 - Optional capture transfer to the phone
-- Automatic hiding to the system tray after inactivity
+- Automatic hiding to the system tray after the configured idle period
 - Light, dark, and Windows-following themes
 - Automatic Korean/English UI selection
 - Session logs and environment diagnostics
 - Windows 7 SP1 compatibility through .NET Framework 4.6.2
+
+## Design Philosophy
+
+Every feature in DX Manager was added to solve a problem encountered during
+real Samsung DeX use. The project prioritizes:
+
+- Stability over feature count
+- Automation over repetitive manual work
+- Practical usability over unnecessary complexity
 
 ## Requirements
 
@@ -112,6 +142,17 @@ Hardware, Android versions, network policies, and Samsung firmware can affect
 behavior. Use **Settings > Diagnostics** and the session log when reporting a
 problem.
 
+## Built On
+
+DX Manager depends on and integrates the following technologies and projects:
+
+- Samsung DeX
+- [scrcpy](https://github.com/Genymobile/scrcpy), maintained by Genymobile
+  and Romain Vimont
+- Android Debug Bridge (ADB) from the Android Open Source Project
+
+Without their work, DX Manager would not exist.
+
 ## Trademark and Independence
 
 DX Manager is an independently developed utility. It is not affiliated with,
@@ -146,6 +187,27 @@ Windows 유틸리티입니다. 올바른 DeX 가상 디스플레이를 생성하
 이 프로그램은 시스템 `PATH`에 등록된 `adb.exe`에 의존하지 않습니다.
 동봉된 ADB를 자동으로 선택하고 항상 절대 경로로 실행합니다.
 
+## 왜 만들었나요?
+
+Samsung DeX for PC가 종료된 뒤에도 Windows에서 기존과 같은 데스크톱
+사용 흐름을 원하는 사용자가 많았습니다.
+
+DX Manager는 Samsung DeX, scrcpy와 ADB를 활용한 실용적인 대안으로
+만들어졌습니다. 실제로 매일 사용하면서 필요했던 자동화와 여러 편의 기능을
+함께 제공합니다.
+
+이 프로그램의 목표는 scrcpy를 대체하는 것이 아닙니다. Samsung DeX와
+scrcpy를 Windows에서 더 쉽고 편리하게 함께 사용할 수 있도록 돕는 것이
+목표입니다.
+
+## 프로젝트 배경
+
+DX Manager는 개인적으로 사용하던 Batch 스크립트, CMD 명령과 AutoHotkey
+자동화 모음에서 시작되었습니다.
+
+실사용을 거치며 기능이 늘어났고, 사용성·안정성·유지보수성과 배포 편의를
+높이기 위해 C# 기반의 Windows 애플리케이션으로 새롭게 개발되었습니다.
+
 ## 주요 기능
 
 - Samsung DeX 가상 디스플레이 1개 실행 및 중지
@@ -157,11 +219,20 @@ Windows 유틸리티입니다. 올바른 DeX 가상 디스플레이를 생성하
 - 한영키 보정과 Enter/Shift+Enter 전환
 - scrcpy 전체 화면 및 선택 영역 캡처
 - 캡처 결과의 휴대폰 전송
-- 미입력 시 시스템 트레이 자동 숨김
+- 설정 시간 동안 미입력 시 시스템 트레이 자동 숨김
 - 라이트, 다크 및 Windows 설정 연동 테마
 - Windows 언어에 따른 한국어·영어 UI 자동 선택
 - 실행 세션 로그와 환경 점검
 - .NET Framework 4.6.2를 통한 Windows 7 SP1 호환
+
+## 개발 철학
+
+DX Manager의 모든 기능은 Samsung DeX를 실제로 사용하면서 겪은 문제를
+해결하기 위해 추가되었습니다. 다음 원칙을 우선합니다.
+
+- 기능의 개수보다 안정성
+- 반복적인 수동 작업보다 자동화
+- 불필요한 복잡함보다 실용성
 
 ## 요구 사항
 
@@ -225,6 +296,17 @@ DLL, 라이선스 파일과 scrcpy 서버 파일이 모두 필요합니다.
 하드웨어, Android 버전, 네트워크 정책과 Samsung 펌웨어에 따라 동작이
 달라질 수 있습니다. 문제를 제보할 때는 **설정 > 진단**과 실행 세션
 로그를 활용하십시오.
+
+## 기반 기술과 프로젝트
+
+DX Manager는 다음 기술과 프로젝트를 활용하여 만들어졌습니다.
+
+- Samsung DeX
+- Genymobile과 Romain Vimont가 개발·관리하는
+  [scrcpy](https://github.com/Genymobile/scrcpy)
+- Android Open Source Project의 Android Debug Bridge(ADB)
+
+이 기술과 프로젝트가 없었다면 DX Manager도 존재할 수 없었습니다.
 
 ## 상표 및 독립성 고지
 
