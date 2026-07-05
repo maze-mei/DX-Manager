@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
@@ -139,6 +140,7 @@ namespace DexManager.Forms
             _pages.Add(BuildKeyboardPage());
             _pages.Add(BuildTimingPage());
             _pages.Add(BuildDiagnosticsPage());
+            _pages.Add(BuildAboutPage());
             foreach (var page in _pages)
             {
                 page.Dock = DockStyle.Fill;
@@ -485,6 +487,88 @@ namespace DexManager.Forms
             panel.Controls.Add(resetButton);
             AddCard(page, LocalizationService.Get("Settings.Diagnostics"), panel);
             return page;
+        }
+
+        private Control BuildAboutPage()
+        {
+            var page = CreatePage();
+            var panel = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                Width = 620,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false
+            };
+            panel.Controls.Add(CreateAboutLabel(
+                LocalizationService.Get("Settings.AboutVersion"),
+                true,
+                new Padding(0, 0, 0, 14)));
+            panel.Controls.Add(CreateAboutLabel(
+                LocalizationService.Get("Settings.AboutSummary"),
+                false,
+                new Padding(0, 0, 0, 18)));
+            panel.Controls.Add(CreateAboutLabel(
+                LocalizationService.Get("Settings.AboutScrcpy"),
+                false,
+                new Padding(0, 0, 0, 12)));
+            panel.Controls.Add(CreateAboutLabel(
+                LocalizationService.Get("Settings.AboutSamsung"),
+                false,
+                new Padding(0, 0, 0, 18)));
+
+            var noticesButton = CreateActionButton(
+                LocalizationService.Get("Settings.OpenNotices"),
+                220);
+            noticesButton.Click += delegate
+            {
+                OpenThirdPartyNotices();
+            };
+            panel.Controls.Add(noticesButton);
+            AddCard(
+                page,
+                LocalizationService.Get("Settings.About"),
+                panel);
+            return page;
+        }
+
+        private Label CreateAboutLabel(
+            string text,
+            bool bold,
+            Padding margin)
+        {
+            return new Label
+            {
+                AutoSize = true,
+                MaximumSize = new Size(610, 0),
+                Font = new Font(
+                    "Segoe UI",
+                    9.5F,
+                    bold ? FontStyle.Bold : FontStyle.Regular),
+                ForeColor = bold
+                    ? _theme.TextPrimary
+                    : _theme.TextSecondary,
+                BackColor = _theme.CardBackground,
+                Margin = margin,
+                Text = text
+            };
+        }
+
+        private void OpenThirdPartyNotices()
+        {
+            var noticePath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "THIRD_PARTY_NOTICES.md");
+            if (!File.Exists(noticePath))
+            {
+                MessageBox.Show(
+                    this,
+                    noticePath,
+                    LocalizationService.Get("App.Name"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                return;
+            }
+            Process.Start("notepad.exe", "\"" + noticePath + "\"");
         }
 
         private void LoadValues()
@@ -1154,7 +1238,8 @@ namespace DexManager.Forms
                 LocalizationService.Get("Settings.Paths"),
                 LocalizationService.Get("Settings.Keyboard"),
                 LocalizationService.Get("Settings.Timing"),
-                LocalizationService.Get("Settings.Diagnostics")
+                LocalizationService.Get("Settings.Diagnostics"),
+                LocalizationService.Get("Settings.About")
             };
             for (var index = 0; index < labels.Length; index++)
             {

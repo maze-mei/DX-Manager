@@ -116,6 +116,12 @@
     <None Include="Resources\DXManager_256.png" />
     <None Include="Resources\DXManager_source.svg" />
     <None Include="Resources\README_아이콘_적용가이드.md" />
+    <Content Include="THIRD_PARTY_NOTICES.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="licenses\scrcpy-LICENSE.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="config\settings.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>

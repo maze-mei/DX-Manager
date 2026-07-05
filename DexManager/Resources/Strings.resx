@@ -122,6 +122,12 @@
   <data name="Settings.Keyboard" xml:space="preserve"><value>Keyboard</value></data>
   <data name="Settings.Timing" xml:space="preserve"><value>Timing / capture</value></data>
   <data name="Settings.Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
+  <data name="Settings.About" xml:space="preserve"><value>About</value></data>
+  <data name="Settings.AboutVersion" xml:space="preserve"><value>DX Manager v1.0.0</value></data>
+  <data name="Settings.AboutSummary" xml:space="preserve"><value>An independently developed utility for managing Android device displays and input.</value></data>
+  <data name="Settings.AboutScrcpy" xml:space="preserve"><value>This program includes and uses scrcpy 4.0, open-source software distributed by Genymobile and Romain Vimont under the Apache License 2.0.</value></data>
+  <data name="Settings.AboutSamsung" xml:space="preserve"><value>This program works with Samsung DeX features on compatible Samsung devices, but is not produced, sponsored, endorsed, or distributed by Samsung Electronics. Samsung and Samsung DeX are trademarks of their respective owner.</value></data>
+  <data name="Settings.OpenNotices" xml:space="preserve"><value>View third-party notices</value></data>
   <data name="Settings.Language" xml:space="preserve"><value>Display language</value></data>
   <data name="Settings.LanguageRestart" xml:space="preserve"><value>Language changes are applied after restarting DX Manager.</value></data>
   <data name="Settings.Theme" xml:space="preserve"><value>App theme</value></data>

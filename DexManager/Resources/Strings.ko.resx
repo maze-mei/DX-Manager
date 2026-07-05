@@ -122,6 +122,12 @@
   <data name="Settings.Keyboard" xml:space="preserve"><value>키 입력</value></data>
   <data name="Settings.Timing" xml:space="preserve"><value>시간 / 캡처</value></data>
   <data name="Settings.Diagnostics" xml:space="preserve"><value>진단</value></data>
+  <data name="Settings.About" xml:space="preserve"><value>정보</value></data>
+  <data name="Settings.AboutVersion" xml:space="preserve"><value>DX Manager v1.0.0</value></data>
+  <data name="Settings.AboutSummary" xml:space="preserve"><value>Android 장치의 화면과 입력을 관리하는 독립 유틸리티입니다.</value></data>
+  <data name="Settings.AboutScrcpy" xml:space="preserve"><value>이 프로그램은 scrcpy 4.0을 포함하고 사용합니다. scrcpy는 Genymobile과 Romain Vimont가 Apache License 2.0으로 배포하는 오픈소스 소프트웨어입니다.</value></data>
+  <data name="Settings.AboutSamsung" xml:space="preserve"><value>이 프로그램은 호환되는 Samsung 장치에서 Samsung DeX 기능과 함께 동작하지만 Samsung Electronics가 제작, 후원, 보증 또는 배포하는 제품이 아닙니다. Samsung 및 Samsung DeX는 각 권리자의 상표입니다.</value></data>
+  <data name="Settings.OpenNotices" xml:space="preserve"><value>제3자 라이선스 보기</value></data>
   <data name="Settings.Language" xml:space="preserve"><value>표시 언어</value></data>
   <data name="Settings.LanguageRestart" xml:space="preserve"><value>언어 변경은 DX Manager를 다시 시작한 뒤 적용됩니다.</value></data>
   <data name="Settings.Theme" xml:space="preserve"><value>앱 테마</value></data>
