@@ -103,10 +103,9 @@ namespace DexManager.Forms
             Text = LocalizationService.Get("Settings.Title");
             Icon = AppIconProvider.Current;
             StartPosition = FormStartPosition.CenterParent;
-            ClientSize = new Size(940, 700);
-            MinimumSize = new Size(860, 640);
             Font = UiFonts.Create(9.5F);
             BackColor = _theme.WindowBackground;
+            UiWindowStyle.ApplyFixedStandardSize(this);
 
             _titleLabel = new Label
             {
@@ -114,7 +113,7 @@ namespace DexManager.Forms
                 Font = UiFonts.Create(20F, FontStyle.Bold),
                 ForeColor = _theme.TextPrimary,
                 Location = new Point(224, 22),
-                Size = new Size(690, 40),
+                Size = new Size(670, 40),
                 Text = LocalizationService.Get("Main.Settings")
             };
             _descriptionLabel = new Label
@@ -122,14 +121,14 @@ namespace DexManager.Forms
                 AutoEllipsis = true,
                 ForeColor = _theme.TextTertiary,
                 Location = new Point(226, 67),
-                Size = new Size(690, 29),
+                Size = new Size(670, 29),
                 Text = LocalizationService.Get("Settings.Description")
             };
 
             _contentHost = new Panel
             {
                 Location = new Point(220, 104),
-                Size = new Size(704, 514),
+                Size = new Size(684, 510),
                 Anchor = AnchorStyles.Top | AnchorStyles.Bottom |
                     AnchorStyles.Left | AnchorStyles.Right,
                 BackColor = _theme.WindowBackground
@@ -150,8 +149,8 @@ namespace DexManager.Forms
 
             _bottomPanel = new Panel
             {
-                Location = new Point(220, 624),
-                Size = new Size(704, 62),
+                Location = new Point(220, 620),
+                Size = new Size(684, 62),
                 Anchor = AnchorStyles.Left | AnchorStyles.Right |
                     AnchorStyles.Bottom,
                 BackColor = _theme.WindowBackground
@@ -169,7 +168,7 @@ namespace DexManager.Forms
             {
                 Primary = true,
                 Text = LocalizationService.Get("Common.Save"),
-                Location = new Point(460, 14),
+                Location = new Point(440, 14),
                 Size = new Size(100, 36),
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
@@ -177,7 +176,7 @@ namespace DexManager.Forms
             var closeButton = new ThemedButton
             {
                 Text = LocalizationService.Get("Common.Close"),
-                Location = new Point(570, 14),
+                Location = new Point(550, 14),
                 Size = new Size(100, 36),
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
@@ -1220,7 +1219,7 @@ namespace DexManager.Forms
             _sidebar = new RoundedPanel
             {
                 Location = new Point(16, 16),
-                Size = new Size(188, 668),
+                Size = new Size(188, 664),
                 Anchor = AnchorStyles.Top | AnchorStyles.Bottom |
                     AnchorStyles.Left,
                 Radius = 14,

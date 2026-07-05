@@ -65,6 +65,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\UiFonts.cs" />
+    <Compile Include="Forms\UiWindowStyle.cs" />
     <Compile Include="Forms\ThemedControls.cs" />
     <Compile Include="Forms\CustomInputControls.cs" />
     <Compile Include="Forms\ThemeColors.cs" />

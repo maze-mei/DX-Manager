@@ -21,8 +21,7 @@ namespace DexManager.Forms
             Text = LocalizationService.Get("Log.Title");
             Icon = AppIconProvider.Current;
             StartPosition = FormStartPosition.CenterParent;
-            ClientSize = new Size(860, 520);
-            MinimumSize = new Size(640, 360);
+            UiWindowStyle.ApplyFixedStandardSize(this);
 
             _logTextBox = new RichTextBox
             {

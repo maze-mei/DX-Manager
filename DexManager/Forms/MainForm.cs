@@ -138,8 +138,7 @@ namespace DexManager.Forms
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = _theme.WindowBackground;
             Font = UiFonts.Create(9.5F);
-            ClientSize = new Size(920, 696);
-            MinimumSize = Size;
+            UiWindowStyle.ApplyFixedStandardSize(this);
             AutoScroll = false;
 
             _pageTitle = new Label

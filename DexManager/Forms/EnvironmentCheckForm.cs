@@ -35,9 +35,8 @@ namespace DexManager.Forms
             Text = LocalizationService.Get("Environment.Title");
             Icon = AppIconProvider.Current;
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(860, 590);
-            MinimumSize = new Size(720, 480);
             Font = UiFonts.Create(9.5F);
+            UiWindowStyle.ApplyFixedStandardSize(this);
 
             _topPanel = new Panel
             {

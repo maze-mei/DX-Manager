@@ -28,9 +28,8 @@ namespace DexManager.Forms
             Text = LocalizationService.Get("Licenses.Title");
             Icon = AppIconProvider.Current;
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(780, 600);
-            MinimumSize = new Size(640, 440);
             Font = UiFonts.Create(9.5F);
+            UiWindowStyle.ApplyFixedStandardSize(this);
 
             _noticesText = ReadBundledText(
                 "THIRD_PARTY_NOTICES.md");
