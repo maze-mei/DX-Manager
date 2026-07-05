@@ -61,6 +61,9 @@
     <Compile Include="Forms\EnvironmentCheckForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Forms\ThirdPartyLicensesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\ThemedControls.cs" />
     <Compile Include="Forms\CustomInputControls.cs" />
     <Compile Include="Forms\ThemeColors.cs" />

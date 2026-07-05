@@ -1990,24 +1990,14 @@ namespace DexManager.Forms
                 Text = LocalizationService.Get("Main.SidebarHint")
             });
 
-            _sidebar.Controls.Add(new Label
-            {
-                AutoSize = false,
-                ForeColor = _theme.TextTertiary,
-                BackColor = _theme.NavigationBackground,
-                Location = new Point(20, _sidebar.Height - 76),
-                Size = new Size(148, 20),
-                Anchor = AnchorStyles.Left | AnchorStyles.Bottom,
-                TextAlign = ContentAlignment.MiddleRight,
-                Text = "v1.0.0"
-            });
-
             var settingsButton = CreateSidebarButton(
                 LocalizationService.Get("Main.Settings"),
                 _sidebar.Height - 48,
                 false,
                 false);
             settingsButton.ShowSettingsIcon = true;
+            settingsButton.TrailingText =
+                "v" + Application.ProductVersion;
             settingsButton.Anchor =
                 AnchorStyles.Left | AnchorStyles.Bottom;
             settingsButton.Click += delegate { ShowSettingsForm(); };

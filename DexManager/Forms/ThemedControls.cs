@@ -36,6 +36,7 @@ namespace DexManager.Forms
         public bool NavigationStyle { get; set; }
         public bool ShowNavigationDot { get; set; }
         public bool ShowSettingsIcon { get; set; }
+        public string TrailingText { get; set; }
 
         protected override void OnMouseEnter(System.EventArgs e)
         {
@@ -137,11 +138,43 @@ namespace DexManager.Forms
             if (NavigationStyle && ShowSettingsIcon)
                 DrawSettingsIcon(e.Graphics, text);
 
+            var leadingOffset =
+                ShowNavigationDot || ShowSettingsIcon ? 30 : 14;
+            var trailingWidth = 0;
+            if (NavigationStyle &&
+                !string.IsNullOrWhiteSpace(TrailingText))
+            {
+                using (var trailingFont = new Font(
+                    "Segoe UI",
+                    8.5F,
+                    FontStyle.Regular))
+                {
+                    trailingWidth = TextRenderer.MeasureText(
+                        TrailingText,
+                        trailingFont).Width;
+                    var trailingBounds = new Rectangle(
+                        Width - trailingWidth - 13,
+                        0,
+                        trailingWidth,
+                        Height);
+                    TextRenderer.DrawText(
+                        e.Graphics,
+                        TrailingText,
+                        trailingFont,
+                        trailingBounds,
+                        Enabled ? colors.TextTertiary : colors.DisabledText,
+                        TextFormatFlags.Right |
+                            TextFormatFlags.VerticalCenter |
+                            TextFormatFlags.EndEllipsis);
+                }
+            }
+
             var textBounds = NavigationStyle
                 ? new Rectangle(
-                    ShowNavigationDot || ShowSettingsIcon ? 30 : 14,
+                    leadingOffset,
                     0,
-                    Width - (ShowNavigationDot || ShowSettingsIcon ? 38 : 28),
+                    Width - leadingOffset - 14 -
+                        (trailingWidth > 0 ? trailingWidth + 8 : 0),
                     Height)
                 : bounds;
             TextRenderer.DrawText(

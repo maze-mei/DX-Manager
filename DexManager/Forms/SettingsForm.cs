@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
@@ -81,6 +80,7 @@ namespace DexManager.Forms
         private ThemedSelectControl _themeBox;
         private Label _saveStatusLabel;
         private Timer _saveStatusTimer;
+        private ThirdPartyLicensesForm _thirdPartyLicensesForm;
 
         public SettingsForm(
             SettingsService settingsService,
@@ -555,20 +555,28 @@ namespace DexManager.Forms
 
         private void OpenThirdPartyNotices()
         {
-            var noticePath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "THIRD_PARTY_NOTICES.md");
-            if (!File.Exists(noticePath))
+            if (_thirdPartyLicensesForm == null ||
+                _thirdPartyLicensesForm.IsDisposed)
             {
-                MessageBox.Show(
-                    this,
-                    noticePath,
-                    LocalizationService.Get("App.Name"),
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
-                return;
+                _thirdPartyLicensesForm =
+                    new ThirdPartyLicensesForm();
+                _thirdPartyLicensesForm.FormClosed += delegate
+                {
+                    _thirdPartyLicensesForm = null;
+                };
+                _thirdPartyLicensesForm.Show();
             }
-            Process.Start("notepad.exe", "\"" + noticePath + "\"");
+            else
+            {
+                if (_thirdPartyLicensesForm.WindowState ==
+                    FormWindowState.Minimized)
+                {
+                    _thirdPartyLicensesForm.WindowState =
+                        FormWindowState.Normal;
+                }
+                _thirdPartyLicensesForm.BringToFront();
+                _thirdPartyLicensesForm.Activate();
+            }
         }
 
         private void LoadValues()

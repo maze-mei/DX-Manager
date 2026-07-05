@@ -128,6 +128,12 @@
   <data name="Settings.AboutScrcpy" xml:space="preserve"><value>This program includes and uses scrcpy 4.0, open-source software distributed by Genymobile and Romain Vimont under the Apache License 2.0.</value></data>
   <data name="Settings.AboutSamsung" xml:space="preserve"><value>This program works with Samsung DeX features on compatible Samsung devices, but is not produced, sponsored, endorsed, or distributed by Samsung Electronics. Samsung and Samsung DeX are trademarks of their respective owner.</value></data>
   <data name="Settings.OpenNotices" xml:space="preserve"><value>View third-party notices</value></data>
+  <data name="Licenses.Title" xml:space="preserve"><value>DX Manager - Third-party licenses</value></data>
+  <data name="Licenses.Guide" xml:space="preserve"><value>Review notices and license terms for open-source software included with DX Manager.</value></data>
+  <data name="Licenses.NoticesTab" xml:space="preserve"><value>Third-party notices</value></data>
+  <data name="Licenses.ScrcpyTab" xml:space="preserve"><value>scrcpy - Apache 2.0</value></data>
+  <data name="Licenses.FileMissing" xml:space="preserve"><value>The bundled license file could not be found: {0}</value></data>
+  <data name="Licenses.ReadFailed" xml:space="preserve"><value>Could not read the license file: {0} ({1})</value></data>
   <data name="Settings.Language" xml:space="preserve"><value>Display language</value></data>
   <data name="Settings.LanguageRestart" xml:space="preserve"><value>Language changes are applied after restarting DX Manager.</value></data>
   <data name="Settings.Theme" xml:space="preserve"><value>App theme</value></data>

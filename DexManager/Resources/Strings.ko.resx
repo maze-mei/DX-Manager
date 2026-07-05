@@ -128,6 +128,12 @@
   <data name="Settings.AboutScrcpy" xml:space="preserve"><value>이 프로그램은 scrcpy 4.0을 포함하고 사용합니다. scrcpy는 Genymobile과 Romain Vimont가 Apache License 2.0으로 배포하는 오픈소스 소프트웨어입니다.</value></data>
   <data name="Settings.AboutSamsung" xml:space="preserve"><value>이 프로그램은 호환되는 Samsung 장치에서 Samsung DeX 기능과 함께 동작하지만 Samsung Electronics가 제작, 후원, 보증 또는 배포하는 제품이 아닙니다. Samsung 및 Samsung DeX는 각 권리자의 상표입니다.</value></data>
   <data name="Settings.OpenNotices" xml:space="preserve"><value>제3자 라이선스 보기</value></data>
+  <data name="Licenses.Title" xml:space="preserve"><value>DX Manager - 제3자 라이선스</value></data>
+  <data name="Licenses.Guide" xml:space="preserve"><value>DX Manager에 포함된 오픈소스 소프트웨어의 고지와 라이선스 조건을 확인합니다.</value></data>
+  <data name="Licenses.NoticesTab" xml:space="preserve"><value>제3자 고지</value></data>
+  <data name="Licenses.ScrcpyTab" xml:space="preserve"><value>scrcpy - Apache 2.0</value></data>
+  <data name="Licenses.FileMissing" xml:space="preserve"><value>동봉된 라이선스 파일을 찾을 수 없습니다: {0}</value></data>
+  <data name="Licenses.ReadFailed" xml:space="preserve"><value>라이선스 파일을 읽지 못했습니다: {0} ({1})</value></data>
   <data name="Settings.Language" xml:space="preserve"><value>표시 언어</value></data>
   <data name="Settings.LanguageRestart" xml:space="preserve"><value>언어 변경은 DX Manager를 다시 시작한 뒤 적용됩니다.</value></data>
   <data name="Settings.Theme" xml:space="preserve"><value>앱 테마</value></data>
