@@ -13,10 +13,14 @@
 </p>
 
 <p align="center">
+  <a href="#english">English</a> ·
+  <a href="#korean">한국어</a> ·
   <a href="docs/USER_GUIDE_EN.md">English guide</a> ·
-  <a href="docs/USER_GUIDE_KO.md">한국어 사용법</a> ·
+  <a href="docs/USER_GUIDE_KO.md">한국어 사용 설명서</a> ·
   <a href="DexManager/THIRD_PARTY_NOTICES.md">Third-party notices</a>
 </p>
+
+<a id="english"></a>
 
 ## Overview
 
@@ -125,3 +129,115 @@ repository is made public. Bundled third-party components remain under their
 own licenses. See
 [THIRD_PARTY_NOTICES.md](DexManager/THIRD_PARTY_NOTICES.md).
 
+---
+
+<a id="korean"></a>
+
+# 한국어
+
+## 개요
+
+DX Manager는 Samsung DeX, ADB와
+[scrcpy](https://github.com/Genymobile/scrcpy)를 기반으로 동작하는
+Windows 유틸리티입니다. 올바른 DeX 가상 디스플레이를 생성하고 추적한 뒤
+해당 화면을 scrcpy로 실행하며, 앱별 가상 디스플레이를 최대 3개까지 추가로
+열 수 있습니다.
+
+이 프로그램은 시스템 `PATH`에 등록된 `adb.exe`에 의존하지 않습니다.
+동봉된 ADB를 자동으로 선택하고 항상 절대 경로로 실행합니다.
+
+## 주요 기능
+
+- Samsung DeX 가상 디스플레이 1개 실행 및 중지
+- 각각 독립적으로 설정할 수 있는 앱 단일창 3개
+- USB 및 무선 ADB 연결
+- Wi-Fi 주소 자동 감지와 Android 11 이상 무선 페어링
+- 창별 해상도, DPI, 비트레이트, FPS와 시작 앱 설정
+- HID 키보드 및 마우스 지원
+- 한영키 보정과 Enter/Shift+Enter 전환
+- scrcpy 전체 화면 및 선택 영역 캡처
+- 캡처 결과의 휴대폰 전송
+- 미입력 시 시스템 트레이 자동 숨김
+- 라이트, 다크 및 Windows 설정 연동 테마
+- Windows 언어에 따른 한국어·영어 UI 자동 선택
+- 실행 세션 로그와 환경 점검
+- .NET Framework 4.6.2를 통한 Windows 7 SP1 호환
+
+## 요구 사항
+
+- Windows 7 SP1, 8.1, 10 또는 11
+- .NET Framework 4.6.2 이상
+- Samsung DeX를 지원하는 Samsung 기기
+- Android 개발자 옵션 및 USB 디버깅 활성화
+- 최초 인증을 위한 데이터 통신 지원 USB 케이블
+
+무선 ADB를 사용하려면 PC와 휴대폰이 같은 로컬 네트워크에서 서로 통신할
+수 있어야 합니다. 게스트 Wi-Fi, AP 격리, VLAN 규칙 또는 회사 네트워크
+정책으로 연결이 차단될 수 있습니다.
+
+## 빠른 시작
+
+1. 릴리스 ZIP을 내려받아 폴더 전체의 압축을 풉니다.
+2. 휴대폰에서 개발자 옵션과 USB 디버깅을 활성화합니다.
+3. 휴대폰을 USB로 연결하고 RSA 디버깅 허용 창을 승인합니다.
+4. `DXManager.exe`를 실행합니다.
+5. 장치 연결 상태가 표시되면 **DeX 시작**을 선택합니다.
+
+`DXManager.exe`만 따로 복사하면 안 됩니다. 함께 제공되는 `tools` 폴더,
+DLL, 라이선스 파일과 scrcpy 서버 파일이 모두 필요합니다.
+
+자세한 사용법은 다음 문서를 참조하십시오.
+
+- [한국어 사용 설명서](docs/USER_GUIDE_KO.md)
+- [English user guide](docs/USER_GUIDE_EN.md)
+
+## 기본 단축키
+
+| 단축키 | 동작 |
+| --- | --- |
+| `F8` | scrcpy 창이 활성화된 상태에서 캡처 모드 진입 |
+| `F8` 다시 누름 | scrcpy 화면 영역 캡처 |
+| 마우스 드래그 | 선택 영역 캡처 |
+| `Esc` | 캡처 모드 취소 |
+| `왼쪽 Alt+F8` | DX Manager 종료 |
+| `Scroll Lock` | 사용 설정 시 일반 Enter와 Shift+Enter 모드 전환 |
+
+캡처 및 종료 단축키는 설정에서 변경할 수 있습니다.
+
+## 빌드
+
+- Visual Studio 2019
+- .NET Framework 4.6.2 Targeting Pack
+- C# WinForms
+- 외부 NuGet 패키지 없음
+
+`DexManager.sln`을 열고 `Release` 구성으로 빌드합니다. 결과물은
+`DexManager/bin/Release`에 생성됩니다. 배포 파일 구성은
+[DexManager/README.md](DexManager/README.md)를 참조하십시오.
+
+## 프로젝트 상태
+
+버전 1.0.0은 다음 환경에서 확인했습니다.
+
+- Windows 11: USB 및 무선 DeX, 단일창 3개 동시 실행
+- Windows 7 SP1 및 .NET Framework 4.6.2: USB 핵심 기능과 scrcpy 4.0
+
+하드웨어, Android 버전, 네트워크 정책과 Samsung 펌웨어에 따라 동작이
+달라질 수 있습니다. 문제를 제보할 때는 **설정 > 진단**과 실행 세션
+로그를 활용하십시오.
+
+## 상표 및 독립성 고지
+
+DX Manager는 독립적으로 개발된 유틸리티입니다. Samsung Electronics 또는
+Genymobile과 제휴·후원·보증 관계가 없으며 해당 회사에서 배포하는
+프로그램이 아닙니다.
+
+Samsung과 Samsung DeX는 Samsung Electronics Co., Ltd.의 상표입니다.
+scrcpy는 해당 개발자들이 유지·관리하는 독립적인 오픈소스 프로젝트입니다.
+
+## 라이선스
+
+DX Manager 자체 소스 코드의 라이선스는 저장소 공개 전에 결정해야 합니다.
+동봉된 제3자 구성요소에는 각각의 라이선스가 적용됩니다. 자세한 내용은
+[THIRD_PARTY_NOTICES.md](DexManager/THIRD_PARTY_NOTICES.md)를
+참조하십시오.
