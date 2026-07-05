@@ -37,7 +37,7 @@ namespace DexManager.Forms
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(860, 590);
             MinimumSize = new Size(720, 480);
-            Font = new Font("Segoe UI", 9.5F);
+            Font = UiFonts.Create(9.5F);
 
             _topPanel = new Panel
             {
@@ -48,8 +48,7 @@ namespace DexManager.Forms
             _titleLabel = new Label
             {
                 AutoSize = true,
-                Font = new Font(
-                    "Segoe UI",
+                Font = UiFonts.Create(
                     20F,
                     FontStyle.Bold),
                 Location = new Point(28, 18),
@@ -222,8 +221,7 @@ namespace DexManager.Forms
                 AutoEllipsis = true,
                 Location = new Point(left, 4),
                 Size = new Size(width, 25),
-                Font = new Font(
-                    "Segoe UI",
+                Font = UiFonts.Create(
                     9.5F,
                     FontStyle.Bold),
                 Text = text
@@ -308,8 +306,7 @@ namespace DexManager.Forms
                 Size = new Size(90, 24),
                 ForeColor = color,
                 BackColor = theme.CardBackground,
-                Font = new Font(
-                    "Segoe UI",
+                Font = UiFonts.Create(
                     9.5F,
                     FontStyle.Bold),
                 Text = GetStatusText(result.Status)

@@ -68,7 +68,7 @@
   <data name="Main.SingleStopping" xml:space="preserve"><value>Stopping window {0}</value></data>
   <data name="Main.SingleCleaning" xml:space="preserve"><value>Cleaning up the Scrcpy virtual display.</value></data>
   <data name="Main.DexRunning" xml:space="preserve"><value>DeX is running</value></data>
-  <data name="Main.DexRunningDetail" xml:space="preserve"><value>The Scrcpy virtual display is running normally.</value></data>
+  <data name="Main.DexRunningDetail" xml:space="preserve"><value>Samsung DeX is running normally.</value></data>
   <data name="Main.SingleRunning" xml:space="preserve"><value>Window {0} is running</value></data>
   <data name="Main.SingleRunningDetail" xml:space="preserve"><value>The Scrcpy virtual display is running.</value></data>
   <data name="Main.AppRunningDetail" xml:space="preserve"><value>{0} is running.</value></data>

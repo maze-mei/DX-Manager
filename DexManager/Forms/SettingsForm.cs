@@ -105,13 +105,13 @@ namespace DexManager.Forms
             StartPosition = FormStartPosition.CenterParent;
             ClientSize = new Size(940, 700);
             MinimumSize = new Size(860, 640);
-            Font = new Font("Segoe UI", 9.5F);
+            Font = UiFonts.Create(9.5F);
             BackColor = _theme.WindowBackground;
 
             _titleLabel = new Label
             {
                 AutoSize = false,
-                Font = new Font("Segoe UI", 20F, FontStyle.Bold),
+                Font = UiFonts.Create(20F, FontStyle.Bold),
                 ForeColor = _theme.TextPrimary,
                 Location = new Point(224, 22),
                 Size = new Size(690, 40),
@@ -121,8 +121,8 @@ namespace DexManager.Forms
             {
                 AutoEllipsis = true,
                 ForeColor = _theme.TextTertiary,
-                Location = new Point(226, 62),
-                Size = new Size(690, 34),
+                Location = new Point(226, 67),
+                Size = new Size(690, 29),
                 Text = LocalizationService.Get("Settings.Description")
             };
 
@@ -540,8 +540,7 @@ namespace DexManager.Forms
             {
                 AutoSize = true,
                 MaximumSize = new Size(610, 0),
-                Font = new Font(
-                    "Segoe UI",
+                Font = UiFonts.Create(
                     9.5F,
                     bold ? FontStyle.Bold : FontStyle.Regular),
                 ForeColor = bold
@@ -1232,7 +1231,7 @@ namespace DexManager.Forms
             _sidebar.Controls.Add(new Label
             {
                 AutoSize = true,
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                Font = UiFonts.Create(9.5F, FontStyle.Bold),
                 ForeColor = _theme.TextTertiary,
                 BackColor = _theme.NavigationBackground,
                 Location = new Point(20, 18),
@@ -1331,7 +1330,7 @@ namespace DexManager.Forms
             card.Controls.Add(new Label
             {
                 AutoSize = true,
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                Font = UiFonts.Create(11F, FontStyle.Bold),
                 ForeColor = _theme.TextSecondary,
                 BackColor = _theme.CardBackground,
                 Location = new Point(20, 15),

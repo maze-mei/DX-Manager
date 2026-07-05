@@ -30,7 +30,7 @@ namespace DexManager.Forms
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(780, 600);
             MinimumSize = new Size(640, 440);
-            Font = new Font("Segoe UI", 9.5F);
+            Font = UiFonts.Create(9.5F);
 
             _noticesText = ReadBundledText(
                 "THIRD_PARTY_NOTICES.md");
@@ -45,7 +45,7 @@ namespace DexManager.Forms
             _titleLabel = new Label
             {
                 AutoSize = true,
-                Font = new Font("Segoe UI", 20F, FontStyle.Bold),
+                Font = UiFonts.Create(20F, FontStyle.Bold),
                 Location = new Point(28, 20),
                 Text = LocalizationService.Get("Licenses.Title")
             };
@@ -117,7 +117,7 @@ namespace DexManager.Forms
                 DetectUrls = true,
                 WordWrap = true,
                 ScrollBars = RichTextBoxScrollBars.Vertical,
-                Font = new Font("Segoe UI", 9.5F),
+                Font = UiFonts.Create(9.5F),
                 TabStop = false
             };
             _contentCard.Controls.Add(_contentBox);

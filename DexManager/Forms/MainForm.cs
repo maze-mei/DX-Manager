@@ -137,7 +137,7 @@ namespace DexManager.Forms
             Icon = AppIconProvider.Current;
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = _theme.WindowBackground;
-            Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+            Font = UiFonts.Create(9.5F);
             ClientSize = new Size(920, 696);
             MinimumSize = Size;
             AutoScroll = false;
@@ -145,7 +145,7 @@ namespace DexManager.Forms
             _pageTitle = new Label
             {
                 AutoSize = true,
-                Font = new Font("Segoe UI", 22F, FontStyle.Bold),
+                Font = UiFonts.Create(22F, FontStyle.Bold),
                 ForeColor = _theme.TextPrimary,
                 Location = new Point(32, 28),
                 Text = LocalizationService.Get("App.Name")
@@ -159,7 +159,7 @@ namespace DexManager.Forms
             _indicatorStatus = new Label
             {
                 AutoSize = false,
-                Font = new Font("Segoe UI", 15F, FontStyle.Bold),
+                Font = UiFonts.Create(15F, FontStyle.Bold),
                 ForeColor = _theme.TextPrimary,
                 Location = new Point(66, 90),
                 Size = new Size(240, 31),
@@ -1748,7 +1748,7 @@ namespace DexManager.Forms
             MoveToCard(_indicatorStatus, _statusCard, 70, 16);
             _indicatorStatus.Size = new Size(360, 28);
             MoveToCard(_indicatorDetail, _statusCard, 70, 48);
-            _indicatorDetail.Size = new Size(580, 18);
+            _indicatorDetail.Size = new Size(580, 20);
             _deviceInfoLabel.Visible = false;
 
             MoveToCard(_displaySettingsTitle, _displayCard, 20, 13);
@@ -1977,7 +1977,7 @@ namespace DexManager.Forms
             _sidebar.Controls.Add(new Label
             {
                 AutoSize = true,
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                Font = UiFonts.Create(9.5F, FontStyle.Bold),
                 ForeColor = _theme.TextTertiary,
                 BackColor = _theme.NavigationBackground,
                 Location = new Point(20, 18),
@@ -2290,7 +2290,7 @@ namespace DexManager.Forms
             var label = new Label
             {
                 AutoSize = true,
-                Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+                Font = UiFonts.Create(13F, FontStyle.Bold),
                 ForeColor = _theme.TextSecondary,
                 Location = new Point(x, y),
                 Text = text

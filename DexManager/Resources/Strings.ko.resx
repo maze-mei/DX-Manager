@@ -68,7 +68,7 @@
   <data name="Main.SingleStopping" xml:space="preserve"><value>단일창 {0} 중지 중</value></data>
   <data name="Main.SingleCleaning" xml:space="preserve"><value>Scrcpy 새 가상화면을 정리합니다.</value></data>
   <data name="Main.DexRunning" xml:space="preserve"><value>DeX 실행 중</value></data>
-  <data name="Main.DexRunningDetail" xml:space="preserve"><value>Scrcpy 가상화면이 정상 실행 중입니다.</value></data>
+  <data name="Main.DexRunningDetail" xml:space="preserve"><value>삼성 DeX가 정상 실행 중입니다.</value></data>
   <data name="Main.SingleRunning" xml:space="preserve"><value>단일창 {0} 실행 중</value></data>
   <data name="Main.SingleRunningDetail" xml:space="preserve"><value>Scrcpy 새 가상화면이 실행 중입니다.</value></data>
   <data name="Main.AppRunningDetail" xml:space="preserve"><value>{0} 앱이 실행 중입니다.</value></data>

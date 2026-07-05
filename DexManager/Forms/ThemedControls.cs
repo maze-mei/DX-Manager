@@ -16,7 +16,7 @@ namespace DexManager.Forms
             UseVisualStyleBackColor = false;
             BackColor = ThemeColors.Current.CardBackground;
             ForeColor = ThemeColors.Current.TextSecondary;
-            Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+            Font = UiFonts.Create(9.5F);
             CornerRadius = 7;
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
                 ControlStyles.OptimizedDoubleBuffer, true);
@@ -144,10 +144,7 @@ namespace DexManager.Forms
             if (NavigationStyle &&
                 !string.IsNullOrWhiteSpace(TrailingText))
             {
-                using (var trailingFont = new Font(
-                    "Segoe UI",
-                    8.5F,
-                    FontStyle.Regular))
+                using (var trailingFont = UiFonts.Create(8.5F))
                 {
                     trailingWidth = TextRenderer.MeasureText(
                         TrailingText,
@@ -247,7 +244,7 @@ namespace DexManager.Forms
         {
             AutoSize = false;
             BackColor = ThemeColors.Current.CardBackground;
-            Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+            Font = UiFonts.Create(9.5F);
             ForeColor = ThemeColors.Current.TextPrimary;
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
                 ControlStyles.OptimizedDoubleBuffer | ControlStyles.Opaque |
