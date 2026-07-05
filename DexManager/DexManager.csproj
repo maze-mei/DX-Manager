@@ -13,6 +13,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Resources\DXManager.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -99,6 +100,7 @@
     <Compile Include="Utils\NativeMethods.cs" />
     <Compile Include="Utils\WindowsVersionHelper.cs" />
     <Compile Include="Utils\AdminHelper.cs" />
+    <Compile Include="Utils\AppIconProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx" />
@@ -110,6 +112,10 @@
     <None Include="App.config" />
     <None Include="app.manifest" />
     <None Include="README.md" />
+    <None Include="Resources\DXManager.ico" />
+    <None Include="Resources\DXManager_256.png" />
+    <None Include="Resources\DXManager_source.svg" />
+    <None Include="Resources\README_아이콘_적용가이드.md" />
     <None Include="config\settings.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>

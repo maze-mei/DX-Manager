@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using DexManager.Models;
 using DexManager.Services;
+using DexManager.Utils;
 
 namespace DexManager.Forms
 {
@@ -133,6 +134,7 @@ namespace DexManager.Forms
             _theme = ThemeColors.Use(_settings.Theme);
 
             Text = LocalizationService.Get("App.Name");
+            Icon = AppIconProvider.Current;
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = _theme.WindowBackground;
             Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);

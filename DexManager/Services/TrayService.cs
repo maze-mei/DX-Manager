@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using DexManager.Utils;
 
 namespace DexManager.Services
 {
@@ -31,7 +32,7 @@ namespace DexManager.Services
 
             _notifyIcon = new NotifyIcon
             {
-                Icon = SystemIcons.Application,
+                Icon = AppIconProvider.Current,
                 Text = LocalizationService.Get("App.Name"),
                 ContextMenuStrip = menu,
                 Visible = true

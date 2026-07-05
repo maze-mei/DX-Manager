@@ -1,0 +1,59 @@
+<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgFinal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8b7bf0"/>
+      <stop offset="55%" stop-color="#6fb9ea"/>
+      <stop offset="100%" stop-color="#4fd1e8"/>
+    </linearGradient>
+    <linearGradient id="glossFinal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.38"/>
+      <stop offset="45%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="vignetteFinal" cx="0.8" cy="0.85" r="0.7">
+      <stop offset="0%" stop-color="#1a1a3a" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#1a1a3a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowFinal" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="monScreen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7a68e0"/>
+      <stop offset="100%" stop-color="#5c4ec2"/>
+    </linearGradient>
+    <linearGradient id="phoneScreen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6fd8ec"/>
+      <stop offset="100%" stop-color="#3fb8d6"/>
+    </linearGradient>
+    <filter id="dropSoft" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#1a1a3a" flood-opacity="0.28"/>
+    </filter>
+    <filter id="dropStrong" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#1a1a3a" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect x="4" y="4" width="248" height="248" rx="56" fill="url(#bgFinal)"/>
+  <rect x="4" y="4" width="248" height="248" rx="56" fill="url(#vignetteFinal)"/>
+  <circle cx="128" cy="120" r="100" fill="url(#glowFinal)"/>
+
+  <g filter="url(#dropSoft)">
+    <rect x="92" y="64" width="118" height="80" rx="12" fill="#ffffff"/>
+  </g>
+  <rect x="100" y="72" width="102" height="62" rx="6" fill="url(#monScreen)"/>
+  <path d="M110 118 L128 100 L142 112 L164 84" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+  <rect x="136" y="144" width="26" height="12" fill="#ffffff"/>
+  <rect x="120" y="156" width="58" height="7" rx="3.5" fill="#ffffff"/>
+  <path d="M100 74 L128 74 L100 116 Z" fill="#ffffff" opacity="0.08"/>
+
+  <g filter="url(#dropStrong)">
+    <rect x="40" y="110" width="54" height="96" rx="13" fill="#ffffff"/>
+  </g>
+  <rect x="46" y="120" width="42" height="68" rx="4" fill="url(#phoneScreen)"/>
+  <circle cx="67" cy="198" r="4" fill="#f0f0f0"/>
+  <path d="M46 121 L60 121 L46 165 Z" fill="#ffffff" opacity="0.12"/>
+
+  <rect x="4" y="4" width="248" height="248" rx="56" fill="url(#glossFinal)"/>
+  <rect x="5.5" y="5.5" width="245" height="245" rx="54.5" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="1.5"/>
+</svg>

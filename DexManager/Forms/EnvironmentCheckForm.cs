@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using DexManager.Models;
 using DexManager.Services;
+using DexManager.Utils;
 
 namespace DexManager.Forms
 {
@@ -32,6 +33,7 @@ namespace DexManager.Forms
             _checkService = checkService;
 
             Text = LocalizationService.Get("Environment.Title");
+            Icon = AppIconProvider.Current;
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(860, 590);
             MinimumSize = new Size(720, 480);

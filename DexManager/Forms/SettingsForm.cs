@@ -100,6 +100,7 @@ namespace DexManager.Forms
             _theme = ThemeColors.Current;
 
             Text = LocalizationService.Get("Settings.Title");
+            Icon = AppIconProvider.Current;
             StartPosition = FormStartPosition.CenterParent;
             ClientSize = new Size(940, 700);
             MinimumSize = new Size(860, 640);

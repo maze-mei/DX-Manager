@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Windows.Forms;
 using DexManager.Services;
+using DexManager.Utils;
 
 namespace DexManager.Forms
 {
@@ -18,6 +19,7 @@ namespace DexManager.Forms
             _logService = logService;
 
             Text = LocalizationService.Get("Log.Title");
+            Icon = AppIconProvider.Current;
             StartPosition = FormStartPosition.CenterParent;
             ClientSize = new Size(860, 520);
             MinimumSize = new Size(640, 360);
