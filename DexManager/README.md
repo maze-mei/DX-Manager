@@ -1,95 +1,62 @@
-# DX Manager
+# DX Manager Source and Build Notes
 
-Samsung DeX용 가상 디스플레이와 Scrcpy 실행을 관리하는 Windows 상주 프로그램입니다.
+[Repository overview](../README.md) ·
+[한국어 사용 설명서](../docs/USER_GUIDE_KO.md) ·
+[English user guide](../docs/USER_GUIDE_EN.md)
 
-## 개발 환경
+## Development Environment
 
 - Visual Studio 2019
-- .NET Framework 4.6.2
+- .NET Framework 4.6.2 targeting pack
 - C# WinForms
-- 외부 NuGet 패키지 없음
+- No external NuGet packages
 
-## 실행
+Open `DexManager.sln` from the repository root and build the `Debug` or
+`Release` configuration.
 
-1. `DexManager.sln`을 Visual Studio 2019에서 엽니다.
-2. `Debug` 또는 `Release` 구성으로 빌드합니다.
-3. 빌드 결과 폴더 전체를 배포합니다.
-4. `DXManager.exe`를 실행합니다.
+## Output
 
-실행 파일만 단독으로 복사하면 안 됩니다. `tools`, DLL과
-`scrcpy-server`가 함께 있어야 합니다. 설정 파일은 첫 실행 시
-`config` 폴더에 자동 생성됩니다.
+Build output is written to:
 
-## ADB 선택 순서
+```text
+DexManager/bin/Debug
+DexManager/bin/Release
+```
 
-1. 설정의 사용자 지정 ADB
-2. `tools\scrcpy\adb.exe` 공통 번들 ADB
-3. Windows 7/8.1에서 위 ADB 실행 실패 시 구형 Windows 대체 ADB
+The application is portable, but `DXManager.exe` is not standalone. A release
+package must include:
 
-각 ADB는 `adb version` 실행에 성공한 경우에만 선택됩니다.
+- `DXManager.exe` and `DXManager.exe.config`
+- `tools/scrcpy` and all of its runtime files
+- `tools/adb`
+- `THIRD_PARTY_NOTICES.md`
+- the `licenses` directory
 
-## 최초 연결
+The `config`, `logs`, and `screenshot` directories are created or populated at
+runtime.
 
-휴대폰에서 다음 작업은 사용자가 직접 해야 합니다.
+## ADB Selection
 
-1. 개발자 옵션 활성화
-2. USB 디버깅 활성화
-3. USB 케이블 연결
-4. RSA 인증창 허용
-5. 이 컴퓨터에서 항상 허용 선택
+DX Manager never relies on an `adb.exe` found through the system `PATH`.
 
-프로그램의 `환경 점검` 버튼에서 연결 상태를 확인할 수 있습니다.
+1. A manually configured ADB is used when manual mode is selected.
+2. Windows 7 and 8.1 use the bundled legacy-compatible ADB.
+3. Windows 10 and later use the bundled modern ADB, or a compatible newer ADB
+   beside a user-selected scrcpy executable.
 
-## 무선 연결
+All ADB commands are executed with the selected absolute path.
 
-PC와 휴대폰을 같은 네트워크에 연결한 뒤 설정의 `연결` 탭을 사용합니다.
+## Compatibility
 
-### USB로 무선 연결 준비
+- Target framework: .NET Framework 4.6.2
+- Intended Windows range: Windows 7 SP1 through Windows 11
+- Bundled scrcpy baseline: 4.0
 
-1. USB 디버깅이 승인된 휴대폰을 USB로 연결합니다.
-2. `무선 ADB 연결 사용`을 선택합니다.
-3. IP 주소를 비워두면 프로그램이 Wi-Fi 주소를 자동으로 찾습니다.
-4. `USB로 무선 준비`를 누릅니다.
-5. 연결 성공 후 USB 케이블을 분리합니다.
+Windows 7 compatibility should be checked on real hardware before each public
+release.
 
-휴대폰을 재부팅하면 TCP/IP 모드를 다시 준비해야 할 수 있습니다.
+## Repository Documentation
 
-### Android 11 이상 페어링
-
-1. 휴대폰 개발자 옵션에서 `무선 디버깅`을 켭니다.
-2. `페어링 코드를 사용하여 기기 페어링`에 표시된 IP, 페어링 포트,
-   6자리 코드를 입력하고 `페어링`을 누릅니다.
-3. 무선 디버깅 기본 화면에 표시된 연결 포트로 바꾼 뒤
-   `무선 연결`을 누릅니다.
-
-페어링 포트와 실제 연결 포트는 서로 다를 수 있습니다. 페어링 코드는
-저장하거나 로그에 남기지 않습니다. 무선 ADB는 신뢰할 수 있는
-사설 네트워크에서만 사용하십시오.
-
-## 캡처
-
-1. F8을 한 번 누릅니다.
-2. F8을 다시 누르면 Scrcpy 창을 캡처합니다.
-3. 마우스로 드래그하면 선택 영역을 캡처합니다.
-4. ESC 또는 시간 초과 시 취소됩니다.
-
-설정에 따라 캡처 파일을 스마트폰으로 전송하고 미디어 스캔을 실행합니다.
-
-## Windows 7 오프라인 배포
-
-- 대상 PC에 .NET Framework 4.6.2 이상이 설치되어 있어야 합니다.
-- 삼성 USB 드라이버는 별도로 준비해야 합니다.
-- 인터넷 설치나 NuGet 복원은 필요하지 않습니다.
-- 공통 번들 ADB가 실행되지 않을 때만 구형 ADB 절대 경로를 설정합니다.
-- 시스템 PATH 자동 등록은 선택 사항이며 관리자 권한이 필요합니다.
-
-## 확인 항목
-
-- X 버튼을 누르면 트레이로 숨겨지는지 확인
-- 트레이 더블클릭으로 창이 복구되는지 확인
-- USB 연결과 분리 상태가 갱신되는지 확인
-- 가상 디스플레이와 Scrcpy가 한 번만 실행되는지 확인
-- F8 전체 및 영역 캡처 확인
-- 캡처 파일의 PC 저장과 스마트폰 전송 확인
-- 자동 숨김과 키 매핑 확인
-- 종료 시 가상 디스플레이 초기화 확인
+Internal architecture, decisions, and handoff notes are maintained in the
+repository-level `docs` directory. Current code and Git history take
+precedence when an internal note becomes stale.
