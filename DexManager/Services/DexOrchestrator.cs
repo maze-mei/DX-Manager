@@ -66,7 +66,8 @@ namespace DexManager.Services
         {
             if (Interlocked.Exchange(ref _operationRunning, 1) == 1)
             {
-                _logService.Warning("DeX 작업이 이미 진행 중입니다.");
+                _logService.Warning(LocalizationService.Get(
+                    "Log.Dex.OperationInProgress"));
                 return;
             }
 
@@ -74,13 +75,15 @@ namespace DexManager.Services
             {
                 if (_scrcpyService.IsRunning)
                 {
-                    _logService.Warning("DeX가 이미 실행 중입니다.");
+                    _logService.Warning(LocalizationService.Get(
+                        "Log.Dex.AlreadyRunning"));
                     return;
                 }
 
                 if (!_adbService.IsAuthorizedDeviceConnected())
                     throw new InvalidOperationException(
-                        "승인된 ADB 장치가 연결되어 있지 않습니다.");
+                        LocalizationService.Get(
+                            "Error.Dex.NoAuthorizedDevice"));
 
                 var displayId = _virtualDisplayService.EnsureVirtualDisplay(
                     _settings.VirtualDisplay,
@@ -88,11 +91,14 @@ namespace DexManager.Services
                 _scrcpyService.Start(_settings.Scrcpy, displayId);
                 TrackSession("DeX", displayId);
                 SaveLastSuccess(displayId);
-                _logService.Info("DeX 실행 흐름을 완료했습니다.");
+                _logService.Info(LocalizationService.Get(
+                    "Log.Dex.StartCompleted"));
             }
             catch (Exception ex)
             {
-                _logService.Error("DeX 시작에 실패했습니다.", ex);
+                _logService.Error(
+                    LocalizationService.Get("Log.Dex.StartFailed"),
+                    ex);
                 throw;
             }
             finally
@@ -105,7 +111,8 @@ namespace DexManager.Services
         {
             if (Interlocked.Exchange(ref _operationRunning, 1) == 1)
             {
-                _logService.Warning("DeX 작업이 이미 진행 중입니다.");
+                _logService.Warning(LocalizationService.Get(
+                    "Log.Dex.OperationInProgress"));
                 return;
             }
 
@@ -123,7 +130,8 @@ namespace DexManager.Services
                         "settings put global stay_on_while_plugged_in 0");
                 }
 
-                _logService.Info("DeX 종료 정리를 완료했습니다.");
+                _logService.Info(LocalizationService.Get(
+                    "Log.Dex.StopCleanupCompleted"));
             }
             finally
             {
@@ -135,7 +143,8 @@ namespace DexManager.Services
         {
             if (Interlocked.Exchange(ref _operationRunning, 1) == 1)
             {
-                _logService.Warning("실행 설정 적용 작업이 이미 진행 중입니다.");
+                _logService.Warning(LocalizationService.Get(
+                    "Log.Dex.ApplyInProgress"));
                 return false;
             }
 
@@ -143,16 +152,19 @@ namespace DexManager.Services
             {
                 if (!_adbService.IsAuthorizedDeviceConnected())
                 {
-                    _logService.Warning(
-                        "실행 설정은 저장했지만 승인된 ADB 장치가 없어 즉시 적용하지 않았습니다.");
+                    _logService.Warning(LocalizationService.Get(
+                        "Log.Dex.ApplyDeferredNoDevice"));
                     return false;
                 }
 
-                _logService.Info("새 실행 설정 적용을 위해 기존 가상화면을 제거합니다.");
+                _logService.Info(LocalizationService.Get(
+                    "Log.Dex.RemovingDisplayForApply"));
                 _scrcpyService.Stop();
                 ClearSession();
                 if (!_virtualDisplayService.Reset())
-                    throw new InvalidOperationException("기존 가상화면을 제거하지 못했습니다.");
+                    throw new InvalidOperationException(
+                        LocalizationService.Get(
+                            "Error.Dex.DisplayResetFailed"));
 
                 Thread.Sleep(1000);
 
@@ -162,12 +174,15 @@ namespace DexManager.Services
                 _scrcpyService.Start(_settings.Scrcpy, displayId);
                 TrackSession("DeX", displayId);
                 SaveLastSuccess(displayId);
-                _logService.Info("새 실행 설정을 즉시 적용했습니다.");
+                _logService.Info(LocalizationService.Get(
+                    "Log.Dex.ApplyCompleted"));
                 return true;
             }
             catch (Exception ex)
             {
-                _logService.Error("새 실행 설정을 즉시 적용하지 못했습니다.", ex);
+                _logService.Error(
+                    LocalizationService.Get("Log.Dex.ApplyFailed"),
+                    ex);
                 throw;
             }
             finally
@@ -180,7 +195,8 @@ namespace DexManager.Services
         {
             if (Interlocked.Exchange(ref _operationRunning, 1) == 1)
             {
-                _logService.Warning("종료 정리 작업이 이미 진행 중입니다.");
+                _logService.Warning(LocalizationService.Get(
+                    "Log.Dex.ShutdownInProgress"));
                 return;
             }
 
@@ -192,11 +208,15 @@ namespace DexManager.Services
                 _adbService.Shell(
                     "settings put global stay_on_while_plugged_in 0");
                 Thread.Sleep(500);
-                _logService.Info("프로그램 종료 전 ADB 정리를 완료했습니다.");
+                _logService.Info(LocalizationService.Get(
+                    "Log.Dex.ShutdownCleanupCompleted"));
             }
             catch (Exception ex)
             {
-                _logService.Error("프로그램 종료 전 ADB 정리에 실패했습니다.", ex);
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Dex.ShutdownCleanupFailed"),
+                    ex);
             }
             finally
             {
@@ -228,14 +248,18 @@ namespace DexManager.Services
                 ScrcpyProcessId = _scrcpyService.CurrentProcessId,
                 CreatedAtUtc = DateTime.UtcNow.ToString("o")
             };
-            _logService.Info("관리 세션 시작: " + _currentSession);
+            _logService.Info(LocalizationService.Format(
+                "Log.Dex.SessionStarted",
+                _currentSession));
         }
 
         private void ClearSession()
         {
             if (_currentSession == null) return;
 
-            _logService.Info("관리 세션 종료: " + _currentSession);
+            _logService.Info(LocalizationService.Format(
+                "Log.Dex.SessionEnded",
+                _currentSession));
             _currentSession = null;
         }
     }

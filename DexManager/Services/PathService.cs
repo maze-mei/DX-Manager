@@ -28,15 +28,17 @@ namespace DexManager.Services
         {
             if (settings == null) throw new ArgumentNullException("settings");
 
-            _logService.Info(
-                "감지된 Windows 버전: " + WindowsVersionHelper.GetDisplayName() +
-                " (" + WindowsVersionHelper.CurrentVersion + ")");
+            _logService.Info(LocalizationService.Format(
+                "Log.Path.WindowsDetected",
+                WindowsVersionHelper.GetDisplayName(),
+                WindowsVersionHelper.CurrentVersion));
 
             if (settings.Paths.AdbSelectionMode == AdbSelectionMode.Manual)
             {
                 return SelectRequired(
                     settings.Paths.AdbPath,
-                    "수동 지정 ADB",
+                    LocalizationService.Get(
+                        "Path.Description.ManualAdb"),
                     timeoutMs);
             }
 
@@ -44,7 +46,8 @@ namespace DexManager.Services
             {
                 return SelectRequired(
                     settings.Paths.Win7AdbPath,
-                    "Windows 7/8.1 레거시 ADB",
+                    LocalizationService.Get(
+                        "Path.Description.LegacyAdb"),
                     timeoutMs);
             }
 
@@ -81,8 +84,8 @@ namespace DexManager.Services
             if (string.IsNullOrWhiteSpace(adbPath)) return false;
             if (!AdminHelper.IsAdministrator())
             {
-                _logService.Warning(
-                    "시스템 PATH 등록에는 관리자 권한이 필요합니다.");
+                _logService.Warning(LocalizationService.Get(
+                    "Log.Path.AdminRequired"));
                 return false;
             }
 
@@ -93,7 +96,8 @@ namespace DexManager.Services
             {
                 if (key == null)
                     throw new InvalidOperationException(
-                        "시스템 환경 변수를 열 수 없습니다.");
+                        LocalizationService.Get(
+                            "Error.Path.SystemEnvironmentUnavailable"));
 
                 var current = key.GetValue(
                     "Path",
@@ -105,7 +109,9 @@ namespace DexManager.Services
                 key.SetValue("Path", updated, RegistryValueKind.ExpandString);
             }
 
-            _logService.Info("ADB 폴더를 시스템 PATH에 등록했습니다: " + adbDirectory);
+            _logService.Info(LocalizationService.Format(
+                "Log.Path.SystemPathRegistered",
+                adbDirectory));
             return true;
         }
 
@@ -113,7 +119,8 @@ namespace DexManager.Services
         {
             var bundled = GetRunnableCandidate(
                 settings.Paths.ModernAdbPath,
-                "동봉 modern ADB",
+                LocalizationService.Get(
+                    "Path.Description.BundledModernAdb"),
                 timeoutMs);
             var external = GetExternalScrcpyAdb(settings, timeoutMs);
 
@@ -127,11 +134,13 @@ namespace DexManager.Services
             if (selected == null)
             {
                 throw new FileNotFoundException(
-                    "실행 가능한 modern adb.exe를 찾을 수 없습니다. " +
-                    "동봉 ADB 또는 지정한 Scrcpy 경로를 확인하세요.");
+                    LocalizationService.Get(
+                        "Error.Path.ModernAdbNotFound"));
             }
 
-            LogSelection(selected, "자동 선택");
+            LogSelection(
+                selected,
+                LocalizationService.Get("Path.Mode.Automatic"));
             return selected.Path;
         }
 
@@ -147,10 +156,14 @@ namespace DexManager.Services
             if (candidate == null)
             {
                 throw new FileNotFoundException(
-                    description + " adb.exe를 실행할 수 없습니다. 경로를 확인하세요.");
+                    LocalizationService.Format(
+                        "Error.Path.AdbUnavailable",
+                        description));
             }
 
-            LogSelection(candidate, settingsModeLabel: "선택");
+            LogSelection(
+                candidate,
+                LocalizationService.Get("Path.Mode.Selected"));
             return candidate.Path;
         }
 
@@ -177,7 +190,8 @@ namespace DexManager.Services
                 "adb.exe");
             return GetRunnableCandidate(
                 adbPath,
-                "지정한 Scrcpy 폴더의 ADB",
+                LocalizationService.Get(
+                    "Path.Description.ExternalScrcpyAdb"),
                 timeoutMs,
                 true);
         }
@@ -195,7 +209,10 @@ namespace DexManager.Services
                 : _settingsService.ResolvePath(configuredPath);
             if (!File.Exists(path))
             {
-                _logService.Warning(description + " 파일이 없습니다: " + path);
+                _logService.Warning(LocalizationService.Format(
+                    "Log.Path.CandidateMissing",
+                    description,
+                    path));
                 return null;
             }
 
@@ -209,8 +226,10 @@ namespace DexManager.Services
                     false);
                 if (!result.IsSuccess)
                 {
-                    _logService.Warning(
-                        description + " 실행 실패: " + result.StandardError);
+                    _logService.Warning(LocalizationService.Format(
+                        "Log.Path.CandidateExecutionFailed",
+                        description,
+                        result.StandardError));
                     return null;
                 }
 
@@ -222,17 +241,26 @@ namespace DexManager.Services
             }
             catch (Exception ex)
             {
-                _logService.Warning(description + " 실행 불가: " + ex.Message);
+                _logService.Warning(LocalizationService.Format(
+                    "Log.Path.CandidateUnavailable",
+                    description,
+                    ex.Message));
                 return null;
             }
         }
 
         private void LogSelection(AdbPathCandidate candidate, string settingsModeLabel)
         {
-            _logService.Info(
-                "ADB " + settingsModeLabel + ": " + candidate.Description);
-            _logService.Info("선택된 ADB 경로: " + candidate.Path);
-            _logService.Info("ADB 버전: " + candidate.VersionText);
+            _logService.Info(LocalizationService.Format(
+                "Log.Path.Selection",
+                settingsModeLabel,
+                candidate.Description));
+            _logService.Info(LocalizationService.Format(
+                "Log.Path.SelectedAdbPath",
+                candidate.Path));
+            _logService.Info(LocalizationService.Format(
+                "Log.Path.AdbVersion",
+                candidate.VersionText));
         }
 
         private static bool IsVersionAtLeast(Version left, Version right)
@@ -259,7 +287,9 @@ namespace DexManager.Services
             var line = (output ?? string.Empty)
                 .Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
                 .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
-            return string.IsNullOrWhiteSpace(line) ? "버전 출력 없음" : line.Trim();
+            return string.IsNullOrWhiteSpace(line)
+                ? LocalizationService.Get("Path.VersionUnavailable")
+                : line.Trim();
         }
 
         private static string NormalizeDirectory(string directory)

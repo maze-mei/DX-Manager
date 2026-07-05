@@ -24,7 +24,8 @@ namespace DexManager.Services
         {
             if (string.IsNullOrWhiteSpace(scrcpyPath))
                 throw new ArgumentException(
-                    "Scrcpy 경로가 비어 있습니다.",
+                    LocalizationService.Get(
+                        "Error.Scrcpy.PathEmpty"),
                     "scrcpyPath");
 
             _scrcpyPath = Path.GetFullPath(scrcpyPath);
@@ -48,8 +49,8 @@ namespace DexManager.Services
             {
                 if (!shouldRun())
                 {
-                    _logService.Info(
-                        "화면 OFF 재적용 조건이 사라져 실행을 취소했습니다.");
+                    _logService.Info(LocalizationService.Get(
+                        "Log.ScreenOff.Cancelled"));
                     return false;
                 }
                 return RunOnce();
@@ -64,7 +65,8 @@ namespace DexManager.Services
         {
             if (!File.Exists(_scrcpyPath))
                 throw new FileNotFoundException(
-                    "scrcpy.exe를 찾을 수 없습니다.",
+                    LocalizationService.Get(
+                        "Error.Scrcpy.FileNotFound"),
                     _scrcpyPath);
 
             var serial = _adbService.TargetSerial;
@@ -95,8 +97,8 @@ namespace DexManager.Services
 
                 try
                 {
-                    _logService.Info(
-                        "휴대폰 화면 OFF 재적용 Scrcpy를 순차 실행합니다.");
+                    _logService.Info(LocalizationService.Get(
+                        "Log.ScreenOff.Starting"));
                     process.Start();
                     started = true;
                     process.BeginOutputReadLine();
@@ -107,15 +109,15 @@ namespace DexManager.Services
                     {
                         if (confirmation.Wait(50))
                         {
-                            _logService.Info(
-                                "휴대폰 화면 OFF 재적용을 확인했습니다.");
+                            _logService.Info(LocalizationService.Get(
+                                "Log.ScreenOff.Confirmed"));
                             return true;
                         }
                         if (process.HasExited) break;
                     }
 
-                    _logService.Warning(
-                        "휴대폰 화면 OFF 재적용 확인에 실패했습니다.");
+                    _logService.Warning(LocalizationService.Get(
+                        "Log.ScreenOff.ConfirmationFailed"));
                     return false;
                 }
                 finally

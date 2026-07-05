@@ -105,7 +105,8 @@ namespace DexManager.Services
             }
 
             AddPcScreenshotFolderCheck(results);
-            _logService.Info("환경 점검을 완료했습니다.");
+            _logService.Info(LocalizationService.Get(
+                "Log.Environment.Completed"));
             return results;
         }
 

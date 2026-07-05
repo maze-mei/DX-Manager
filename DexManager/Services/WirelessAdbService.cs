@@ -105,17 +105,21 @@ namespace DexManager.Services
             if (IsConnected(endpoint)) return true;
 
             if (writeLog)
-                _logService.Info("무선 ADB 재연결 시도: " + endpoint);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Wireless.ReconnectAttempt",
+                    endpoint));
             var result = _adbService.Connect(endpoint, writeLog);
             var connected = result.IsSuccess && IsConnected(endpoint);
             if (writeLog)
             {
                 if (connected)
-                    _logService.Info("무선 ADB 재연결 성공: " + endpoint);
+                    _logService.Info(LocalizationService.Format(
+                        "Log.Wireless.ReconnectSucceeded",
+                        endpoint));
                 else
-                    _logService.Warning(
-                        "무선 ADB 재연결 실패: " +
-                        GetResultMessage(result));
+                    _logService.Warning(LocalizationService.Format(
+                        "Log.Wireless.ReconnectFailed",
+                        GetResultMessage(result)));
             }
             return connected;
         }
@@ -126,7 +130,9 @@ namespace DexManager.Services
         {
             var normalizedHost = NormalizeHost(host);
             var endpoint = BuildEndpoint(normalizedHost, port);
-            _logService.Info("무선 ADB 연결 시도: " + endpoint);
+            _logService.Info(LocalizationService.Format(
+                "Log.Wireless.ConnectAttempt",
+                endpoint));
 
             _adbService.StartServer();
             var result = _adbService.Connect(endpoint, true);
@@ -143,7 +149,9 @@ namespace DexManager.Services
             _settings.Connection.WirelessPort = port;
             _settingsService.Save(_settings);
             _adbService.SetTargetSerial(endpoint);
-            _logService.Info("무선 ADB 연결 성공: " + endpoint);
+            _logService.Info(LocalizationService.Format(
+                "Log.Wireless.ConnectSucceeded",
+                endpoint));
             return WirelessConnectionResult.Succeeded(
                 endpoint,
                 LocalizationService.Get("Wireless.Connected"));
@@ -178,11 +186,10 @@ namespace DexManager.Services
                     LocalizationService.Get("Wireless.NoWifiIp"));
             }
 
-            _logService.Info(
-                "USB 장치를 무선 ADB 모드로 전환합니다: " +
-                usbSerial +
-                ", port=" +
-                port);
+            _logService.Info(LocalizationService.Format(
+                "Log.Wireless.EnableFromUsb",
+                usbSerial,
+                port));
             var tcpipResult = _adbService.EnableTcpIp(
                 usbSerial,
                 port);
@@ -242,7 +249,8 @@ namespace DexManager.Services
             _settings.Connection.Mode = AdbConnectionMode.Usb;
             _settingsService.Save(_settings);
             _adbService.SetTargetSerial(string.Empty);
-            _logService.Info("무선 ADB 연결을 해제하고 USB 모드로 전환했습니다.");
+            _logService.Info(LocalizationService.Get(
+                "Log.Wireless.Disconnected"));
             return WirelessConnectionResult.Succeeded(
                 string.Empty,
                 LocalizationService.Get("Wireless.Disconnected"));
@@ -356,7 +364,9 @@ namespace DexManager.Services
 
         private static string GetResultMessage(ProcessResult result)
         {
-            if (result == null) return "결과 없음";
+            if (result == null)
+                return LocalizationService.Get(
+                    "Wireless.NoResult");
             var text = !string.IsNullOrWhiteSpace(result.StandardError)
                 ? result.StandardError
                 : result.StandardOutput;

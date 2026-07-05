@@ -374,11 +374,15 @@ namespace DexManager.Forms
 
         private async void MainForm_Shown(object sender, EventArgs e)
         {
-            _logService.Info("메인 창을 표시했습니다.");
+            _logService.Info(
+                LocalizationService.Get("Log.Main.Shown"));
             try { _captureCoordinator.Start(); }
             catch (Exception ex)
             {
-                _logService.Error("캡처 단축키 등록에 실패했습니다.", ex);
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Main.CaptureHotkeyRegistrationFailed"),
+                    ex);
                 _trayService.ShowBalloon(
                     LocalizationService.Get("App.Name"),
                     LocalizationService.Get("Main.CaptureHotkeyFailed"));
@@ -388,7 +392,10 @@ namespace DexManager.Forms
             try { _keyMappingService.Start(); }
             catch (Exception ex)
             {
-                _logService.Error("키 매핑 시작에 실패했습니다.", ex);
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Main.KeyMappingStartFailed"),
+                    ex);
                 _trayService.ShowBalloon(
                     LocalizationService.Get("App.Name"),
                     LocalizationService.Get("Main.KeyMappingFailed"));
@@ -444,7 +451,9 @@ namespace DexManager.Forms
             {
                 _adbStatusValue.Text =
                     LocalizationService.Get("Status.Error");
-                _logService.Error("ADB 초기화에 실패했습니다.", ex);
+                _logService.Error(
+                    LocalizationService.Get("Log.Main.AdbInitFailed"),
+                    ex);
                 _connectionError = LocalizationService.Format(
                     "Error.AdbInit",
                     ex.Message);
@@ -727,7 +736,8 @@ namespace DexManager.Forms
                 catch (Exception ex)
                 {
                     _logService.Error(
-                        "휴대폰 화면 OFF 재적용에 실패했습니다.",
+                        LocalizationService.Get(
+                            "Log.Main.ScreenOffReapplyFailed"),
                         ex);
                 }
             });
@@ -757,21 +767,26 @@ namespace DexManager.Forms
                     (requested ? "7" : "0"));
                 if (!result.IsSuccess)
                 {
-                    _logService.Warning(
-                        "잠자기 방지 설정 변경에 실패했습니다: " +
-                        result.StandardError);
+                    _logService.Warning(LocalizationService.Format(
+                        "Log.Main.StayAwakeCommandFailed",
+                        result.StandardError));
                     return;
                 }
 
                 _lastAppliedStayAwakeState = requested;
                 _logService.Info(
                     requested
-                        ? "실행 중인 Scrcpy 세션에 맞춰 잠자기 방지를 켰습니다."
-                        : "실행 중인 Scrcpy 세션이 없어 잠자기 방지를 껐습니다.");
+                        ? LocalizationService.Get(
+                            "Log.Main.StayAwakeEnabled")
+                        : LocalizationService.Get(
+                            "Log.Main.StayAwakeDisabled"));
             }
             catch (Exception ex)
             {
-                _logService.Error("잠자기 방지 설정을 변경하지 못했습니다.", ex);
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Main.StayAwakeChangeFailed"),
+                    ex);
             }
         }
 
@@ -817,16 +832,19 @@ namespace DexManager.Forms
                 }
                 var result = _adbService.Shell("input keyevent 224");
                 if (result.IsSuccess)
-                    _logService.Info(
-                        "모든 Scrcpy 창이 종료되어 휴대폰 화면을 켰습니다.");
+                    _logService.Info(LocalizationService.Get(
+                        "Log.Main.PhoneScreenWoken"));
                 else
-                    _logService.Warning(
-                        "휴대폰 화면 켜기 명령이 실패했습니다: " +
-                        result.StandardError);
+                    _logService.Warning(LocalizationService.Format(
+                        "Log.Main.PhoneScreenWakeCommandFailed",
+                        result.StandardError));
             }
             catch (Exception ex)
             {
-                _logService.Error("휴대폰 화면을 켜지 못했습니다.", ex);
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Main.PhoneScreenWakeFailed"),
+                    ex);
             }
         }
 
@@ -1201,8 +1219,8 @@ namespace DexManager.Forms
                 }
                 if (!_adbService.IsAuthorizedDeviceConnected())
                 {
-                    _logService.Info(
-                        "실행 설정을 저장했습니다. 연결된 ADB 장치가 없어 다음 DeX 시작 때 적용합니다.");
+                    _logService.Info(LocalizationService.Get(
+                        "Log.Main.SettingsDeferredNoDevice"));
                     MessageBox.Show(
                         this,
                         LocalizationService.Get("Main.ApplyNoDevice"),
@@ -1254,8 +1272,13 @@ namespace DexManager.Forms
             }
             catch (Exception ex)
             {
-                _logService.Error("실행 설정은 저장했지만 즉시 적용하지 못했습니다.", ex);
-                _connectionError = "실행 설정 즉시 적용 실패: " + ex.Message;
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Main.SettingsImmediateApplyFailed"),
+                    ex);
+                _connectionError = LocalizationService.Format(
+                    "Main.ApplyFailedShort",
+                    ex.Message);
                 SetConnectionIndicator(
                     Color.Firebrick,
                     LocalizationService.Get("Status.Error"),
@@ -1382,11 +1405,15 @@ namespace DexManager.Forms
                 if (!selected)
                     SetSelectedAppPackage(selectedPackage, selectedName);
                 SaveSelectedAppIdentity();
-                _logService.Info("Scrcpy 앱 목록을 메인 화면에 표시했습니다.");
+                _logService.Info(LocalizationService.Get(
+                    "Log.Main.AppListDisplayed"));
             }
             catch (Exception ex)
             {
-                _logService.Error("Scrcpy 앱 목록을 불러오지 못했습니다.", ex);
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Main.AppListLoadFailed"),
+                    ex);
                 MessageBox.Show(
                     this,
                     LocalizationService.Format(
@@ -1465,8 +1492,11 @@ namespace DexManager.Forms
             _settingsService.Save(_settings);
             _logService.Info(
                 _selectedMode == 0
-                    ? "메인 화면의 DeX/Scrcpy 실행 설정을 저장했습니다."
-                    : "단일창 " + _selectedMode + " 실행 설정을 저장했습니다.");
+                    ? LocalizationService.Get(
+                        "Log.Main.DexSettingsSaved")
+                    : LocalizationService.Format(
+                        "Log.Main.SingleWindowSettingsSaved",
+                        _selectedMode));
             if (showMessage)
             {
                 MessageBox.Show(
@@ -2075,9 +2105,9 @@ namespace DexManager.Forms
             }
             catch (Exception ex)
             {
-                _logService.Warning(
-                    "모드 전환 중 현재 실행 설정을 저장하지 못했습니다: " +
-                    ex.Message);
+                _logService.Warning(LocalizationService.Format(
+                    "Log.Main.ModeSwitchSaveFailed",
+                    ex.Message));
             }
         }
 

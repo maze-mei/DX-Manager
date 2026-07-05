@@ -46,7 +46,8 @@ namespace DexManager.Services
         public void Start()
         {
             if (_timer != null) return;
-            _logService.Info("ADB 장치 감시를 시작합니다.");
+            _logService.Info(LocalizationService.Get(
+                "Log.DeviceMonitor.Started"));
             _timer = new Timer(Poll, null, 0, _intervalMs);
         }
 
@@ -55,7 +56,8 @@ namespace DexManager.Services
             var timer = Interlocked.Exchange(ref _timer, null);
             if (timer == null) return;
             timer.Dispose();
-            _logService.Info("ADB 장치 감시를 중지했습니다.");
+            _logService.Info(LocalizationService.Get(
+                "Log.DeviceMonitor.Stopped"));
         }
 
         public void Dispose()
@@ -108,7 +110,10 @@ namespace DexManager.Services
             }
             catch (Exception ex)
             {
-                _logService.Error("장치 감시 중 오류가 발생했습니다.", ex);
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.DeviceMonitor.Failed"),
+                    ex);
                 PublishIfChanged(DeviceState.Disconnected());
             }
             finally
@@ -127,9 +132,13 @@ namespace DexManager.Services
                 _currentState = next;
             }
 
-            _logService.Info(
-                "장치 상태 변경: " + previous.Status + " -> " + next.Status +
-                (string.IsNullOrWhiteSpace(next.Serial) ? string.Empty : " (" + next.Serial + ")"));
+            _logService.Info(LocalizationService.Format(
+                "Log.DeviceMonitor.StateChanged",
+                previous.Status,
+                next.Status,
+                string.IsNullOrWhiteSpace(next.Serial)
+                    ? string.Empty
+                    : " (" + next.Serial + ")"));
 
             var args = new DeviceStateChangedEventArgs(
                 CopyState(previous),

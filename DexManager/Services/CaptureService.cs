@@ -29,14 +29,18 @@ namespace DexManager.Services
         public CaptureResult CaptureWindow(IntPtr windowHandle)
         {
             if (windowHandle == IntPtr.Zero)
-                throw new InvalidOperationException("Scrcpy 창을 찾을 수 없습니다.");
+                throw new InvalidOperationException(
+                    LocalizationService.Get(
+                        "Error.Capture.ScrcpyWindowNotFound"));
 
             NativeRect clientRect;
             var clientOrigin = new NativePoint();
             if (!NativeMethods.GetClientRect(windowHandle, out clientRect) ||
                 !NativeMethods.ClientToScreen(windowHandle, ref clientOrigin))
             {
-                throw new InvalidOperationException("Scrcpy 창 영역을 확인하지 못했습니다.");
+                throw new InvalidOperationException(
+                    LocalizationService.Get(
+                        "Error.Capture.WindowAreaUnavailable"));
             }
 
             var rectangle = new Rectangle(
@@ -50,7 +54,10 @@ namespace DexManager.Services
         public CaptureResult CaptureRectangle(Rectangle rectangle, string prefix)
         {
             if (rectangle.Width <= 0 || rectangle.Height <= 0)
-                throw new ArgumentException("캡처 영역이 올바르지 않습니다.", "rectangle");
+                throw new ArgumentException(
+                    LocalizationService.Get(
+                        "Error.Capture.InvalidArea"),
+                    "rectangle");
 
             var folder = _settingsService.ResolvePath(
                 _settings.Paths.ScreenshotFolder);
@@ -76,7 +83,9 @@ namespace DexManager.Services
                 bitmap.Save(localPath, ImageFormat.Png);
             }
 
-            _logService.Info("화면 캡처를 저장했습니다: " + localPath);
+            _logService.Info(LocalizationService.Format(
+                "Log.Capture.Saved",
+                localPath));
             var transferred = false;
             var remotePath = string.Empty;
 
@@ -103,16 +112,18 @@ namespace DexManager.Services
                 if (!mkdirResult.IsSuccess)
                 {
                     throw new InvalidOperationException(
-                        "스마트폰 캡처 폴더를 확인하지 못했습니다. " +
-                        GetCommandError(mkdirResult));
+                        LocalizationService.Format(
+                            "Error.Capture.DeviceFolderFailed",
+                            GetCommandError(mkdirResult)));
                 }
 
                 pushResult = _adbService.Push(localPath, remotePath);
                 if (!pushResult.IsSuccess)
                 {
                     throw new InvalidOperationException(
-                        "캡처 파일을 스마트폰으로 전송하지 못했습니다. " +
-                        GetCommandError(pushResult));
+                        LocalizationService.Format(
+                            "Error.Capture.PushFailed",
+                            GetCommandError(pushResult)));
                 }
             }
 
@@ -121,9 +132,12 @@ namespace DexManager.Services
                 "am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d " +
                 ShellQuote(mediaUri));
             if (!scanResult.IsSuccess)
-                _logService.Warning("미디어 스캔 broadcast 실행에 실패했습니다.");
+                _logService.Warning(LocalizationService.Get(
+                    "Log.Capture.MediaScanFailed"));
 
-            _logService.Info("캡처 파일을 스마트폰으로 전송했습니다: " + remotePath);
+            _logService.Info(LocalizationService.Format(
+                "Log.Capture.Pushed",
+                remotePath));
         }
 
         private static string CombineDevicePath(string folder, string fileName)

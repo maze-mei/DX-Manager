@@ -35,8 +35,9 @@ namespace DexManager.Services
         public void Start()
         {
             _timer.Start();
-            _logService.Info(
-                "자동 숨김을 시작했습니다: " + _idleSeconds + "초");
+            _logService.Info(LocalizationService.Format(
+                "Log.AutoHide.Started",
+                _idleSeconds));
         }
 
         public void Stop()
@@ -80,14 +81,15 @@ namespace DexManager.Services
                 if (minimized)
                 {
                     _minimizedByService = true;
-                    _logService.Info(
-                        "사용자 입력이 없어 실행 중인 Scrcpy 창을 최소화했습니다.");
+                    _logService.Info(LocalizationService.Get(
+                        "Log.AutoHide.ScrcpyMinimized"));
                 }
 
                 if (!_hideRequested)
                 {
                     _hideRequested = true;
-                    _logService.Info("사용자 입력이 없어 DX Manager UI를 트레이로 숨깁니다.");
+                    _logService.Info(LocalizationService.Get(
+                        "Log.AutoHide.ManagerHidden"));
                     RaiseIdleHideRequested();
                 }
             }

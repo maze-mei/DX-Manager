@@ -41,9 +41,10 @@ namespace DexManager.Services
             if (_settings.UseLowLevelHotkeys)
             {
                 InstallHook();
-                _logService.Info(
-                    "저수준 키보드 후크 핫키 사용: 캡처=" +
-                    _captureShortcut + ", 종료=" + _exitShortcut);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Hotkey.LowLevelEnabled",
+                    _captureShortcut,
+                    _exitShortcut));
             }
         }
 
@@ -72,9 +73,10 @@ namespace DexManager.Services
         {
             if (message.Msg == NativeMethods.WmHotkey)
             {
-                _logService.Info(
-                    "WM_HOTKEY 수신: WParam=" + message.WParam +
-                    ", LParam=" + message.LParam);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Hotkey.MessageReceived",
+                    message.WParam,
+                    message.LParam));
 
                 if (!_settings.UseLowLevelHotkeys &&
                     message.WParam.ToInt32() == CaptureHotkeyId)
@@ -110,35 +112,36 @@ namespace DexManager.Services
 
             if (_registered)
             {
-                _logService.Info(
-                    "RegisterHotKey 등록 성공: " +
-                    _captureShortcut +
-                    ", Modifiers=" + modifiers +
-                    ", Key=" + key);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Hotkey.Registered",
+                    _captureShortcut,
+                    modifiers,
+                    key));
                 if (_settings.UseLowLevelHotkeys)
                 {
                     NativeMethods.UnregisterHotKey(
                         Handle,
                         CaptureHotkeyId);
                     _registered = false;
-                    _logService.Info(
-                        "저수준 후크 사용을 위해 진단용 RegisterHotKey 등록을 해제했습니다.");
+                    _logService.Info(LocalizationService.Get(
+                        "Log.Hotkey.DiagnosticRegistrationRemoved"));
                 }
                 return;
             }
 
             var error = Marshal.GetLastWin32Error();
-            _logService.Warning(
-                "RegisterHotKey 등록 실패: " +
-                _captureShortcut +
-                ", LastWin32Error=" + error);
+            _logService.Warning(LocalizationService.Format(
+                "Log.Hotkey.RegistrationFailed",
+                _captureShortcut,
+                error));
 
             if (!_settings.UseLowLevelHotkeys)
             {
                 throw new Win32Exception(
                     error,
-                    "전역 캡처 단축키를 등록하지 못했습니다: " +
-                    _captureShortcut);
+                    LocalizationService.Format(
+                        "Error.Hotkey.GlobalCaptureRegistrationFailed",
+                        _captureShortcut));
             }
         }
 
@@ -161,7 +164,8 @@ namespace DexManager.Services
                 var error = Marshal.GetLastWin32Error();
                 throw new Win32Exception(
                     error,
-                    "저수준 키보드 후크를 설치하지 못했습니다.");
+                    LocalizationService.Get(
+                        "Error.Hotkey.LowLevelHookFailed"));
             }
         }
 
@@ -245,12 +249,13 @@ namespace DexManager.Services
         private void LogKeyboardEvent(LowLevelKeyboardInput data, int message)
         {
             var state = ModifierState.Read();
-            _logService.Info(
-                "키 진단: msg=0x" + message.ToString("X") +
-                ", vk=0x" + data.VirtualKey.ToString("X") +
-                ", scan=0x" + data.ScanCode.ToString("X") +
-                ", flags=0x" + data.Flags.ToString("X") +
-                ", mods=" + state);
+            _logService.Info(LocalizationService.Format(
+                "Log.Hotkey.Diagnostics",
+                message.ToString("X"),
+                data.VirtualKey.ToString("X"),
+                data.ScanCode.ToString("X"),
+                data.Flags.ToString("X"),
+                state));
         }
 
         private void RaiseCapture()

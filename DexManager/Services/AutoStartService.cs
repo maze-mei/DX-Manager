@@ -43,12 +43,15 @@ namespace DexManager.Services
             using (var key = Registry.CurrentUser.CreateSubKey(RunKeyPath))
             {
                 if (key == null)
-                    throw new InvalidOperationException("자동 실행 레지스트리를 열 수 없습니다.");
+                    throw new InvalidOperationException(
+                        LocalizationService.Get(
+                            "Error.AutoStart.RegistryUnavailable"));
                 key.SetValue(ValueName, command, RegistryValueKind.String);
                 key.DeleteValue(LegacyValueName, false);
             }
 
-            _logService.Info("Windows 자동 실행을 등록했습니다.");
+            _logService.Info(LocalizationService.Get(
+                "Log.AutoStart.Registered"));
         }
 
         public void Unregister()
@@ -62,7 +65,8 @@ namespace DexManager.Services
                 }
             }
 
-            _logService.Info("Windows 자동 실행 등록을 해제했습니다.");
+            _logService.Info(LocalizationService.Get(
+                "Log.AutoStart.Unregistered"));
         }
     }
 }

@@ -33,7 +33,8 @@ namespace DexManager.Services
         {
             if (string.IsNullOrWhiteSpace(scrcpyPath))
                 throw new ArgumentException(
-                    "Scrcpy 경로가 비어 있습니다.",
+                    LocalizationService.Get(
+                        "Error.Scrcpy.PathEmpty"),
                     "scrcpyPath");
 
             _scrcpyPath = Path.GetFullPath(scrcpyPath);
@@ -168,11 +169,13 @@ namespace DexManager.Services
                 throw new ArgumentNullException("settings");
             if (!File.Exists(_scrcpyPath))
                 throw new FileNotFoundException(
-                    "scrcpy.exe를 찾을 수 없습니다.",
+                    LocalizationService.Get(
+                        "Error.Scrcpy.FileNotFound"),
                     _scrcpyPath);
             if (string.IsNullOrWhiteSpace(settings.StartAppPackage))
                 throw new InvalidOperationException(
-                    "단일창에서 실행할 앱을 선택하세요.");
+                    LocalizationService.Get(
+                        "Error.SingleWindow.AppRequired"));
 
             var started = false;
             _launchCoordinator.RunExclusive(delegate
@@ -182,8 +185,9 @@ namespace DexManager.Services
                 {
                     if (IsRunning(slot))
                     {
-                        _logService.Warning(
-                            "단일창 " + slot + "이 이미 실행 중입니다.");
+                        _logService.Warning(LocalizationService.Format(
+                            "Log.SingleWindow.AlreadyRunning",
+                            slot));
                         return;
                     }
 
@@ -200,8 +204,10 @@ namespace DexManager.Services
                     _stayAwakeRequests[slot] = settings.StayAwake;
                     _screenOffRequests[slot] = settings.TurnScreenOff;
                     started = true;
-                    _logService.Info(
-                        "단일창 " + slot + " Scrcpy 실행: " + arguments);
+                    _logService.Info(LocalizationService.Format(
+                        "Log.SingleWindow.Start",
+                        slot,
+                        arguments));
                 }
 
                 try
@@ -243,7 +249,9 @@ namespace DexManager.Services
 
                 StopProcess(process);
                 stopped = true;
-                _logService.Info("단일창 " + slot + "을 중지했습니다.");
+                _logService.Info(LocalizationService.Format(
+                    "Log.SingleWindow.Stopped",
+                    slot));
             });
 
             if (stopped) RaiseRunningChanged();
@@ -268,8 +276,9 @@ namespace DexManager.Services
                 {
                     StopProcess(item.Value);
                     stoppedCount++;
-                    _logService.Info(
-                        "단일창 " + item.Key + "을 중지했습니다.");
+                    _logService.Info(LocalizationService.Format(
+                        "Log.SingleWindow.Stopped",
+                        item.Key));
                 }
             });
 
@@ -371,8 +380,9 @@ namespace DexManager.Services
 
             if (slot > 0)
             {
-                _logService.Info(
-                    "단일창 " + slot + " Scrcpy 프로세스가 종료되었습니다.");
+                _logService.Info(LocalizationService.Format(
+                    "Log.SingleWindow.ProcessExited",
+                    slot));
                 RaiseRunningChanged();
             }
         }
@@ -458,22 +468,26 @@ namespace DexManager.Services
             {
                 if (!IsProcessRunning(process))
                     throw new InvalidOperationException(
-                        "단일창 " + slot +
-                        " Scrcpy가 창을 준비하기 전에 종료되었습니다.");
+                        LocalizationService.Format(
+                            "Error.SingleWindow.ExitedBeforeWindow",
+                            slot));
 
                 process.Refresh();
                 if (process.MainWindowHandle != IntPtr.Zero)
                 {
-                    _logService.Info(
-                        "단일창 " + slot +
-                        " Scrcpy 창 준비 완료: PID=" + process.Id);
+                    _logService.Info(LocalizationService.Format(
+                        "Log.SingleWindow.WindowReady",
+                        slot,
+                        process.Id));
                     return;
                 }
                 Thread.Sleep(50);
             }
 
             throw new TimeoutException(
-                "단일창 " + slot + " Scrcpy 창 준비 시간이 초과되었습니다.");
+                LocalizationService.Format(
+                    "Error.SingleWindow.WindowTimeout",
+                    slot));
         }
 
         private void AbortStart(Process process, int slot)

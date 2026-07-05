@@ -34,9 +34,13 @@ namespace DexManager.Utils
             bool writeLog)
         {
             if (string.IsNullOrWhiteSpace(fileName))
-                throw new ArgumentException("실행 파일 경로가 비어 있습니다.", "fileName");
+                throw new ArgumentException(
+                    LocalizationService.Get("Error.Process.PathEmpty"),
+                    "fileName");
             if (!File.Exists(fileName))
-                throw new FileNotFoundException("실행 파일을 찾을 수 없습니다.", fileName);
+                throw new FileNotFoundException(
+                    LocalizationService.Get("Error.Process.FileNotFound"),
+                    fileName);
 
             var stopwatch = Stopwatch.StartNew();
             var output = new StringBuilder();
@@ -58,7 +62,10 @@ namespace DexManager.Utils
             };
 
             if (writeLog)
-                _logService.Info("프로세스 실행: " + fileName + " " + startInfo.Arguments);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Process.Start",
+                    fileName,
+                    startInfo.Arguments));
 
             using (var process = new Process { StartInfo = startInfo })
             {
@@ -81,7 +88,9 @@ namespace DexManager.Utils
                     try { process.Kill(); }
                     catch (Exception ex)
                     {
-                        _logService.Warning("시간 초과 프로세스를 종료하지 못했습니다: " + ex.Message);
+                        _logService.Warning(LocalizationService.Format(
+                            "Log.Process.KillTimedOutFailed",
+                            ex.Message));
                     }
                 }
                 else
@@ -120,8 +129,8 @@ namespace DexManager.Utils
 
         private void LogResult(ProcessResult result)
         {
-            var summary = string.Format(
-                "프로세스 종료: ExitCode={0}, Timeout={1}, Duration={2}ms",
+            var summary = LocalizationService.Format(
+                "Log.Process.End",
                 result.ExitCode,
                 result.TimedOut,
                 (long)result.Duration.TotalMilliseconds);

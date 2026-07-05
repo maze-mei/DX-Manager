@@ -34,7 +34,9 @@ namespace DexManager.Services
             LogService logService)
         {
             if (string.IsNullOrWhiteSpace(scrcpyPath))
-                throw new ArgumentException("Scrcpy 경로가 비어 있습니다.", "scrcpyPath");
+                throw new ArgumentException(
+                    LocalizationService.Get("Error.Scrcpy.PathEmpty"),
+                    "scrcpyPath");
 
             _scrcpyPath = Path.GetFullPath(scrcpyPath);
             _processTimeoutMs = Math.Max(processTimeoutMs, 1000);
@@ -194,7 +196,10 @@ namespace DexManager.Services
         public IList<ScrcpyAppInfo> ListApps()
         {
             if (!File.Exists(_scrcpyPath))
-                throw new FileNotFoundException("scrcpy.exe를 찾을 수 없습니다.", _scrcpyPath);
+                throw new FileNotFoundException(
+                    LocalizationService.Get(
+                        "Error.Scrcpy.FileNotFound"),
+                    _scrcpyPath);
 
             var arguments = new List<string>();
             AddSerialArgument(arguments);
@@ -210,8 +215,9 @@ namespace DexManager.Services
             if (!result.IsSuccess)
             {
                 throw new InvalidOperationException(
-                    "Scrcpy 앱 목록을 불러오지 못했습니다: " +
-                    result.StandardError);
+                    LocalizationService.Format(
+                        "Error.Scrcpy.AppListLoadFailed",
+                        result.StandardError));
             }
 
             var output = (result.StandardOutput ?? string.Empty) + "\n" +
@@ -219,9 +225,12 @@ namespace DexManager.Services
             var apps = ParseAppList(output);
             if (apps.Count == 0)
                 throw new InvalidOperationException(
-                    "Scrcpy 앱 목록 결과를 해석하지 못했습니다.");
+                    LocalizationService.Get(
+                        "Error.Scrcpy.AppListParseFailed"));
 
-            _logService.Info("Scrcpy 앱 목록을 불러왔습니다: " + apps.Count + "개");
+            _logService.Info(LocalizationService.Format(
+                "Log.Scrcpy.AppListLoaded",
+                apps.Count));
             return apps;
         }
 
@@ -235,14 +244,15 @@ namespace DexManager.Services
                 {
                     if (IsProcessRunning(_process))
                     {
-                        _logService.Warning(
-                            "Scrcpy가 이미 실행 중이므로 중복 실행을 건너뜁니다.");
+                        _logService.Warning(LocalizationService.Get(
+                            "Log.Scrcpy.AlreadyRunning"));
                         return;
                     }
 
                     if (!File.Exists(_scrcpyPath))
                         throw new FileNotFoundException(
-                            "scrcpy.exe를 찾을 수 없습니다.",
+                            LocalizationService.Get(
+                                "Error.Scrcpy.FileNotFound"),
                             _scrcpyPath);
 
                     var arguments = BuildArguments(settings, displayId);
@@ -259,7 +269,9 @@ namespace DexManager.Services
                     _turnScreenOffRequested = settings.TurnScreenOff;
                     started = true;
 
-                    _logService.Info("Scrcpy 실행: " + arguments);
+                    _logService.Info(LocalizationService.Format(
+                        "Log.Scrcpy.Start",
+                        arguments));
                 }
 
                 try
@@ -304,7 +316,8 @@ namespace DexManager.Services
                 {
                     process.Dispose();
                     stopped = true;
-                    _logService.Info("Scrcpy를 중지했습니다.");
+                    _logService.Info(LocalizationService.Get(
+                        "Log.Scrcpy.Stopped"));
                 }
             });
 
@@ -323,11 +336,14 @@ namespace DexManager.Services
         {
             if (!File.Exists(_scrcpyPath))
             {
-                _logService.Warning("Scrcpy Wake-up 파일이 없습니다: " + _scrcpyPath);
+                _logService.Warning(LocalizationService.Format(
+                    "Log.Scrcpy.WakeUpFileMissing",
+                    _scrcpyPath));
                 return false;
             }
 
-            _logService.Info("Scrcpy Wake-up을 실행합니다.");
+            _logService.Info(LocalizationService.Get(
+                "Log.Scrcpy.WakeUpStarting"));
             var arguments = new List<string>();
             AddSerialArgument(arguments);
             arguments.Add("--no-audio");
@@ -347,7 +363,10 @@ namespace DexManager.Services
                 }
                 catch (Exception ex)
                 {
-                    _logService.Error("Scrcpy Wake-up 실행에 실패했습니다.", ex);
+                    _logService.Error(
+                        LocalizationService.Get(
+                            "Log.Scrcpy.WakeUpFailed"),
+                        ex);
                     return false;
                 }
             }
@@ -393,7 +412,8 @@ namespace DexManager.Services
             }
 
             if (!ownedProcess) return;
-            _logService.Info("Scrcpy 프로세스가 종료되었습니다.");
+            _logService.Info(LocalizationService.Get(
+                "Log.Scrcpy.ProcessExited"));
             RaiseRunningChanged();
         }
 
@@ -404,20 +424,23 @@ namespace DexManager.Services
             {
                 if (!IsProcessRunning(process))
                     throw new InvalidOperationException(
-                        "Scrcpy가 창을 준비하기 전에 종료되었습니다.");
+                        LocalizationService.Get(
+                            "Error.Scrcpy.ExitedBeforeWindow"));
 
                 process.Refresh();
                 if (process.MainWindowHandle != IntPtr.Zero)
                 {
-                    _logService.Info(
-                        "Scrcpy 창 준비 완료: PID=" + process.Id);
+                    _logService.Info(LocalizationService.Format(
+                        "Log.Scrcpy.WindowReady",
+                        process.Id));
                     return;
                 }
                 Thread.Sleep(50);
             }
 
             throw new TimeoutException(
-                "Scrcpy 창 준비 시간이 초과되었습니다.");
+                LocalizationService.Get(
+                    "Error.Scrcpy.WindowTimeout"));
         }
 
         private void AbortStart(Process process)

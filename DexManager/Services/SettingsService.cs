@@ -26,8 +26,11 @@ namespace DexManager.Services
             if (!File.Exists(SettingsFilePath))
             {
                 var defaults = AppSettings.CreateDefault();
+                LocalizationService.Apply(defaults.Language);
                 Save(defaults);
-                _logService.Info("기본 설정 파일을 생성했습니다: " + SettingsFilePath);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Settings.CreatedDefaults",
+                    SettingsFilePath));
                 return defaults;
             }
 
@@ -42,15 +45,19 @@ namespace DexManager.Services
 
                 var originalSchemaVersion = settings.SchemaVersion;
                 settings.EnsureDefaults();
+                LocalizationService.Apply(settings.Language);
                 if (originalSchemaVersion != settings.SchemaVersion)
                 {
                     Save(settings);
-                    _logService.Info(
-                        "설정 스키마를 " + originalSchemaVersion +
-                        "에서 " + settings.SchemaVersion + "로 갱신했습니다.");
+                    _logService.Info(LocalizationService.Format(
+                        "Log.Settings.SchemaUpdated",
+                        originalSchemaVersion,
+                        settings.SchemaVersion));
                 }
 
-                _logService.Info("설정 파일을 불러왔습니다: " + SettingsFilePath);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Settings.Loaded",
+                    SettingsFilePath));
                 return settings;
             }
             catch (Exception ex)
@@ -58,8 +65,9 @@ namespace DexManager.Services
                 var backupPath = SettingsFilePath + ".invalid-" +
                     DateTime.Now.ToString("yyyyMMdd-HHmmss");
                 File.Copy(SettingsFilePath, backupPath, true);
-                _logService.Error(
-                    "설정 파일을 읽지 못해 기본 설정을 사용합니다. 백업: " + backupPath,
+                _logService.Error(LocalizationService.Format(
+                    "Log.Settings.LoadFailed",
+                    backupPath),
                     ex);
 
                 var defaults = AppSettings.CreateDefault();
@@ -91,9 +99,9 @@ namespace DexManager.Services
                 }
 
                 File.Move(tempPath, SettingsFilePath);
-                _logService.Info(
-                    "설정 파일을 저장했습니다: " +
-                    SettingsFilePath);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Settings.Saved",
+                    SettingsFilePath));
             }
         }
 

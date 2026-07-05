@@ -39,7 +39,8 @@ namespace DexManager
                 LocalizationService.Apply(settings.Language);
                 logService.SetLogDirectory(
                     settingsService.ResolvePath(settings.Paths.LogFolder));
-                logService.Info("DX Manager를 시작합니다.");
+                logService.Info(
+                    LocalizationService.Get("Log.Program.Starting"));
 
                 var processRunner = new ProcessRunner(logService);
                 var pathService = new PathService(
@@ -55,9 +56,9 @@ namespace DexManager
                     "ADB",
                     adbPath,
                     EnvironmentVariableTarget.Process);
-                logService.Info(
-                    "Scrcpy가 사용할 ADB 경로를 지정했습니다: " +
-                    adbPath);
+                logService.Info(LocalizationService.Format(
+                    "Log.Program.ScrcpyAdbPath",
+                    adbPath));
                 var adbService = new AdbService(
                     adbPath,
                     settings.Timing.ProcessTimeoutMs,
@@ -160,7 +161,9 @@ namespace DexManager
             }
             catch (Exception ex)
             {
-                logService.Error("프로그램 초기화에 실패했습니다.", ex);
+                logService.Error(
+                    LocalizationService.Get("Log.Program.InitFailed"),
+                    ex);
                 MessageBox.Show(
                     LocalizationService.Format(
                         "Program.InitFailed",

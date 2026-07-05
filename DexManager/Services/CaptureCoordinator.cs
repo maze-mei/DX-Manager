@@ -47,7 +47,11 @@ namespace DexManager.Services
             {
                 Interval = Math.Max(settings.Timing.CaptureWaitSeconds, 1) * 1000
             };
-            _timeoutTimer.Tick += delegate { CancelCaptureMode("시간 초과"); };
+            _timeoutTimer.Tick += delegate
+            {
+                CancelCaptureMode(LocalizationService.Get(
+                    "Capture.CancelReason.Timeout"));
+            };
             _hotkeyService.CaptureHotkeyPressed += HotkeyService_CaptureHotkeyPressed;
             _hotkeyService.CaptureContextActive =
                 IsCaptureHotkeyContextActive;
@@ -117,7 +121,8 @@ namespace DexManager.Services
             _pollTimer.Start();
             _timeoutTimer.Start();
             _hintOverlay.ShowHint();
-            _logService.Info("캡처 대기: F8 재입력 또는 마우스 드래그");
+            _logService.Info(LocalizationService.Get(
+                "Log.Capture.Waiting"));
 
             var handler = CaptureModeStarted;
             if (handler != null) handler(this, EventArgs.Empty);
@@ -144,7 +149,8 @@ namespace DexManager.Services
             var handle = GetPreferredScrcpyWindow();
             if (handle == IntPtr.Zero)
             {
-                _logService.Warning("Scrcpy 창을 찾지 못해 캡처 모드를 시작할 수 없습니다.");
+                _logService.Warning(LocalizationService.Get(
+                    "Log.Capture.ScrcpyWindowMissing"));
                 return;
             }
 
@@ -243,9 +249,14 @@ namespace DexManager.Services
                 if (task.IsFaulted)
                 {
                     var exception = task.Exception == null
-                        ? new InvalidOperationException("캡처에 실패했습니다.")
+                        ? new InvalidOperationException(
+                            LocalizationService.Get(
+                                "Error.Capture.Failed"))
                         : task.Exception.GetBaseException();
-                    _logService.Error("캡처에 실패했습니다.", exception);
+                    _logService.Error(
+                        LocalizationService.Get(
+                            "Log.Capture.Failed"),
+                        exception);
                     RaiseFailed(exception);
                     return;
                 }
@@ -264,7 +275,9 @@ namespace DexManager.Services
         {
             if (!_waitingForCaptureChoice) return;
             EndCaptureMode();
-            _logService.Info("캡처를 취소했습니다: " + reason);
+            _logService.Info(LocalizationService.Format(
+                "Log.Capture.Cancelled",
+                reason));
         }
 
         private void EndCaptureMode()

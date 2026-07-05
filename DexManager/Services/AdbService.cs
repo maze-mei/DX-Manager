@@ -23,7 +23,9 @@ namespace DexManager.Services
             LogService logService)
         {
             if (string.IsNullOrWhiteSpace(adbPath))
-                throw new ArgumentException("ADB 경로가 비어 있습니다.", "adbPath");
+                throw new ArgumentException(
+                    LocalizationService.Get("Error.Adb.PathEmpty"),
+                    "adbPath");
 
             _adbPath = Path.GetFullPath(adbPath);
             _defaultTimeoutMs = Math.Max(defaultTimeoutMs, 1000);
@@ -70,14 +72,19 @@ namespace DexManager.Services
                 EnvironmentVariableTarget.Process);
             _logService.Info(
                 normalized.Length == 0
-                    ? "ADB 대상 장치 선택을 해제했습니다."
-                    : "ADB 대상 장치 선택: " + normalized);
+                    ? LocalizationService.Get(
+                        "Log.Adb.TargetCleared")
+                    : LocalizationService.Format(
+                        "Log.Adb.TargetSelected",
+                        normalized));
         }
 
         public ProcessResult StartServer()
         {
             var result = Run("start-server");
-            LogCommandResult("ADB start-server 결과", result);
+            LogCommandResult(
+                LocalizationService.Get("Log.Adb.StartServerResult"),
+                result);
             return result;
         }
 
@@ -88,8 +95,12 @@ namespace DexManager.Services
 
         public void LogStartupDiagnostics()
         {
-            _logService.Info("선택된 ADB 경로: " + _adbPath);
-            LogCommandResult("ADB version 결과", GetVersion());
+            _logService.Info(LocalizationService.Format(
+                "Log.Adb.SelectedPath",
+                _adbPath));
+            LogCommandResult(
+                LocalizationService.Get("Log.Adb.VersionResult"),
+                GetVersion());
         }
 
         public ProcessResult KillServer()
@@ -105,7 +116,9 @@ namespace DexManager.Services
         public ProcessResult Shell(string command)
         {
             if (string.IsNullOrWhiteSpace(command))
-                throw new ArgumentException("ADB shell 명령이 비어 있습니다.", "command");
+                throw new ArgumentException(
+                    LocalizationService.Get("Error.Adb.ShellCommandEmpty"),
+                    "command");
             return Shell(command, true);
         }
 
@@ -122,7 +135,9 @@ namespace DexManager.Services
             bool writeLog)
         {
             if (string.IsNullOrWhiteSpace(serial))
-                throw new ArgumentException("ADB serial이 비어 있습니다.", "serial");
+                throw new ArgumentException(
+                    LocalizationService.Get("Error.Adb.SerialEmpty"),
+                    "serial");
             if (string.IsNullOrWhiteSpace(command))
                 throw new ArgumentException("ADB shell command is empty.", "command");
             return RunForSerial(
@@ -134,9 +149,13 @@ namespace DexManager.Services
         public ProcessResult Push(string localPath, string remotePath)
         {
             if (!File.Exists(localPath))
-                throw new FileNotFoundException("전송할 파일을 찾을 수 없습니다.", localPath);
+                throw new FileNotFoundException(
+                    LocalizationService.Get("Error.Adb.PushFileNotFound"),
+                    localPath);
             if (string.IsNullOrWhiteSpace(remotePath))
-                throw new ArgumentException("스마트폰 대상 경로가 비어 있습니다.", "remotePath");
+                throw new ArgumentException(
+                    LocalizationService.Get("Error.Adb.RemotePathEmpty"),
+                    "remotePath");
 
             return RunTargeted(
                 "push " + Quote(localPath) + " " + Quote(remotePath),
@@ -156,7 +175,8 @@ namespace DexManager.Services
         {
             if (string.IsNullOrWhiteSpace(endpoint))
                 throw new ArgumentException(
-                    "무선 ADB 주소가 비어 있습니다.",
+                    LocalizationService.Get(
+                        "Error.Adb.WirelessEndpointEmpty"),
                     "endpoint");
             return Run("connect " + Quote(endpoint.Trim()), writeLog);
         }
@@ -165,7 +185,8 @@ namespace DexManager.Services
         {
             if (string.IsNullOrWhiteSpace(endpoint))
                 throw new ArgumentException(
-                    "무선 ADB 주소가 비어 있습니다.",
+                    LocalizationService.Get(
+                        "Error.Adb.WirelessEndpointEmpty"),
                     "endpoint");
             return Run("disconnect " + Quote(endpoint.Trim()), true);
         }
@@ -176,20 +197,25 @@ namespace DexManager.Services
         {
             if (string.IsNullOrWhiteSpace(endpoint))
                 throw new ArgumentException(
-                    "페어링 주소가 비어 있습니다.",
+                    LocalizationService.Get(
+                        "Error.Adb.PairingEndpointEmpty"),
                     "endpoint");
             if (string.IsNullOrWhiteSpace(pairingCode))
                 throw new ArgumentException(
-                    "페어링 코드가 비어 있습니다.",
+                    LocalizationService.Get(
+                        "Error.Adb.PairingCodeEmpty"),
                     "pairingCode");
 
-            _logService.Info(
-                "ADB 무선 페어링을 시도합니다: " + endpoint.Trim());
+            _logService.Info(LocalizationService.Format(
+                "Log.Adb.PairingAttempt",
+                endpoint.Trim()));
             var result = Run(
                 "pair " + Quote(endpoint.Trim()) + " " +
                 Quote(pairingCode.Trim()),
                 false);
-            LogCommandResult("ADB pair 결과", SanitizePairResult(result));
+            LogCommandResult(
+                LocalizationService.Get("Log.Adb.PairResult"),
+                SanitizePairResult(result));
             return result;
         }
 
@@ -205,8 +231,12 @@ namespace DexManager.Services
 
             if (writeLog)
             {
-                LogCommandResult("ADB devices 결과", result);
-                _logService.Info("ADB 장치 조회 결과: " + devices.Count + "개");
+                LogCommandResult(
+                    LocalizationService.Get("Log.Adb.DevicesResult"),
+                    result);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Adb.DeviceCount",
+                    devices.Count));
             }
             return devices;
         }
@@ -223,7 +253,8 @@ namespace DexManager.Services
 
         public AdbWakeUpResult WakeUp(Func<bool> scrcpyWakeUp)
         {
-            _logService.Info("ADB Wake-up을 시작합니다.");
+            _logService.Info(
+                LocalizationService.Get("Log.Adb.WakeUpStarting"));
             if (!IsTcpIpSerial(TargetSerial))
                 KillServer();
             StartServer();
@@ -236,19 +267,23 @@ namespace DexManager.Services
 
             if (scrcpyWakeUp == null)
             {
-                _logService.Warning("ADB Wake-up 실패: Scrcpy Wake-up이 구성되지 않았습니다.");
+                _logService.Warning(LocalizationService.Get(
+                    "Log.Adb.WakeUpScrcpyUnavailable"));
                 return new AdbWakeUpResult(false, false, devicesBefore);
             }
 
-            _logService.Warning("기본 ADB Wake-up 실패. Scrcpy Wake-up을 실행합니다.");
+            _logService.Warning(LocalizationService.Get(
+                "Log.Adb.WakeUpFallback"));
             var scrcpyStarted = scrcpyWakeUp();
             var devicesAfter = GetDevices();
             var success = scrcpyStarted && IsAuthorizedDeviceConnected();
 
             if (success)
-                _logService.Info("Scrcpy Wake-up 후 ADB 장치를 확인했습니다.");
+                _logService.Info(LocalizationService.Get(
+                    "Log.Adb.WakeUpDeviceFound"));
             else
-                _logService.Warning("Scrcpy Wake-up 후에도 ADB 장치를 확인하지 못했습니다.");
+                _logService.Warning(LocalizationService.Get(
+                    "Log.Adb.WakeUpDeviceMissing"));
 
             return new AdbWakeUpResult(success, true, devicesAfter);
         }
@@ -316,7 +351,9 @@ namespace DexManager.Services
             bool writeLog)
         {
             if (string.IsNullOrWhiteSpace(serial))
-                throw new ArgumentException("ADB serial이 비어 있습니다.", "serial");
+                throw new ArgumentException(
+                    LocalizationService.Get("Error.Adb.SerialEmpty"),
+                    "serial");
             return Run(
                 "-s " + Quote(serial.Trim()) + " " + arguments,
                 writeLog);

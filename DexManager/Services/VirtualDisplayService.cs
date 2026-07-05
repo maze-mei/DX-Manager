@@ -57,7 +57,9 @@ namespace DexManager.Services
 
             if (hasSetting && settings.ReuseExistingDisplay)
             {
-                _logService.Info("기존 가상 디스플레이 설정을 재사용합니다: " + current);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Display.ReusingSetting",
+                    current));
                 return SelectExistingDisplay(settings, before);
             }
 
@@ -72,9 +74,13 @@ namespace DexManager.Services
                 "settings put global overlay_display_devices " + Quote(value));
             if (!result.IsSuccess)
                 throw new InvalidOperationException(
-                    "가상 디스플레이 설정 적용 실패: " + result.StandardError);
+                    LocalizationService.Format(
+                        "Error.Display.ApplyFailed",
+                        result.StandardError));
 
-            _logService.Info("가상 디스플레이 설정을 적용했습니다: " + value);
+            _logService.Info(LocalizationService.Format(
+                "Log.Display.SettingApplied",
+                value));
             return WaitForCreatedDisplay(settings, before, creationWaitMs);
         }
 
@@ -101,7 +107,8 @@ namespace DexManager.Services
             var result = _adbService.Shell(
                 "settings put global overlay_display_devices none");
             if (result.IsSuccess)
-                _logService.Info("가상 디스플레이 설정을 초기화했습니다.");
+                _logService.Info(LocalizationService.Get(
+                    "Log.Display.Reset"));
             return result.IsSuccess;
         }
 
@@ -137,7 +144,9 @@ namespace DexManager.Services
 
             if (matches.Count == 1)
             {
-                _logService.Info("기존 가상 디스플레이 ID 선택: " + matches[0].Id);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Display.ExistingSelected",
+                    matches[0].Id));
                 return matches[0].Id;
             }
 
@@ -145,20 +154,22 @@ namespace DexManager.Services
             {
                 if (displays.Count == 1)
                 {
-                    _logService.Warning(
-                        "해상도/DPI가 일치하는 기존 가상 디스플레이를 찾지 못했지만 후보가 1개뿐이라 선택합니다: " +
-                        displays[0]);
+                    _logService.Warning(LocalizationService.Format(
+                        "Log.Display.SingleFallbackSelected",
+                        displays[0]));
                     return displays[0].Id;
                 }
 
                 throw new InvalidOperationException(
-                    "재사용할 기존 가상 디스플레이를 찾을 수 없습니다. display 목록: " +
-                    FormatDisplays(displays));
+                    LocalizationService.Format(
+                        "Error.Display.ReusableNotFound",
+                        FormatDisplays(displays)));
             }
 
             throw new InvalidOperationException(
-                "재사용할 기존 가상 디스플레이가 여러 개라 선택할 수 없습니다. 후보: " +
-                FormatDisplays(matches));
+                LocalizationService.Format(
+                    "Error.Display.ReusableAmbiguous",
+                    FormatDisplays(matches)));
         }
 
         private int SelectCandidate(
@@ -169,7 +180,9 @@ namespace DexManager.Services
         {
             if (candidates.Count == 1)
             {
-                _logService.Info("새 가상 디스플레이 ID 선택: " + candidates[0].Id);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Display.NewSelected",
+                    candidates[0].Id));
                 return candidates[0].Id;
             }
 
@@ -179,15 +192,19 @@ namespace DexManager.Services
                 LogDisplaySnapshot("matched candidates", matches);
                 if (matches.Count == 1)
                 {
-                    _logService.Info("새 가상 디스플레이 ID 선택: " + matches[0].Id);
+                    _logService.Info(LocalizationService.Format(
+                        "Log.Display.NewSelected",
+                        matches[0].Id));
                     return matches[0].Id;
                 }
             }
 
             throw new InvalidOperationException(
-                "새 가상 디스플레이 ID를 명확히 선택할 수 없습니다. before=[" +
-                FormatDisplays(before) + "], after=[" + FormatDisplays(after) +
-                "], candidates=[" + FormatDisplays(candidates) + "]");
+                LocalizationService.Format(
+                    "Error.Display.NewAmbiguous",
+                    FormatDisplays(before),
+                    FormatDisplays(after),
+                    FormatDisplays(candidates)));
         }
 
         private static IList<DisplayInfo> GetNewDisplayCandidates(
@@ -285,7 +302,10 @@ namespace DexManager.Services
 
         private void LogDisplaySnapshot(string label, IList<DisplayInfo> displays)
         {
-            _logService.Info("디스플레이 " + label + ": " + FormatDisplays(displays));
+            _logService.Info(LocalizationService.Format(
+                "Log.Display.Snapshot",
+                label,
+                FormatDisplays(displays)));
         }
 
         private static string FormatDisplays(IEnumerable<DisplayInfo> displays)

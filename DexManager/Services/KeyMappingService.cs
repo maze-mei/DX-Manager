@@ -58,20 +58,22 @@ namespace DexManager.Services
             }
 
             if (_hookHandle == IntPtr.Zero)
-                throw new Win32Exception("키 매핑 훅을 설치하지 못했습니다.");
+                throw new Win32Exception(
+                    LocalizationService.Get(
+                        "Error.KeyMapping.HookFailed"));
 
-            _logService.Info("Scrcpy 전용 키 매핑을 시작했습니다.");
+            _logService.Info(LocalizationService.Get(
+                "Log.KeyMapping.Started"));
             if (_settings.ConvertEnterToShiftEnter)
             {
                 _enterShiftMode = false;
-                _logService.Info(
-                    "Enter 변환 사용: 시작 상태=일반 Enter, " +
-                    "Scroll Lock 입력 시 Shift+Enter 모드 전환");
+                _logService.Info(LocalizationService.Get(
+                    "Log.KeyMapping.EnterConversionEnabled"));
             }
             else
             {
-                _logService.Warning(
-                    "Enter 변환 설정이 꺼져 있어 일반 Enter가 그대로 전송됩니다.");
+                _logService.Warning(LocalizationService.Get(
+                    "Log.KeyMapping.EnterConversionDisabled"));
             }
         }
 
@@ -80,7 +82,8 @@ namespace DexManager.Services
             if (_hookHandle == IntPtr.Zero) return;
             NativeMethods.UnhookWindowsHookEx(_hookHandle);
             _hookHandle = IntPtr.Zero;
-            _logService.Info("Scrcpy 전용 키 매핑을 중지했습니다.");
+            _logService.Info(LocalizationService.Get(
+                "Log.KeyMapping.Stopped"));
         }
 
         public void Dispose()
@@ -149,9 +152,12 @@ namespace DexManager.Services
                 {
                     _scrollLockHeld = true;
                     _enterShiftMode = !_enterShiftMode;
-                    _logService.Info(
-                        "Enter 입력 모드: " +
-                        (_enterShiftMode ? "Shift+Enter" : "일반 Enter"));
+                    _logService.Info(LocalizationService.Format(
+                        "Log.KeyMapping.EnterMode",
+                        _enterShiftMode
+                            ? "Shift+Enter"
+                            : LocalizationService.Get(
+                                "KeyMapping.NormalEnter")));
                 }
                 else if (keyUp)
                 {
@@ -276,12 +282,13 @@ namespace DexManager.Services
 
         private void LogKeyboardDiagnostic(LowLevelKeyboardInput data, int message)
         {
-            _logService.Info(
-                "키 매핑 진단: msg=0x" + message.ToString("X") +
-                ", vk=0x" + data.VirtualKey.ToString("X") +
-                ", scan=0x" + data.ScanCode.ToString("X") +
-                ", flags=0x" + data.Flags.ToString("X") +
-                ", injected=" + ((data.Flags & NativeMethods.LlkhfInjected) != 0));
+            _logService.Info(LocalizationService.Format(
+                "Log.KeyMapping.Diagnostics",
+                message.ToString("X"),
+                data.VirtualKey.ToString("X"),
+                data.ScanCode.ToString("X"),
+                data.Flags.ToString("X"),
+                (data.Flags & NativeMethods.LlkhfInjected) != 0));
         }
 
         private void SendKeyCombination(
@@ -415,8 +422,8 @@ namespace DexManager.Services
         {
             if (_rightShiftNormalizationLogged) return;
             _rightShiftNormalizationLogged = true;
-            _logService.Info(
-                "Scrcpy 입력용 오른쪽 Shift 스캔코드를 정상 형식으로 보정합니다.");
+            _logService.Info(LocalizationService.Get(
+                "Log.KeyMapping.RightShiftNormalized"));
         }
 
         private void LogSendInputFailure(
