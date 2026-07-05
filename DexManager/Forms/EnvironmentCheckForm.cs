@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DexManager.Models;
@@ -11,68 +12,136 @@ namespace DexManager.Forms
     public sealed class EnvironmentCheckForm : Form
     {
         private readonly EnvironmentCheckService _checkService;
-        private readonly ListView _resultList;
-        private readonly Button _checkButton;
-        private readonly Button _closeButton;
-        private readonly Label _guide;
-        private readonly FlowLayoutPanel _buttonPanel;
+        private readonly Label _titleLabel;
+        private readonly Label _guideLabel;
+        private readonly Label _statusLabel;
+        private readonly Panel _topPanel;
+        private readonly Panel _cardHost;
+        private readonly Panel _headerPanel;
+        private readonly FlowLayoutPanel _resultPanel;
+        private readonly RoundedPanel _resultCard;
+        private readonly Panel _bottomPanel;
+        private readonly ThemedButton _checkButton;
+        private readonly ThemedButton _closeButton;
+        private IList<EnvironmentCheckItem> _lastResults =
+            new List<EnvironmentCheckItem>();
 
-        public EnvironmentCheckForm(EnvironmentCheckService checkService)
+        public EnvironmentCheckForm(
+            EnvironmentCheckService checkService)
         {
             _checkService = checkService;
 
             Text = LocalizationService.Get("Environment.Title");
-            StartPosition = FormStartPosition.CenterParent;
-            ClientSize = new Size(820, 430);
-            MinimumSize = new Size(680, 360);
+            StartPosition = FormStartPosition.CenterScreen;
+            ClientSize = new Size(860, 590);
+            MinimumSize = new Size(720, 480);
+            Font = new Font("Segoe UI", 9.5F);
 
-            _guide = new Label
+            _topPanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 66,
-                Padding = new Padding(10),
+                Height = 112,
+                Padding = new Padding(28, 20, 28, 10)
+            };
+            _titleLabel = new Label
+            {
+                AutoSize = true,
+                Font = new Font(
+                    "Segoe UI",
+                    20F,
+                    FontStyle.Bold),
+                Location = new Point(28, 18),
+                Text = LocalizationService.Get(
+                    "Environment.Title")
+            };
+            _guideLabel = new Label
+            {
+                AutoEllipsis = true,
+                Location = new Point(30, 61),
+                Size = new Size(790, 42),
                 Text = LocalizationService.Format(
                     "Environment.Guide",
                     Environment.NewLine)
             };
+            _topPanel.Controls.Add(_titleLabel);
+            _topPanel.Controls.Add(_guideLabel);
 
-            _resultList = new ListView
-            {
-                Dock = DockStyle.Fill,
-                View = View.Details,
-                FullRowSelect = true,
-                GridLines = true
-            };
-            _resultList.Columns.Add(LocalizationService.Get("Environment.Status"), 80);
-            _resultList.Columns.Add(LocalizationService.Get("Environment.Item"), 130);
-            _resultList.Columns.Add(LocalizationService.Get("Environment.Result"), 560);
-
-            _buttonPanel = new FlowLayoutPanel
+            _bottomPanel = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 48,
-                FlowDirection = FlowDirection.RightToLeft,
-                Padding = new Padding(6)
+                Height = 70,
+                Padding = new Padding(28, 12, 28, 18)
             };
-            _checkButton = new Button
+            _statusLabel = new Label
             {
-                Text = LocalizationService.Get("Environment.CheckAgain"),
-                Size = new Size(100, 30)
+                AutoEllipsis = true,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
             };
-            _checkButton.Click += async delegate { await RunCheckAsync(); };
-
-            _closeButton = new Button
+            var buttonPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Right,
+                Width = 232,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                Padding = Padding.Empty
+            };
+            _checkButton = new ThemedButton
+            {
+                Primary = true,
+                Text = LocalizationService.Get(
+                    "Environment.CheckAgain"),
+                Size = new Size(112, 36),
+                Margin = Padding.Empty
+            };
+            _checkButton.Click += async delegate
+            {
+                await RunCheckAsync();
+            };
+            _closeButton = new ThemedButton
             {
                 Text = LocalizationService.Get("Common.Close"),
-                Size = new Size(90, 30)
+                Size = new Size(104, 36),
+                Margin = new Padding(0, 0, 12, 0)
             };
             _closeButton.Click += delegate { Close(); };
+            buttonPanel.Controls.Add(_checkButton);
+            buttonPanel.Controls.Add(_closeButton);
+            _bottomPanel.Controls.Add(_statusLabel);
+            _bottomPanel.Controls.Add(buttonPanel);
 
-            _buttonPanel.Controls.Add(_checkButton);
-            _buttonPanel.Controls.Add(_closeButton);
-            Controls.Add(_resultList);
-            Controls.Add(_guide);
-            Controls.Add(_buttonPanel);
+            _cardHost = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(24, 0, 24, 8)
+            };
+            _resultCard = new RoundedPanel
+            {
+                Dock = DockStyle.Fill,
+                Radius = 14,
+                Padding = new Padding(18, 14, 18, 14)
+            };
+            _headerPanel = CreateHeader();
+            _resultPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                Padding = Padding.Empty,
+                Margin = Padding.Empty
+            };
+            _resultPanel.SizeChanged += delegate
+            {
+                ResizeResultRows();
+            };
+            _resultCard.Controls.Add(_resultPanel);
+            _resultCard.Controls.Add(_headerPanel);
+            _cardHost.Controls.Add(_resultCard);
+
+            Controls.Add(_cardHost);
+            Controls.Add(_bottomPanel);
+            Controls.Add(_topPanel);
             ApplyCurrentTheme();
             Shown += async delegate { await RunCheckAsync(); };
         }
@@ -81,40 +150,125 @@ namespace DexManager.Forms
         {
             var theme = ThemeColors.Current;
             BackColor = theme.WindowBackground;
-            _guide.BackColor = theme.WindowBackground;
-            _guide.ForeColor = theme.TextPrimary;
-            _buttonPanel.BackColor = theme.WindowBackground;
-            _checkButton.BackColor = theme.CardSoft;
-            _checkButton.ForeColor = theme.TextPrimary;
-            _closeButton.BackColor = theme.CardSoft;
-            _closeButton.ForeColor = theme.TextPrimary;
-            _resultList.BackColor = theme.CardBackground;
-            _resultList.ForeColor = theme.TextPrimary;
+            _topPanel.BackColor = theme.WindowBackground;
+            _cardHost.BackColor = theme.WindowBackground;
+            _titleLabel.BackColor = theme.WindowBackground;
+            _titleLabel.ForeColor = theme.TextPrimary;
+            _guideLabel.BackColor = theme.WindowBackground;
+            _guideLabel.ForeColor = theme.TextTertiary;
+            _bottomPanel.BackColor = theme.WindowBackground;
+            _statusLabel.BackColor = theme.WindowBackground;
+            _statusLabel.ForeColor = theme.TextTertiary;
+            _resultCard.BackColor = theme.WindowBackground;
+            _resultCard.FillColor = theme.CardBackground;
+            _resultCard.BorderColor = theme.CardBorder;
+            _headerPanel.BackColor = theme.CardBackground;
+            foreach (var label in _headerPanel.Controls
+                .OfType<Label>())
+            {
+                label.BackColor = theme.CardBackground;
+                label.ForeColor = theme.TextTertiary;
+            }
+            foreach (var divider in _headerPanel.Controls
+                .OfType<Panel>())
+            {
+                divider.BackColor = theme.CardBorder;
+            }
+            _resultPanel.BackColor = theme.CardBackground;
+            _checkButton.BackColor = theme.WindowBackground;
+            _closeButton.BackColor = theme.WindowBackground;
+            if (_lastResults.Count > 0)
+                ShowResults(_lastResults);
             Invalidate(true);
+        }
+
+        private Panel CreateHeader()
+        {
+            var header = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 36
+            };
+            header.Controls.Add(CreateHeaderLabel(
+                LocalizationService.Get("Environment.Status"),
+                0,
+                90));
+            header.Controls.Add(CreateHeaderLabel(
+                LocalizationService.Get("Environment.Item"),
+                90,
+                180));
+            header.Controls.Add(CreateHeaderLabel(
+                LocalizationService.Get("Environment.Result"),
+                270,
+                480));
+            var divider = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 1
+            };
+            header.Controls.Add(divider);
+            return header;
+        }
+
+        private static Label CreateHeaderLabel(
+            string text,
+            int left,
+            int width)
+        {
+            return new Label
+            {
+                AutoEllipsis = true,
+                Location = new Point(left, 4),
+                Size = new Size(width, 25),
+                Font = new Font(
+                    "Segoe UI",
+                    9.5F,
+                    FontStyle.Bold),
+                Text = text
+            };
         }
 
         private async Task RunCheckAsync()
         {
             _checkButton.Enabled = false;
-            _resultList.Items.Clear();
+            _statusLabel.Text = LocalizationService.Get(
+                "Environment.Checking");
+            _resultPanel.Controls.Clear();
 
             try
             {
                 var results = await Task.Run(
                     delegate { return _checkService.Run(); });
+                _lastResults = results;
                 ShowResults(results);
+                var failed = results.Count(
+                    item => item.Status ==
+                        EnvironmentCheckStatus.Failed);
+                var warning = results.Count(
+                    item => item.Status ==
+                        EnvironmentCheckStatus.Warning);
+                _statusLabel.Text = failed > 0
+                    ? LocalizationService.Get(
+                        "Environment.Failed")
+                    : warning > 0
+                        ? LocalizationService.Get(
+                            "Environment.Warning")
+                        : LocalizationService.Get(
+                            "Environment.Passed");
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    this,
-                    LocalizationService.Format(
-                        "Environment.RunFailed",
-                        Environment.NewLine,
-                        ex.Message),
-                    LocalizationService.Get("App.Name"),
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                var failed = new EnvironmentCheckItem
+                {
+                    Name = LocalizationService.Get(
+                        "Environment.Title"),
+                    Status = EnvironmentCheckStatus.Failed,
+                    Message = ex.Message
+                };
+                _lastResults = new[] { failed };
+                ShowResults(_lastResults);
+                _statusLabel.Text = LocalizationService.Get(
+                    "Environment.Failed");
             }
             finally
             {
@@ -122,32 +276,114 @@ namespace DexManager.Forms
             }
         }
 
-        private void ShowResults(IEnumerable<EnvironmentCheckItem> results)
+        private void ShowResults(
+            IEnumerable<EnvironmentCheckItem> results)
         {
+            _resultPanel.SuspendLayout();
+            _resultPanel.Controls.Clear();
             foreach (var result in results)
+                _resultPanel.Controls.Add(CreateResultRow(result));
+            _resultPanel.ResumeLayout();
+            ResizeResultRows();
+        }
+
+        private Control CreateResultRow(
+            EnvironmentCheckItem result)
+        {
+            var theme = ThemeColors.Current;
+            var color = GetStatusColor(result.Status, theme);
+            var row = new Panel
             {
-                var item = new ListViewItem(GetStatusText(result.Status));
-                item.SubItems.Add(result.Name);
-                item.SubItems.Add(result.Message);
-                item.ForeColor = GetStatusColor(result.Status);
-                _resultList.Items.Add(item);
+                Height = 54,
+                Margin = Padding.Empty,
+                BackColor = theme.CardBackground,
+                Tag = result
+            };
+            var status = new Label
+            {
+                AutoEllipsis = true,
+                Location = new Point(0, 15),
+                Size = new Size(90, 24),
+                ForeColor = color,
+                BackColor = theme.CardBackground,
+                Font = new Font(
+                    "Segoe UI",
+                    9.5F,
+                    FontStyle.Bold),
+                Text = GetStatusText(result.Status)
+            };
+            var name = new Label
+            {
+                AutoEllipsis = true,
+                Location = new Point(90, 15),
+                Size = new Size(180, 24),
+                ForeColor = color,
+                BackColor = theme.CardBackground,
+                Text = result.Name
+            };
+            var message = new Label
+            {
+                AutoEllipsis = true,
+                Location = new Point(270, 15),
+                Size = new Size(450, 24),
+                ForeColor = color,
+                BackColor = theme.CardBackground,
+                Text = result.Message
+            };
+            var divider = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 1,
+                BackColor = theme.CardBorder
+            };
+            row.Controls.Add(status);
+            row.Controls.Add(name);
+            row.Controls.Add(message);
+            row.Controls.Add(divider);
+            return row;
+        }
+
+        private void ResizeResultRows()
+        {
+            var width = Math.Max(
+                _resultPanel.ClientSize.Width -
+                SystemInformation.VerticalScrollBarWidth,
+                400);
+            foreach (Control row in _resultPanel.Controls)
+            {
+                row.Width = width;
+                if (row.Controls.Count < 3) continue;
+                var message = row.Controls
+                    .OfType<Label>()
+                    .OrderBy(label => label.Left)
+                    .LastOrDefault();
+                if (message != null)
+                    message.Width = Math.Max(width - 270, 120);
             }
         }
 
-        private static string GetStatusText(EnvironmentCheckStatus status)
+        private static string GetStatusText(
+            EnvironmentCheckStatus status)
         {
             if (status == EnvironmentCheckStatus.Passed)
-                return LocalizationService.Get("Environment.Passed");
+                return LocalizationService.Get(
+                    "Environment.Passed");
             if (status == EnvironmentCheckStatus.Warning)
-                return LocalizationService.Get("Environment.Warning");
-            return LocalizationService.Get("Environment.Failed");
+                return LocalizationService.Get(
+                    "Environment.Warning");
+            return LocalizationService.Get(
+                "Environment.Failed");
         }
 
-        private static Color GetStatusColor(EnvironmentCheckStatus status)
+        private static Color GetStatusColor(
+            EnvironmentCheckStatus status,
+            ThemePalette theme)
         {
-            if (status == EnvironmentCheckStatus.Passed) return Color.DarkGreen;
-            if (status == EnvironmentCheckStatus.Warning) return Color.DarkOrange;
-            return Color.DarkRed;
+            if (status == EnvironmentCheckStatus.Passed)
+                return theme.TextPrimary;
+            if (status == EnvironmentCheckStatus.Warning)
+                return Color.FromArgb(245, 158, 11);
+            return Color.FromArgb(239, 68, 68);
         }
     }
 }

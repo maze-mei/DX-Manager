@@ -130,7 +130,9 @@ namespace DexManager
                     adbService,
                     scrcpyService,
                     pathService,
-                    logService);
+                    logService,
+                    settingsService,
+                    settings);
                 var keyMappingService = new KeyMappingService(
                     scrcpyService,
                     singleWindowService,

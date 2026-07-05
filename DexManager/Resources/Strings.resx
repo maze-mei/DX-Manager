@@ -225,6 +225,12 @@
   <data name="Environment.AdminYes" xml:space="preserve"><value>Running as administrator.</value></data>
   <data name="Environment.AdminNo" xml:space="preserve"><value>Running with standard privileges. Administrator access is required to modify system PATH.</value></data>
   <data name="Environment.AdbDevice" xml:space="preserve"><value>ADB device</value></data>
+  <data name="Environment.AdbVersion" xml:space="preserve"><value>ADB version</value></data>
+  <data name="Environment.PcCaptureFolder" xml:space="preserve"><value>PC screenshot folder</value></data>
+  <data name="Environment.DeviceCaptureFolder" xml:space="preserve"><value>Phone screenshot folder</value></data>
+  <data name="Environment.FolderWriteFailed" xml:space="preserve"><value>Cannot write to folder: {0} · {1}</value></data>
+  <data name="Environment.DeviceFolderSkipped" xml:space="preserve"><value>Connect and authorize a phone to run this check.</value></data>
+  <data name="Environment.DeviceFolderFailed" xml:space="preserve"><value>Cannot write to the phone folder: {0}</value></data>
   <data name="Environment.DeviceQueryFailed" xml:space="preserve"><value>Could not query ADB devices: {0}</value></data>
   <data name="Environment.FileMissing" xml:space="preserve"><value>File not found: {0}</value></data>
   <data name="Environment.DeviceAuthorized" xml:space="preserve"><value>Connected and authorized: {0}</value></data>
@@ -249,6 +255,7 @@
   <data name="Environment.Warning" xml:space="preserve"><value>Review</value></data>
   <data name="Environment.Failed" xml:space="preserve"><value>Failed</value></data>
   <data name="Environment.RunFailed" xml:space="preserve"><value>Environment check failed.{0}{0}{1}</value></data>
+  <data name="Environment.Checking" xml:space="preserve"><value>Checking the environment...</value></data>
   <data name="Tray.Open" xml:space="preserve"><value>Open DX Manager</value></data>
   <data name="Tray.StartDex" xml:space="preserve"><value>Start DeX</value></data>
   <data name="Tray.StopDex" xml:space="preserve"><value>Stop DeX</value></data>

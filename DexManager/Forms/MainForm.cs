@@ -2384,7 +2384,7 @@ namespace DexManager.Forms
                     _environmentCheckForm = new EnvironmentCheckForm(_environmentCheckService);
                     _environmentCheckForm.FormClosed += delegate { _environmentCheckForm = null; };
                 }
-                if (!_environmentCheckForm.Visible) _environmentCheckForm.Show(this);
+                if (!_environmentCheckForm.Visible) _environmentCheckForm.Show();
                 _environmentCheckForm.WindowState = FormWindowState.Normal;
                 _environmentCheckForm.BringToFront();
                 _environmentCheckForm.Activate();

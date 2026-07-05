@@ -225,6 +225,12 @@
   <data name="Environment.AdminYes" xml:space="preserve"><value>관리자 권한으로 실행 중입니다.</value></data>
   <data name="Environment.AdminNo" xml:space="preserve"><value>일반 권한입니다. 시스템 PATH 등록 시 관리자 실행이 필요합니다.</value></data>
   <data name="Environment.AdbDevice" xml:space="preserve"><value>ADB 장치</value></data>
+  <data name="Environment.AdbVersion" xml:space="preserve"><value>ADB 버전</value></data>
+  <data name="Environment.PcCaptureFolder" xml:space="preserve"><value>PC 스크린샷 폴더</value></data>
+  <data name="Environment.DeviceCaptureFolder" xml:space="preserve"><value>휴대폰 스크린샷 폴더</value></data>
+  <data name="Environment.FolderWriteFailed" xml:space="preserve"><value>폴더에 쓸 수 없습니다: {0} · {1}</value></data>
+  <data name="Environment.DeviceFolderSkipped" xml:space="preserve"><value>승인된 휴대폰을 연결하면 확인할 수 있습니다.</value></data>
+  <data name="Environment.DeviceFolderFailed" xml:space="preserve"><value>휴대폰 폴더에 쓸 수 없습니다: {0}</value></data>
   <data name="Environment.DeviceQueryFailed" xml:space="preserve"><value>ADB 장치 조회 실패: {0}</value></data>
   <data name="Environment.FileMissing" xml:space="preserve"><value>파일을 찾을 수 없습니다: {0}</value></data>
   <data name="Environment.DeviceAuthorized" xml:space="preserve"><value>연결 및 승인됨: {0}</value></data>
@@ -249,6 +255,7 @@
   <data name="Environment.Warning" xml:space="preserve"><value>확인</value></data>
   <data name="Environment.Failed" xml:space="preserve"><value>실패</value></data>
   <data name="Environment.RunFailed" xml:space="preserve"><value>환경 점검 중 오류가 발생했습니다.{0}{0}{1}</value></data>
+  <data name="Environment.Checking" xml:space="preserve"><value>환경을 점검하고 있습니다...</value></data>
   <data name="Tray.Open" xml:space="preserve"><value>DX Manager 열기</value></data>
   <data name="Tray.StartDex" xml:space="preserve"><value>DeX 시작</value></data>
   <data name="Tray.StopDex" xml:space="preserve"><value>DeX 중지</value></data>
