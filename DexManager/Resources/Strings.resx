@@ -78,8 +78,8 @@
   <data name="Main.AuthorizationDetail" xml:space="preserve"><value>Approve ADB debugging on the phone.</value></data>
   <data name="Main.DeviceOffline" xml:space="preserve"><value>Device offline</value></data>
   <data name="Main.DeviceOfflineDetail" xml:space="preserve"><value>Check the phone connection or ADB status.</value></data>
-  <data name="Main.ConnectedDevice" xml:space="preserve"><value>{0}  ·  {1}  ·  {2}</value></data>
-  <data name="Main.ConnectedDeviceFallback" xml:space="preserve"><value>Android device  ·  {0}  ·  {1}</value></data>
+  <data name="Main.ConnectedDevice" xml:space="preserve"><value>{0}  ·  {1}</value></data>
+  <data name="Main.ConnectedDeviceFallback" xml:space="preserve"><value>Android device  ·  {0}</value></data>
   <data name="Main.SingleReady" xml:space="preserve"><value>Window {0} ready</value></data>
   <data name="Main.SelectApp" xml:space="preserve"><value>Select an app to launch.</value></data>
   <data name="Main.PressStart" xml:space="preserve"><value>Press Start to launch the selected app on a new display.</value></data>

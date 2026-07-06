@@ -641,15 +641,13 @@ namespace DexManager.Forms
                             "Main.ConnectedDeviceFallback",
                             AdbService.IsTcpIpSerial(e.Current.Serial)
                                 ? "Wi-Fi"
-                                : "USB",
-                            e.Current.Serial)
+                                : "USB")
                         : LocalizationService.Format(
                             "Main.ConnectedDevice",
                             e.Current.DisplayName,
                             AdbService.IsTcpIpSerial(e.Current.Serial)
                                 ? "Wi-Fi"
-                                : "USB",
-                            e.Current.Serial))
+                                : "USB"))
                     : LocalizationService.Get("Main.WaitingPhone");
                 if (e.Current.Status == AdbDeviceStatus.Device)
                     UpdateDeviceStayAwakeState();
