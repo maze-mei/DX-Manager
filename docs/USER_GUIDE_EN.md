@@ -73,6 +73,10 @@ Each slot stores its own resolution, DPI, bitrate, FPS, app, and run options.
 Choose **None** at the top of the app list to start without automatically
 launching an app.
 
+Apps that were launched successfully are kept in a shared recent-app list.
+They can be selected in another slot or after restarting DX Manager without
+loading the complete device app list first.
+
 Single-window mode does not reuse the DeX overlay display. Each slot uses
 scrcpy's new virtual display feature, so DeX and three app windows can run at
 the same time.
@@ -226,4 +230,4 @@ by, endorsed by, or distributed by Samsung Electronics or Genymobile.
 
 Samsung and Samsung DeX are trademarks of Samsung Electronics Co., Ltd.
 scrcpy and bundled dependencies remain under their respective licenses. See
-[`THIRD_PARTY_NOTICES.md`](../DexManager/THIRD_PARTY_NOTICES.md).
+[`THIRD_PARTY_NOTICES.md`](../DexManager/licenses/THIRD_PARTY_NOTICES.md).

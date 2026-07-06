@@ -11,7 +11,7 @@ Copyright (C) 2018 Genymobile
 Copyright (C) 2018-2026 Romain Vimont
 
 scrcpy is licensed under the Apache License, Version 2.0. The complete
-license text is provided in `licenses/scrcpy-LICENSE.txt`.
+license text is provided in `scrcpy-LICENSE.txt` in this directory.
 
 Official project: https://github.com/Genymobile/scrcpy
 

@@ -32,7 +32,9 @@ namespace DexManager.Forms
             UiWindowStyle.ApplyFixedStandardSize(this);
 
             _noticesText = ReadBundledText(
-                "THIRD_PARTY_NOTICES.md");
+                Path.Combine(
+                    "licenses",
+                    "THIRD_PARTY_NOTICES.md"));
             _scrcpyLicenseText = ReadBundledText(
                 Path.Combine("licenses", "scrcpy-LICENSE.txt"));
 

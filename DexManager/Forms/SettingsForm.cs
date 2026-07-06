@@ -10,10 +10,11 @@ using DexManager.Utils;
 
 namespace DexManager.Forms
 {
-    public sealed class SettingsForm : Form
+    public sealed class SettingsForm : Form, IMessageFilter
     {
         private const int CardContentTop = 44;
         private const int CardContentBottom = 18;
+        private const int WmMouseWheel = 0x020A;
 
         private readonly SettingsService _settingsService;
         private readonly AppSettings _settings;
@@ -190,7 +191,11 @@ namespace DexManager.Forms
                 _saveStatusTimer.Stop();
                 _saveStatusLabel.Visible = false;
             };
-            FormClosed += delegate { _saveStatusTimer.Dispose(); };
+            FormClosed += delegate
+            {
+                Application.RemoveMessageFilter(this);
+                _saveStatusTimer.Dispose();
+            };
 
             Controls.Add(BuildSidebar());
             Controls.Add(_contentHost);
@@ -199,6 +204,7 @@ namespace DexManager.Forms
             Controls.Add(_bottomPanel);
             LoadValues();
             ShowPage(0);
+            Application.AddMessageFilter(this);
         }
 
         private Control BuildGeneralPage()
@@ -732,6 +738,7 @@ namespace DexManager.Forms
             _settings.Connection = defaults.Connection;
             _settings.Language = defaults.Language;
             _settings.Theme = defaults.Theme;
+            _settings.RememberedApps = defaults.RememberedApps;
         }
 
         private void ShowSaveStatus(
@@ -1280,6 +1287,55 @@ namespace DexManager.Forms
                 _navigationButtons[i].Invalidate();
             }
             _pages[index].BringToFront();
+        }
+
+        public bool PreFilterMessage(ref Message message)
+        {
+            if (message.Msg != WmMouseWheel ||
+                !Visible ||
+                _contentHost == null ||
+                !_contentHost.RectangleToScreen(
+                    _contentHost.ClientRectangle).Contains(Cursor.Position))
+            {
+                return false;
+            }
+
+            ScrollableControl page = null;
+            foreach (var candidate in _pages)
+            {
+                if (candidate.Visible)
+                {
+                    page = candidate as ScrollableControl;
+                    break;
+                }
+            }
+
+            if (page == null || !page.VerticalScroll.Visible)
+                return false;
+
+            var delta = unchecked((short)(
+                ((long)message.WParam >> 16) & 0xFFFF));
+            if (delta == 0) return false;
+
+            var maximum = Math.Max(
+                0,
+                page.VerticalScroll.Maximum -
+                page.VerticalScroll.LargeChange + 1);
+            var current = Math.Max(
+                0,
+                Math.Min(maximum, -page.AutoScrollPosition.Y));
+            var lines = SystemInformation.MouseWheelScrollLines;
+            var step = lines < 0
+                ? Math.Max(1, page.ClientSize.Height)
+                : Math.Max(1, lines) * 16;
+            var notches = delta / 120;
+            if (notches == 0) notches = Math.Sign(delta);
+            var target = Math.Max(
+                0,
+                Math.Min(maximum, current - notches * step));
+
+            page.AutoScrollPosition = new Point(0, target);
+            return true;
         }
 
         private Control CreatePage()

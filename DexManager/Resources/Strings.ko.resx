@@ -247,7 +247,6 @@
   <data name="Log.KeyMapping.EnterMode" xml:space="preserve"><value>Enter 입력 모드: {0}</value></data>
   <data name="KeyMapping.NormalEnter" xml:space="preserve"><value>일반 Enter</value></data>
   <data name="Log.KeyMapping.Diagnostics" xml:space="preserve"><value>키 매핑 진단: msg=0x{0}, vk=0x{1}, scan=0x{2}, flags=0x{3}, injected={4}</value></data>
-  <data name="Log.KeyMapping.RightShiftNormalized" xml:space="preserve"><value>Scrcpy 입력용 오른쪽 Shift 스캔코드를 정상 형식으로 보정합니다.</value></data>
   <data name="Log.Path.WindowsDetected" xml:space="preserve"><value>감지된 Windows 버전: {0} ({1})</value></data>
   <data name="Path.Description.ManualAdb" xml:space="preserve"><value>수동 지정 ADB</value></data>
   <data name="Path.Description.LegacyAdb" xml:space="preserve"><value>Windows 7/8.1 레거시 ADB</value></data>

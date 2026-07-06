@@ -20,14 +20,17 @@ namespace DexManager.Models
         [DataMember(Order = 10)] public ConnectionSettings Connection { get; set; }
         [DataMember(Order = 11)] public AppLanguage Language { get; set; }
         [DataMember(Order = 12)] public AppTheme Theme { get; set; }
+        [DataMember(Order = 13)]
+        public List<RememberedAppSettings> RememberedApps { get; set; }
 
         public static AppSettings CreateDefault()
         {
             return new AppSettings
             {
-                SchemaVersion = 15,
+                SchemaVersion = 16,
                 Language = AppLanguage.Auto,
                 Theme = AppTheme.Auto,
+                RememberedApps = new List<RememberedAppSettings>(),
                 Paths = new PathSettings
                 {
                     AdbPath = string.Empty,
@@ -122,6 +125,8 @@ namespace DexManager.Models
             if (KeyMappings == null) KeyMappings = defaults.KeyMappings;
             if (LastSuccess == null) LastSuccess = defaults.LastSuccess;
             if (Connection == null) Connection = defaults.Connection;
+            if (RememberedApps == null)
+                RememberedApps = new List<RememberedAppSettings>();
             if (SingleWindowSlots == null)
                 SingleWindowSlots = new List<SingleWindowSlotSettings>();
             while (SingleWindowSlots.Count < 3)
@@ -252,6 +257,22 @@ namespace DexManager.Models
                 Theme = defaults.Theme;
                 SchemaVersion = defaults.SchemaVersion;
             }
+            if (oldSchemaVersion < 16)
+            {
+                AddRememberedApp(
+                    RememberedApps,
+                    Scrcpy.StartAppPackage,
+                    Scrcpy.StartAppName);
+                foreach (var slot in SingleWindowSlots)
+                {
+                    if (slot == null) continue;
+                    AddRememberedApp(
+                        RememberedApps,
+                        slot.StartAppPackage,
+                        slot.StartAppName);
+                }
+                SchemaVersion = defaults.SchemaVersion;
+            }
             if (VirtualDisplay.CustomWidth <= 0)
                 VirtualDisplay.CustomWidth = VirtualDisplay.Width;
             if (VirtualDisplay.CustomHeight <= 0)
@@ -298,6 +319,37 @@ namespace DexManager.Models
                 KeyMappings.KoreanEnglishInputMode = defaults.KeyMappings.KoreanEnglishInputMode;
             if (!System.Enum.IsDefined(typeof(KeyInputMode), KeyMappings.EnterInputMode))
                 KeyMappings.EnterInputMode = defaults.KeyMappings.EnterInputMode;
+        }
+
+        private static void AddRememberedApp(
+            IList<RememberedAppSettings> apps,
+            string packageName,
+            string appName)
+        {
+            if (apps == null || string.IsNullOrWhiteSpace(packageName))
+                return;
+
+            foreach (var app in apps)
+            {
+                if (app != null &&
+                    string.Equals(
+                        app.PackageName,
+                        packageName,
+                        System.StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!string.IsNullOrWhiteSpace(appName))
+                        app.Name = appName;
+                    return;
+                }
+            }
+
+            apps.Add(new RememberedAppSettings
+            {
+                PackageName = packageName,
+                Name = string.IsNullOrWhiteSpace(appName)
+                    ? packageName
+                    : appName
+            });
         }
 
         private static bool HasStayAwakeArgument(string value)
@@ -368,6 +420,13 @@ namespace DexManager.Models
                 FlexDisplay = false
             };
         }
+    }
+
+    [DataContract]
+    public sealed class RememberedAppSettings
+    {
+        [DataMember(Order = 1)] public string Name { get; set; }
+        [DataMember(Order = 2)] public string PackageName { get; set; }
     }
 
     [DataContract]

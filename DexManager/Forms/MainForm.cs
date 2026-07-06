@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -10,6 +11,8 @@ namespace DexManager.Forms
 {
     public sealed class MainForm : Form
     {
+        private const int MaxRememberedApps = 20;
+
         private static string NoStartAppText
         {
             get { return LocalizationService.Get("Main.NoApp"); }
@@ -254,6 +257,7 @@ namespace DexManager.Forms
             _startAppBox.SelectionChangeCommitted +=
                 StartAppBox_SelectionChangeCommitted;
             AddNoStartAppItem();
+            AddRememberedAppItems();
             _loadAppsButton = CreateThemedButton(
                 LocalizationService.Get("Main.LoadApps"),
                 false,
@@ -506,6 +510,9 @@ namespace DexManager.Forms
             try
             {
                 await _orchestrator.StartAsync();
+                RememberStartedApp(
+                    _settings.Scrcpy.StartAppPackage,
+                    _settings.Scrcpy.StartAppName);
                 _modeSettingsDirty[0] = false;
             }
             catch (Exception ex)
@@ -566,6 +573,9 @@ namespace DexManager.Forms
                 {
                     _singleWindowService.Start(slot, settings);
                 });
+                RememberStartedApp(
+                    settings.StartAppPackage,
+                    settings.StartAppName);
                 _modeSettingsDirty[slot] = false;
             }
             catch (Exception ex)
@@ -1379,6 +1389,7 @@ namespace DexManager.Forms
                 _startAppBox.Items.Clear();
                 AddNoStartAppItem();
                 foreach (var app in apps) _startAppBox.Items.Add(app);
+                AddRememberedAppItems();
 
                 var selected = false;
                 if (string.IsNullOrWhiteSpace(selectedPackage))
@@ -1635,6 +1646,98 @@ namespace DexManager.Forms
                 slot.StartAppName = appName;
             }
             _settingsService.Save(_settings);
+        }
+
+        private void RememberStartedApp(
+            string packageName,
+            string appName)
+        {
+            packageName = (packageName ?? string.Empty).Trim();
+            if (packageName.Length == 0) return;
+
+            appName = string.IsNullOrWhiteSpace(appName)
+                ? packageName
+                : appName.Trim();
+            if (_settings.RememberedApps == null)
+            {
+                _settings.RememberedApps =
+                    new List<RememberedAppSettings>();
+            }
+
+            for (var index = _settings.RememberedApps.Count - 1;
+                index >= 0;
+                index--)
+            {
+                var remembered = _settings.RememberedApps[index];
+                if (remembered == null ||
+                    string.IsNullOrWhiteSpace(
+                        remembered.PackageName) ||
+                    string.Equals(
+                        remembered.PackageName,
+                        packageName,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    _settings.RememberedApps.RemoveAt(index);
+                }
+            }
+
+            _settings.RememberedApps.Insert(
+                0,
+                new RememberedAppSettings
+                {
+                    Name = appName,
+                    PackageName = packageName
+                });
+            while (_settings.RememberedApps.Count >
+                MaxRememberedApps)
+            {
+                _settings.RememberedApps.RemoveAt(
+                    _settings.RememberedApps.Count - 1);
+            }
+
+            AddRememberedAppItems();
+            _settingsService.Save(_settings);
+        }
+
+        private void AddRememberedAppItems()
+        {
+            if (_settings.RememberedApps == null) return;
+
+            foreach (var remembered in _settings.RememberedApps)
+            {
+                if (remembered == null ||
+                    string.IsNullOrWhiteSpace(
+                        remembered.PackageName) ||
+                    ContainsAppPackage(remembered.PackageName))
+                {
+                    continue;
+                }
+
+                _startAppBox.Items.Add(new ScrcpyAppInfo
+                {
+                    Name = string.IsNullOrWhiteSpace(remembered.Name)
+                        ? remembered.PackageName
+                        : remembered.Name,
+                    PackageName = remembered.PackageName
+                });
+            }
+        }
+
+        private bool ContainsAppPackage(string packageName)
+        {
+            foreach (var item in _startAppBox.Items)
+            {
+                var app = item as ScrcpyAppInfo;
+                if (app != null &&
+                    string.Equals(
+                        app.PackageName,
+                        packageName,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private void AddNoStartAppItem()

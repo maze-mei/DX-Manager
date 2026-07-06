@@ -17,7 +17,7 @@
   <a href="#korean">한국어</a> ·
   <a href="docs/USER_GUIDE_EN.md">English guide</a> ·
   <a href="docs/USER_GUIDE_KO.md">한국어 사용 설명서</a> ·
-  <a href="DexManager/THIRD_PARTY_NOTICES.md">Third-party notices</a>
+  <a href="DexManager/licenses/THIRD_PARTY_NOTICES.md">Third-party notices</a>
 </p>
 
 <a id="english"></a>
@@ -60,6 +60,7 @@ distribution.
 - USB and wireless ADB connections
 - Wi-Fi address detection and Android 11+ pairing
 - Per-window resolution, DPI, bitrate, FPS, and app selection
+- Shared history of successfully launched apps
 - HID keyboard and mouse support
 - Korean/English key correction and Enter/Shift+Enter switching
 - Full scrcpy-window and selected-region capture
@@ -168,7 +169,7 @@ authors.
 The license for DX Manager's original source code must be selected before the
 repository is made public. Bundled third-party components remain under their
 own licenses. See
-[THIRD_PARTY_NOTICES.md](DexManager/THIRD_PARTY_NOTICES.md).
+[THIRD_PARTY_NOTICES.md](DexManager/licenses/THIRD_PARTY_NOTICES.md).
 
 ---
 
@@ -215,6 +216,7 @@ DX Manager는 개인적으로 사용하던 Batch 스크립트, CMD 명령과 Aut
 - USB 및 무선 ADB 연결
 - Wi-Fi 주소 자동 감지와 Android 11 이상 무선 페어링
 - 창별 해상도, DPI, 비트레이트, FPS와 시작 앱 설정
+- 성공적으로 실행한 앱을 공통 최근 목록으로 기억
 - HID 키보드 및 마우스 지원
 - 한영키 보정과 Enter/Shift+Enter 전환
 - scrcpy 전체 화면 및 선택 영역 캡처
@@ -321,5 +323,5 @@ scrcpy는 해당 개발자들이 유지·관리하는 독립적인 오픈소스 
 
 DX Manager 자체 소스 코드의 라이선스는 저장소 공개 전에 결정해야 합니다.
 동봉된 제3자 구성요소에는 각각의 라이선스가 적용됩니다. 자세한 내용은
-[THIRD_PARTY_NOTICES.md](DexManager/THIRD_PARTY_NOTICES.md)를
+[THIRD_PARTY_NOTICES.md](DexManager/licenses/THIRD_PARTY_NOTICES.md)를
 참조하십시오.

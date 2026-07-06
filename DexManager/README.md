@@ -29,8 +29,7 @@ package must include:
 - `DXManager.exe` and `DXManager.exe.config`
 - `tools/scrcpy` and all of its runtime files
 - `tools/adb`
-- `THIRD_PARTY_NOTICES.md`
-- the `licenses` directory
+- the `licenses` directory, including `THIRD_PARTY_NOTICES.md`
 
 The `config`, `logs`, and `screenshot` directories are created or populated at
 runtime.

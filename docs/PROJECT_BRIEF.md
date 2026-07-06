@@ -28,6 +28,7 @@ Windows WinForms 프로그램이다. DeX 화면 한 개와 앱별 단일창 세 
 - Scrcpy `--new-display` 기반 단일창 슬롯 3개
 - 슬롯별 해상도, DPI, 비트레이트, FPS, 앱과 옵션 저장
 - 앱 목록, 표시 이름/패키지 저장, 자동 실행
+- 성공적으로 자동 실행한 앱의 공통 최근 목록 보존
 - Scrcpy 4.0 `--flex-display`
 - USB 및 TCP/IP 무선 ADB, IP 자동 감지, Android 11 페어링
 - OS별 ADB 선택과 절대 경로 실행

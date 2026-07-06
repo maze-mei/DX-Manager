@@ -247,7 +247,6 @@
   <data name="Log.KeyMapping.EnterMode" xml:space="preserve"><value>Enter input mode: {0}</value></data>
   <data name="KeyMapping.NormalEnter" xml:space="preserve"><value>normal Enter</value></data>
   <data name="Log.KeyMapping.Diagnostics" xml:space="preserve"><value>Key-mapping diagnostics: msg=0x{0}, vk=0x{1}, scan=0x{2}, flags=0x{3}, injected={4}</value></data>
-  <data name="Log.KeyMapping.RightShiftNormalized" xml:space="preserve"><value>Normalizing the right Shift scan code for scrcpy input.</value></data>
   <data name="Log.Path.WindowsDetected" xml:space="preserve"><value>Detected Windows version: {0} ({1})</value></data>
   <data name="Path.Description.ManualAdb" xml:space="preserve"><value>manually specified ADB</value></data>
   <data name="Path.Description.LegacyAdb" xml:space="preserve"><value>Windows 7/8.1 legacy ADB</value></data>
