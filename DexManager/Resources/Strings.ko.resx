@@ -332,6 +332,7 @@
   <data name="Settings.WakeUpMode" xml:space="preserve"><value>ADB Wake-up 방식</value></data>
   <data name="Settings.AutoHide" xml:space="preserve"><value>자동 숨김 사용</value></data>
   <data name="Settings.AutoStartDex" xml:space="preserve"><value>기기 연결 시 DeX 자동 시작</value></data>
+  <data name="Settings.ShowConnectedDeviceInfo" xml:space="preserve"><value>연결된 장치 정보 표시</value></data>
   <data name="Settings.ResetDisplay" xml:space="preserve"><value>중지/종료 시 가상화면 제거</value></data>
   <data name="Settings.DisableStayAwake" xml:space="preserve"><value>중지/종료 시 잠자기 방지 해제</value></data>
   <data name="Settings.AdbAuto" xml:space="preserve"><value>자동 선택 (Windows 버전과 Scrcpy 경로 기준)</value></data>

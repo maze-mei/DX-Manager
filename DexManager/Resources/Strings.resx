@@ -332,6 +332,7 @@
   <data name="Settings.WakeUpMode" xml:space="preserve"><value>ADB wake-up mode</value></data>
   <data name="Settings.AutoHide" xml:space="preserve"><value>Enable automatic hiding</value></data>
   <data name="Settings.AutoStartDex" xml:space="preserve"><value>Start DeX when a device connects</value></data>
+  <data name="Settings.ShowConnectedDeviceInfo" xml:space="preserve"><value>Show connected device details</value></data>
   <data name="Settings.ResetDisplay" xml:space="preserve"><value>Remove virtual display on stop/exit</value></data>
   <data name="Settings.DisableStayAwake" xml:space="preserve"><value>Disable stay-awake on stop/exit</value></data>
   <data name="Settings.AdbAuto" xml:space="preserve"><value>Automatic (Windows version and Scrcpy path)</value></data>

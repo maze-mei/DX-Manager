@@ -23,6 +23,7 @@ namespace DexManager.Forms
         private readonly Action _showLogs;
         private readonly Action _showEnvironmentCheck;
         private readonly Action<AppTheme> _applyTheme;
+        private readonly Action _settingsChanged;
         private ThemePalette _theme;
         private readonly List<Control> _pages = new List<Control>();
         private readonly List<ThemedButton> _navigationButtons =
@@ -49,6 +50,7 @@ namespace DexManager.Forms
         private CheckBox _resetDisplayOnStopBox;
         private CheckBox _disableStayAwakeBox;
         private CheckBox _autoStartDexBox;
+        private CheckBox _showConnectedDeviceInfoBox;
         private ThemedNumberControl _deviceMonitorIntervalBox;
         private ThemedNumberControl _disconnectMonitorIntervalBox;
         private ThemedNumberControl _connectedStartDelayBox;
@@ -90,7 +92,8 @@ namespace DexManager.Forms
             WirelessAdbService wirelessAdbService,
             Action showLogs,
             Action showEnvironmentCheck,
-            Action<AppTheme> applyTheme)
+            Action<AppTheme> applyTheme,
+            Action settingsChanged)
         {
             _settingsService = settingsService;
             _settings = settings;
@@ -99,6 +102,7 @@ namespace DexManager.Forms
             _showLogs = showLogs;
             _showEnvironmentCheck = showEnvironmentCheck;
             _applyTheme = applyTheme;
+            _settingsChanged = settingsChanged;
             _theme = ThemeColors.Current;
 
             Text = LocalizationService.Get("Settings.Title");
@@ -235,6 +239,9 @@ namespace DexManager.Forms
             _wakeUpModeBox = AddCombo<ScrcpyWakeUpMode>(startup, LocalizationService.Get("Settings.WakeUpMode"));
             _autoHideBox = AddCheck(startup, LocalizationService.Get("Settings.AutoHide"));
             _autoStartDexBox = AddCheck(startup, LocalizationService.Get("Settings.AutoStartDex"));
+            _showConnectedDeviceInfoBox = AddCheck(
+                startup,
+                LocalizationService.Get("Settings.ShowConnectedDeviceInfo"));
             AddCard(page, LocalizationService.Get("Settings.GroupStartup"), startup);
 
             var shutdown = CreateTable();
@@ -621,6 +628,8 @@ namespace DexManager.Forms
             _wakeUpModeBox.SelectedItem = _settings.Features.ScrcpyWakeUpMode;
             _autoHideBox.Checked = _settings.Features.AutoHideEnabled;
             _autoStartDexBox.Checked = _settings.Features.AutoStartDexOnDeviceConnected;
+            _showConnectedDeviceInfoBox.Checked =
+                _settings.Features.ShowConnectedDeviceInfo;
             _resetDisplayOnStopBox.Checked = _settings.Features.ResetVirtualDisplayOnStop;
             _disableStayAwakeBox.Checked = _settings.Features.DisableStayAwakeOnStop;
             _pushCaptureBox.Checked = _settings.Features.PushCaptureToDevice;
@@ -681,6 +690,7 @@ namespace DexManager.Forms
                 {
                     _applyTheme(_settings.Theme);
                 }
+                if (_settingsChanged != null) _settingsChanged();
                 ShowSaveStatus(
                     LocalizationService.Get("Settings.SavedInline"),
                     Color.DarkGreen,
@@ -716,6 +726,7 @@ namespace DexManager.Forms
             LoadValues();
             if (_applyTheme != null)
                 _applyTheme(_settings.Theme);
+            if (_settingsChanged != null) _settingsChanged();
             ShowSaveStatus(
                 LocalizationService.Get(
                     "Settings.ResetDefaultsDone"),
@@ -782,6 +793,8 @@ namespace DexManager.Forms
             _settings.Features.ScrcpyWakeUpMode = (ScrcpyWakeUpMode)_wakeUpModeBox.SelectedItem;
             _settings.Features.AutoHideEnabled = _autoHideBox.Checked;
             _settings.Features.AutoStartDexOnDeviceConnected = _autoStartDexBox.Checked;
+            _settings.Features.ShowConnectedDeviceInfo =
+                _showConnectedDeviceInfoBox.Checked;
             _settings.Features.ResetVirtualDisplayOnStop = _resetDisplayOnStopBox.Checked;
             _settings.Features.DisableStayAwakeOnStop = _disableStayAwakeBox.Checked;
             _settings.Features.PushCaptureToDevice = _pushCaptureBox.Checked;

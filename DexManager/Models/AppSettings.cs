@@ -27,7 +27,7 @@ namespace DexManager.Models
         {
             return new AppSettings
             {
-                SchemaVersion = 16,
+                SchemaVersion = 17,
                 Language = AppLanguage.Auto,
                 Theme = AppTheme.Auto,
                 RememberedApps = new List<RememberedAppSettings>(),
@@ -86,7 +86,8 @@ namespace DexManager.Models
                     PushCaptureToDevice = true,
                     ResetVirtualDisplayOnStop = true,
                     DisableStayAwakeOnStop = true,
-                    AutoStartDexOnDeviceConnected = true
+                    AutoStartDexOnDeviceConnected = true,
+                    ShowConnectedDeviceInfo = true
                 },
                 KeyMappings = new KeyMappingSettings
                 {
@@ -271,6 +272,12 @@ namespace DexManager.Models
                         slot.StartAppPackage,
                         slot.StartAppName);
                 }
+                SchemaVersion = defaults.SchemaVersion;
+            }
+            if (oldSchemaVersion < 17)
+            {
+                Features.ShowConnectedDeviceInfo =
+                    defaults.Features.ShowConnectedDeviceInfo;
                 SchemaVersion = defaults.SchemaVersion;
             }
             if (VirtualDisplay.CustomWidth <= 0)
@@ -558,6 +565,7 @@ namespace DexManager.Models
         [DataMember(Order = 7)] public bool ResetVirtualDisplayOnStop { get; set; }
         [DataMember(Order = 8)] public bool DisableStayAwakeOnStop { get; set; }
         [DataMember(Order = 9)] public bool AutoStartDexOnDeviceConnected { get; set; }
+        [DataMember(Order = 10)] public bool ShowConnectedDeviceInfo { get; set; }
     }
 
     [DataContract]

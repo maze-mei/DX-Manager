@@ -149,6 +149,18 @@ namespace DexManager.Services
 
         public string GetDeviceDisplayName(string serial)
         {
+            var settingCommands = new[]
+            {
+                "settings get global device_name",
+                "settings get secure bluetooth_name"
+            };
+
+            foreach (var command in settingCommands)
+            {
+                var value = ReadDeviceText(serial, command);
+                if (!string.IsNullOrWhiteSpace(value)) return value;
+            }
+
             var properties = new[]
             {
                 "ro.product.marketname",
@@ -158,27 +170,35 @@ namespace DexManager.Services
 
             foreach (var property in properties)
             {
-                var result = ShellForSerial(
+                var value = ReadDeviceText(
                     serial,
-                    "getprop " + property,
-                    false);
-                if (!result.IsSuccess ||
-                    string.IsNullOrWhiteSpace(result.StandardOutput))
-                {
-                    continue;
-                }
-
-                var value = result.StandardOutput.Trim();
-                if (!string.Equals(
-                    value,
-                    "unknown",
-                    StringComparison.OrdinalIgnoreCase))
-                {
-                    return value;
-                }
+                    "getprop " + property);
+                if (!string.IsNullOrWhiteSpace(value)) return value;
             }
 
             return string.Empty;
+        }
+
+        private string ReadDeviceText(string serial, string command)
+        {
+            var result = ShellForSerial(serial, command, false);
+            if (!result.IsSuccess ||
+                string.IsNullOrWhiteSpace(result.StandardOutput))
+            {
+                return string.Empty;
+            }
+
+            var value = result.StandardOutput.Trim();
+            return string.Equals(
+                       value,
+                       "null",
+                       StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(
+                       value,
+                       "unknown",
+                       StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : value;
         }
 
         public ProcessResult Push(string localPath, string remotePath)

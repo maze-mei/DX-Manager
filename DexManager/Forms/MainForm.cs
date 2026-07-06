@@ -1017,6 +1017,7 @@ namespace DexManager.Forms
             _indicatorStatus.Text = status;
             var device = _lastDeviceState;
             _indicatorDetail.Text =
+                _settings.Features.ShowConnectedDeviceInfo &&
                 device != null &&
                 device.Status == AdbDeviceStatus.Device &&
                 !string.IsNullOrWhiteSpace(_deviceInfoLabel.Text)
@@ -2508,7 +2509,8 @@ namespace DexManager.Forms
                         _wirelessAdbService,
                         ShowLogForm,
                         ShowEnvironmentCheck,
-                        ApplyThemeSelection);
+                        ApplyThemeSelection,
+                        UpdateRunningState);
                     _settingsForm.FormClosed += delegate { _settingsForm = null; };
                 }
                 if (!_settingsForm.Visible) _settingsForm.Show();
