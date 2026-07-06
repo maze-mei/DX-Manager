@@ -636,12 +636,20 @@ namespace DexManager.Forms
                         : LocalizationService.Get("Status.Responding");
                 _deviceStatusValue.Text = GetDeviceStatusText(e.Current);
                 _deviceInfoLabel.Text = e.Current.Status == AdbDeviceStatus.Device
-                    ? LocalizationService.Format(
-                        "Main.ConnectedDevice",
-                        AdbService.IsTcpIpSerial(e.Current.Serial)
-                            ? "Wi-Fi"
-                            : "USB",
-                        e.Current.Serial)
+                    ? (string.IsNullOrWhiteSpace(e.Current.DisplayName)
+                        ? LocalizationService.Format(
+                            "Main.ConnectedDeviceFallback",
+                            AdbService.IsTcpIpSerial(e.Current.Serial)
+                                ? "Wi-Fi"
+                                : "USB",
+                            e.Current.Serial)
+                        : LocalizationService.Format(
+                            "Main.ConnectedDevice",
+                            e.Current.DisplayName,
+                            AdbService.IsTcpIpSerial(e.Current.Serial)
+                                ? "Wi-Fi"
+                                : "USB",
+                            e.Current.Serial))
                     : LocalizationService.Get("Main.WaitingPhone");
                 if (e.Current.Status == AdbDeviceStatus.Device)
                     UpdateDeviceStayAwakeState();

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using DexManager.Models;
 
@@ -11,6 +12,9 @@ namespace DexManager.Services
         private readonly LogService _logService;
         private readonly int _intervalMs;
         private readonly object _stateLock = new object();
+        private readonly Dictionary<string, string> _deviceNameCache =
+            new Dictionary<string, string>(
+                StringComparer.OrdinalIgnoreCase);
         private Timer _timer;
         private int _polling;
         private DateTime _wirelessMissingSinceUtc = DateTime.MinValue;
@@ -103,6 +107,10 @@ namespace DexManager.Services
                     {
                         IsConnected = preferred.Status == AdbDeviceStatus.Device,
                         Serial = preferred.Serial,
+                        DisplayName =
+                            preferred.Status == AdbDeviceStatus.Device
+                                ? GetDeviceDisplayName(preferred.Serial)
+                                : string.Empty,
                         Status = preferred.Status
                     };
 
@@ -162,7 +170,24 @@ namespace DexManager.Services
         {
             return left.IsConnected == right.IsConnected &&
                 left.Status == right.Status &&
+                string.Equals(
+                    left.DisplayName,
+                    right.DisplayName,
+                    StringComparison.CurrentCulture) &&
                 string.Equals(left.Serial, right.Serial, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private string GetDeviceDisplayName(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return string.Empty;
+
+            string cached;
+            if (_deviceNameCache.TryGetValue(serial, out cached))
+                return cached;
+
+            var displayName = _adbService.GetDeviceDisplayName(serial);
+            _deviceNameCache[serial] = displayName ?? string.Empty;
+            return displayName ?? string.Empty;
         }
 
         private static DeviceState CopyState(DeviceState state)
@@ -171,6 +196,7 @@ namespace DexManager.Services
             {
                 IsConnected = state.IsConnected,
                 Serial = state.Serial,
+                DisplayName = state.DisplayName,
                 Status = state.Status
             };
         }

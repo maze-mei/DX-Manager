@@ -78,7 +78,8 @@
   <data name="Main.AuthorizationDetail" xml:space="preserve"><value>휴대폰에서 ADB 디버깅 승인을 확인하세요.</value></data>
   <data name="Main.DeviceOffline" xml:space="preserve"><value>장치 오프라인</value></data>
   <data name="Main.DeviceOfflineDetail" xml:space="preserve"><value>휴대폰 연결 또는 ADB 상태를 확인하세요.</value></data>
-  <data name="Main.ConnectedDevice" xml:space="preserve"><value>연결된 Android 장치  ·  {0}  ·  {1}</value></data>
+  <data name="Main.ConnectedDevice" xml:space="preserve"><value>{0}  ·  {1}  ·  {2}</value></data>
+  <data name="Main.ConnectedDeviceFallback" xml:space="preserve"><value>Android 장치  ·  {0}  ·  {1}</value></data>
   <data name="Main.SingleReady" xml:space="preserve"><value>단일창 {0} 준비</value></data>
   <data name="Main.SelectApp" xml:space="preserve"><value>실행할 앱을 선택하세요.</value></data>
   <data name="Main.PressStart" xml:space="preserve"><value>시작 버튼을 누르면 선택한 앱을 새 가상화면에서 실행합니다.</value></data>

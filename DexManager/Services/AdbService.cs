@@ -147,6 +147,40 @@ namespace DexManager.Services
                 writeLog);
         }
 
+        public string GetDeviceDisplayName(string serial)
+        {
+            var properties = new[]
+            {
+                "ro.product.marketname",
+                "ro.product.vendor.marketname",
+                "ro.product.model"
+            };
+
+            foreach (var property in properties)
+            {
+                var result = ShellForSerial(
+                    serial,
+                    "getprop " + property,
+                    false);
+                if (!result.IsSuccess ||
+                    string.IsNullOrWhiteSpace(result.StandardOutput))
+                {
+                    continue;
+                }
+
+                var value = result.StandardOutput.Trim();
+                if (!string.Equals(
+                    value,
+                    "unknown",
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return value;
+                }
+            }
+
+            return string.Empty;
+        }
+
         public ProcessResult Push(string localPath, string remotePath)
         {
             if (!File.Exists(localPath))
