@@ -17,6 +17,8 @@ namespace DexManager.Services
         private readonly AdbService _adbService;
         private readonly ScrcpyLaunchCoordinator _launchCoordinator;
         private readonly LogService _logService;
+        private readonly ScrcpyRuntimeInfo _runtimeInfo;
+        private bool _unsupportedFlexDisplayLogged;
         private readonly Dictionary<int, Process> _processes =
             new Dictionary<int, Process>();
         private readonly Dictionary<int, bool> _stayAwakeRequests =
@@ -29,6 +31,7 @@ namespace DexManager.Services
             int processTimeoutMs,
             AdbService adbService,
             ScrcpyLaunchCoordinator launchCoordinator,
+            ScrcpyRuntimeInfo runtimeInfo,
             LogService logService)
         {
             if (string.IsNullOrWhiteSpace(scrcpyPath))
@@ -43,6 +46,8 @@ namespace DexManager.Services
                 throw new ArgumentNullException("adbService");
             _launchCoordinator = launchCoordinator ??
                 throw new ArgumentNullException("launchCoordinator");
+            _runtimeInfo = runtimeInfo ??
+                throw new ArgumentNullException("runtimeInfo");
             _logService = logService ??
                 throw new ArgumentNullException("logService");
         }
@@ -325,8 +330,21 @@ namespace DexManager.Services
             }
             if (settings.UseHidKeyboard) arguments.Add("-K");
             if (settings.UseHidMouse) arguments.Add("-M");
-            if (settings.StayAwake) arguments.Add("--keep-active");
-            if (settings.FlexDisplay) arguments.Add("--flex-display");
+            if (settings.StayAwake)
+                arguments.Add(_runtimeInfo.StayAwakeArgument);
+            if (settings.FlexDisplay)
+            {
+                if (_runtimeInfo.SupportsFlexDisplay)
+                {
+                    arguments.Add("--flex-display");
+                }
+                else if (!_unsupportedFlexDisplayLogged)
+                {
+                    _unsupportedFlexDisplayLogged = true;
+                    _logService.Warning(LocalizationService.Get(
+                        "Log.Scrcpy.FlexDisplayUnsupported"));
+                }
+            }
             if (settings.TurnScreenOff)
             {
                 arguments.Add("-S");
@@ -352,8 +370,8 @@ namespace DexManager.Services
                     WindowStyle = ProcessWindowStyle.Minimized,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    StandardOutputEncoding = Encoding.UTF8,
-                    StandardErrorEncoding = Encoding.UTF8
+                    StandardOutputEncoding = _runtimeInfo.OutputEncoding,
+                    StandardErrorEncoding = _runtimeInfo.OutputEncoding
                 }
             };
         }

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using DexManager.Models;
 using DexManager.Utils;
@@ -223,7 +224,8 @@ namespace DexManager.Services
                     "version",
                     Path.GetDirectoryName(path),
                     Math.Max(timeoutMs, 3000),
-                    false);
+                    false,
+                    Encoding.Default);
                 if (!result.IsSuccess)
                 {
                     _logService.Warning(LocalizationService.Format(

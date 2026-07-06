@@ -466,4 +466,6 @@
   <data name="Settings.GroupInput" xml:space="preserve"><value>Input correction</value></data>
   <data name="Settings.GroupMonitoring" xml:space="preserve"><value>Monitoring and process timing</value></data>
   <data name="Settings.GroupCapture" xml:space="preserve"><value>Auto-hide and capture</value></data>
+  <data name="Log.Scrcpy.FlexDisplayUnsupported" xml:space="preserve"><value>The selected scrcpy version does not support --flex-display; the option was skipped.</value></data>
+  <data name="Log.KeyMapping.RightShiftCompatibility" xml:space="preserve"><value>Enabled the SDL3 right Shift compatibility mapping.</value></data>
 </root>

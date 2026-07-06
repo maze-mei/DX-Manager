@@ -40,6 +40,7 @@ namespace DexManager.Utils
         internal const int HangulScanCode = 0xF2;
         internal const int LeftAltScanCode = 0x38;
         internal const ushort LeftShiftScanCode = 0x2A;
+        internal const ushort RightShiftScanCode = 0x36;
         internal const ushort SpaceScanCode = 0x39;
         internal const ushort EnterScanCode = 0x1C;
         internal const uint InputKeyboard = 1;

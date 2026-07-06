@@ -22,6 +22,8 @@ namespace DexManager.Services
         private bool _hangulHeld;
         private bool _scrollLockHeld;
         private bool _enterShiftMode;
+        private bool _rightShiftMapped;
+        private bool _rightShiftMappingLogged;
 
         public KeyMappingService(
             ScrcpyService scrcpyService,
@@ -78,6 +80,7 @@ namespace DexManager.Services
         public void Stop()
         {
             if (_hookHandle == IntPtr.Zero) return;
+            ReleaseRightShiftMapping();
             NativeMethods.UnhookWindowsHookEx(_hookHandle);
             _hookHandle = IntPtr.Zero;
             _logService.Info(LocalizationService.Get(
@@ -118,6 +121,44 @@ namespace DexManager.Services
                 IsKeyboardDiagnosticTarget(data))
             {
                 LogKeyboardDiagnostic(data, message);
+            }
+
+            if (_scrcpyService.RuntimeInfo.RequiresRightShiftWorkaround &&
+                data.VirtualKey == NativeMethods.VkRShift &&
+                data.ScanCode == NativeMethods.RightShiftScanCode)
+            {
+                if (keyDown)
+                {
+                    if (!_rightShiftMapped)
+                    {
+                        _rightShiftMapped = true;
+                        if (!SendLeftShiftCompatibility(false))
+                        {
+                            _rightShiftMapped = false;
+                            return NativeMethods.CallNextHookEx(
+                                _hookHandle,
+                                code,
+                                wParam,
+                                lParam);
+                        }
+
+                        if (!_rightShiftMappingLogged)
+                        {
+                            _rightShiftMappingLogged = true;
+                            _logService.Info(LocalizationService.Get(
+                                "Log.KeyMapping.RightShiftCompatibility"));
+                        }
+                    }
+                    return new IntPtr(1);
+                }
+
+                if (keyUp && _rightShiftMapped)
+                {
+                    _rightShiftMapped = false;
+                    if (!SendLeftShiftCompatibility(true))
+                        KeyUp(NativeMethods.VkLShift);
+                    return new IntPtr(1);
+                }
             }
 
             if (_settings.ConvertEnterToShiftEnter &&
@@ -376,6 +417,39 @@ namespace DexManager.Services
             if (sent != inputs.Length)
                 LogSendInputFailure(description, "ScanCode", sent, inputs.Length, inputSize);
             return sent == inputs.Length;
+        }
+
+        private bool SendLeftShiftCompatibility(bool keyUp)
+        {
+            var inputs = new[]
+            {
+                CreateScanCodeInput(
+                    NativeMethods.LeftShiftScanCode,
+                    keyUp)
+            };
+            var inputSize = Marshal.SizeOf(typeof(Input));
+            var sent = NativeMethods.SendInput(
+                1,
+                inputs,
+                inputSize);
+            if (sent != 1)
+            {
+                LogSendInputFailure(
+                    "Right Shift compatibility",
+                    "ScanCode",
+                    sent,
+                    1,
+                    inputSize);
+            }
+            return sent == 1;
+        }
+
+        private void ReleaseRightShiftMapping()
+        {
+            if (!_rightShiftMapped) return;
+            _rightShiftMapped = false;
+            if (!SendLeftShiftCompatibility(true))
+                KeyUp(NativeMethods.VkLShift);
         }
 
         private void LogSendInputFailure(

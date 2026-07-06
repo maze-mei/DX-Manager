@@ -12,6 +12,114 @@ using DexManager.Utils;
 
 namespace DexManager.Services
 {
+    public sealed class ScrcpyRuntimeInfo
+    {
+        private ScrcpyRuntimeInfo(
+            int majorVersion,
+            int minorVersion,
+            int sdlMajorVersion)
+        {
+            MajorVersion = majorVersion;
+            MinorVersion = minorVersion;
+            SdlMajorVersion = sdlMajorVersion;
+        }
+
+        public int MajorVersion { get; private set; }
+        public int MinorVersion { get; private set; }
+        public int SdlMajorVersion { get; private set; }
+
+        public bool SupportsKeepActiveLongOption
+        {
+            get { return MajorVersion >= 4; }
+        }
+
+        public bool SupportsFlexDisplay
+        {
+            get { return MajorVersion >= 4; }
+        }
+
+        public bool RequiresRightShiftWorkaround
+        {
+            get { return SdlMajorVersion >= 3; }
+        }
+
+        public string StayAwakeArgument
+        {
+            get
+            {
+                return SupportsKeepActiveLongOption
+                    ? "--keep-active"
+                    : "-w";
+            }
+        }
+
+        public Encoding OutputEncoding
+        {
+            get
+            {
+                return MajorVersion >= 4
+                    ? Encoding.UTF8
+                    : Encoding.Default;
+            }
+        }
+
+        public static ScrcpyRuntimeInfo Detect(
+            string scrcpyPath,
+            int timeoutMs,
+            ProcessRunner processRunner)
+        {
+            var major = 4;
+            var minor = 0;
+            var sdlMajor = 3;
+
+            try
+            {
+                var result = processRunner.Run(
+                    scrcpyPath,
+                    "--version",
+                    Path.GetDirectoryName(scrcpyPath),
+                    Math.Min(Math.Max(timeoutMs, 1000), 5000),
+                    false);
+                var text = (result.StandardOutput ?? string.Empty) + "\n" +
+                    (result.StandardError ?? string.Empty);
+                var versionMatch = Regex.Match(
+                    text,
+                    @"scrcpy\s+(\d+)\.(\d+)",
+                    RegexOptions.IgnoreCase);
+                if (versionMatch.Success)
+                {
+                    major = int.Parse(
+                        versionMatch.Groups[1].Value,
+                        CultureInfo.InvariantCulture);
+                    minor = int.Parse(
+                        versionMatch.Groups[2].Value,
+                        CultureInfo.InvariantCulture);
+                }
+
+                var sdlMatch = Regex.Match(
+                    text,
+                    @"SDL:\s*(\d+)\.",
+                    RegexOptions.IgnoreCase);
+                if (sdlMatch.Success)
+                {
+                    sdlMajor = int.Parse(
+                        sdlMatch.Groups[1].Value,
+                        CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    sdlMajor = major >= 4 ? 3 : 2;
+                }
+            }
+            catch
+            {
+                // Preserve the bundled scrcpy 4.0 behavior if probing fails.
+            }
+
+            return new ScrcpyRuntimeInfo(major, minor, sdlMajor);
+        }
+    }
+
     public sealed class ScrcpyService : IDisposable
     {
         private readonly object _syncRoot = new object();
@@ -21,6 +129,7 @@ namespace DexManager.Services
         private readonly AdbService _adbService;
         private readonly ScrcpyLaunchCoordinator _launchCoordinator;
         private readonly LogService _logService;
+        private readonly ScrcpyRuntimeInfo _runtimeInfo;
         private Process _process;
         private bool _stayAwakeRequested;
         private bool _turnScreenOffRequested;
@@ -47,6 +156,10 @@ namespace DexManager.Services
             _launchCoordinator = launchCoordinator ??
                 throw new ArgumentNullException("launchCoordinator");
             _logService = logService;
+            _runtimeInfo = ScrcpyRuntimeInfo.Detect(
+                _scrcpyPath,
+                _processTimeoutMs,
+                _processRunner);
         }
 
         public event EventHandler RunningChanged;
@@ -65,6 +178,11 @@ namespace DexManager.Services
         public string ScrcpyPath
         {
             get { return _scrcpyPath; }
+        }
+
+        public ScrcpyRuntimeInfo RuntimeInfo
+        {
+            get { return _runtimeInfo; }
         }
 
         public int CurrentProcessId
@@ -170,7 +288,8 @@ namespace DexManager.Services
 
             if (settings.UseHidKeyboard) arguments.Add("-K");
             if (settings.UseHidMouse) arguments.Add("-M");
-            if (settings.StayAwake) arguments.Add("--keep-active");
+            if (settings.StayAwake)
+                arguments.Add(_runtimeInfo.StayAwakeArgument);
             if (settings.TurnScreenOff)
             {
                 arguments.Add("-S");
@@ -210,7 +329,9 @@ namespace DexManager.Services
                     _scrcpyPath,
                     string.Join(" ", arguments),
                     Path.GetDirectoryName(_scrcpyPath),
-                    _processTimeoutMs);
+                    _processTimeoutMs,
+                    true,
+                    _runtimeInfo.OutputEncoding);
             });
             if (!result.IsSuccess)
             {
@@ -391,8 +512,8 @@ namespace DexManager.Services
                     WindowStyle = ProcessWindowStyle.Minimized,
                     RedirectStandardOutput = redirectOutput,
                     RedirectStandardError = redirectOutput,
-                    StandardOutputEncoding = Encoding.UTF8,
-                    StandardErrorEncoding = Encoding.UTF8
+                    StandardOutputEncoding = _runtimeInfo.OutputEncoding,
+                    StandardErrorEncoding = _runtimeInfo.OutputEncoding
                 }
             };
         }

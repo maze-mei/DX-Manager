@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using DexManager.Models;
 using DexManager.Utils;
 
@@ -327,12 +328,19 @@ namespace DexManager.Services
 
         private ProcessResult Run(string arguments, bool writeLog)
         {
+            var outputEncoding = string.Equals(
+                (arguments ?? string.Empty).Trim(),
+                "version",
+                StringComparison.OrdinalIgnoreCase)
+                ? Encoding.Default
+                : Encoding.UTF8;
             return _processRunner.Run(
                 _adbPath,
                 arguments,
                 Path.GetDirectoryName(_adbPath),
                 _defaultTimeoutMs,
-                writeLog);
+                writeLog,
+                outputEncoding);
         }
 
         private ProcessResult RunTargeted(

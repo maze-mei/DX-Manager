@@ -33,6 +33,23 @@ namespace DexManager.Utils
             int timeoutMs,
             bool writeLog)
         {
+            return Run(
+                fileName,
+                arguments,
+                workingDirectory,
+                timeoutMs,
+                writeLog,
+                Encoding.UTF8);
+        }
+
+        public ProcessResult Run(
+            string fileName,
+            string arguments,
+            string workingDirectory,
+            int timeoutMs,
+            bool writeLog,
+            Encoding outputEncoding)
+        {
             if (string.IsNullOrWhiteSpace(fileName))
                 throw new ArgumentException(
                     LocalizationService.Get("Error.Process.PathEmpty"),
@@ -45,6 +62,7 @@ namespace DexManager.Utils
             var stopwatch = Stopwatch.StartNew();
             var output = new StringBuilder();
             var error = new StringBuilder();
+            var encoding = outputEncoding ?? Encoding.UTF8;
 
             var startInfo = new ProcessStartInfo
             {
@@ -57,8 +75,8 @@ namespace DexManager.Utils
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8
+                StandardOutputEncoding = encoding,
+                StandardErrorEncoding = encoding
             };
 
             if (writeLog)

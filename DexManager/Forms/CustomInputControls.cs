@@ -249,12 +249,277 @@ namespace DexManager.Forms
         }
     }
 
-    internal class ThemedTextControl : Control
+    internal sealed class ThemedTextControl : UserControl
+    {
+        private readonly TextBox _editor;
+        private readonly ThemedTextDisplay _display;
+        private bool _syncingText;
+        private bool _selectAllOnFocus;
+        private int _maxLength = 256;
+        private bool _usePasswordMask;
+        private bool _useMiddleEllipsis;
+
+        public ThemedTextControl()
+        {
+            TabStop = false;
+            Cursor = Cursors.IBeam;
+            Font = UiFonts.Create(9.5F);
+            Size = new Size(200, 32);
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw |
+                ControlStyles.SupportsTransparentBackColor,
+                true);
+            BackColor = Color.Transparent;
+
+            _editor = new TextBox
+            {
+                BorderStyle = BorderStyle.None,
+                Multiline = false,
+                TabStop = true,
+                MaxLength = _maxLength,
+                Font = Font
+            };
+            _editor.TextChanged += Editor_TextChanged;
+            _editor.Enter += Editor_Enter;
+            _editor.Leave += Editor_Leave;
+
+            _display = new ThemedTextDisplay
+            {
+                TabStop = false,
+                Cursor = Cursors.IBeam,
+                Font = Font
+            };
+            _display.MouseDown += Display_MouseDown;
+
+            Controls.Add(_editor);
+            Controls.Add(_display);
+            LayoutChildren();
+            ApplyTheme();
+        }
+
+        public int MaxLength
+        {
+            get { return _maxLength; }
+            set
+            {
+                _maxLength = Math.Max(0, value);
+                _editor.MaxLength = _maxLength;
+            }
+        }
+
+        public bool UsePasswordMask
+        {
+            get { return _usePasswordMask; }
+            set
+            {
+                _usePasswordMask = value;
+                _editor.UseSystemPasswordChar = value;
+                _display.UsePasswordMask = value;
+                _display.Invalidate();
+            }
+        }
+
+        public bool UseMiddleEllipsis
+        {
+            get { return _useMiddleEllipsis; }
+            set
+            {
+                _useMiddleEllipsis = value;
+                _display.UseMiddleEllipsis = value;
+                _display.Invalidate();
+            }
+        }
+
+        public void SelectAll()
+        {
+            _editor.Focus();
+            _editor.SelectAll();
+        }
+
+        public void Clear()
+        {
+            _editor.Clear();
+        }
+
+        protected override void OnTextChanged(EventArgs e)
+        {
+            if (!_syncingText && _editor != null &&
+                !string.Equals(_editor.Text, base.Text, StringComparison.Ordinal))
+            {
+                _syncingText = true;
+                _editor.Text = base.Text ?? string.Empty;
+                _syncingText = false;
+            }
+
+            if (_display != null)
+            {
+                _display.DisplayText = base.Text ?? string.Empty;
+                _display.Invalidate();
+            }
+            base.OnTextChanged(e);
+        }
+
+        protected override void OnFontChanged(EventArgs e)
+        {
+            base.OnFontChanged(e);
+            if (_editor != null) _editor.Font = Font;
+            if (_display != null) _display.Font = Font;
+            LayoutChildren();
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            LayoutChildren();
+        }
+
+        protected override void OnEnabledChanged(EventArgs e)
+        {
+            base.OnEnabledChanged(e);
+            _editor.Enabled = Enabled;
+            _display.Enabled = Enabled;
+            ApplyTheme();
+            Invalidate();
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            if (!Enabled || e.Button != MouseButtons.Left) return;
+            _selectAllOnFocus = true;
+            _editor.Focus();
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            ApplyTheme();
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            ThemedSelectControl.DrawFieldBackground(
+                e.Graphics,
+                ClientRectangle,
+                _editor.Focused,
+                Enabled);
+            base.OnPaint(e);
+        }
+
+        private void Editor_TextChanged(object sender, EventArgs e)
+        {
+            if (_syncingText) return;
+            _syncingText = true;
+            base.Text = _editor.Text;
+            _syncingText = false;
+        }
+
+        private void Editor_Enter(object sender, EventArgs e)
+        {
+            _display.Visible = false;
+            _selectAllOnFocus = true;
+            BeginInvoke((Action)delegate
+            {
+                if (IsDisposed || !_editor.Focused || !_selectAllOnFocus) return;
+                _editor.SelectAll();
+                _selectAllOnFocus = false;
+            });
+            Invalidate();
+        }
+
+        private void Editor_Leave(object sender, EventArgs e)
+        {
+            _selectAllOnFocus = false;
+            _display.Visible = true;
+            _display.BringToFront();
+            Invalidate();
+        }
+
+        private void Display_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (!Enabled || e.Button != MouseButtons.Left) return;
+            _selectAllOnFocus = true;
+            _display.Visible = false;
+            _editor.Focus();
+        }
+
+        private void LayoutChildren()
+        {
+            if (_editor == null || _display == null) return;
+
+            var editorHeight = _editor.PreferredHeight;
+            _editor.SetBounds(
+                10,
+                Math.Max((Height - editorHeight) / 2, 1),
+                Math.Max(Width - 20, 0),
+                editorHeight);
+            _display.SetBounds(
+                10,
+                1,
+                Math.Max(Width - 20, 0),
+                Math.Max(Height - 2, 0));
+        }
+
+        private void ApplyTheme()
+        {
+            if (_editor == null || _display == null) return;
+
+            var colors = ThemeColors.Current;
+            var background = Enabled
+                ? colors.CardSoft
+                : colors.DisabledBackground;
+            var foreground = Enabled
+                ? colors.TextPrimary
+                : colors.DisabledText;
+            _editor.BackColor = background;
+            _editor.ForeColor = foreground;
+            _display.BackColor = background;
+            _display.ForeColor = foreground;
+        }
+
+        private sealed class ThemedTextDisplay : Control
+        {
+            public string DisplayText { get; set; }
+            public bool UsePasswordMask { get; set; }
+            public bool UseMiddleEllipsis { get; set; }
+
+            public ThemedTextDisplay()
+            {
+                SetStyle(
+                    ControlStyles.UserPaint |
+                    ControlStyles.AllPaintingInWmPaint |
+                    ControlStyles.OptimizedDoubleBuffer,
+                    true);
+            }
+
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
+                var value = DisplayText ?? string.Empty;
+                if (UsePasswordMask)
+                    value = new string('\u2022', value.Length);
+
+                var flags = TextFormatFlags.Left |
+                    TextFormatFlags.VerticalCenter |
+                    TextFormatFlags.NoPadding |
+                    TextFormatFlags.NoPrefix |
+                    (UseMiddleEllipsis
+                        ? TextFormatFlags.PathEllipsis
+                        : TextFormatFlags.EndEllipsis);
+                TextRenderer.DrawText(
+                    e.Graphics,
+                    value,
+                    Font,
+                    ClientRectangle,
+                    ForeColor,
+                    BackColor,
+                    flags);
+            }
+        }
+    }
+
+    internal class ThemedPaintedTextControl : Control
     {
         private int _selectionStart;
         private int _selectionLength;
 
-        public ThemedTextControl()
+        public ThemedPaintedTextControl()
         {
             TabStop = true;
             Cursor = Cursors.IBeam;
@@ -716,7 +981,7 @@ namespace DexManager.Forms
         }
     }
 
-    internal sealed class ThemedHotkeyControl : ThemedTextControl
+    internal sealed class ThemedHotkeyControl : ThemedPaintedTextControl
     {
         private string _valueBeforeCapture = string.Empty;
 
@@ -839,7 +1104,7 @@ namespace DexManager.Forms
         }
     }
 
-    internal sealed class ThemedNumberControl : ThemedTextControl
+    internal sealed class ThemedNumberControl : ThemedPaintedTextControl
     {
         private decimal _value;
         private bool _updatingText;

@@ -85,12 +85,14 @@ namespace DexManager
                     settings.Timing.ProcessTimeoutMs,
                     adbService,
                     scrcpyLaunchCoordinator,
+                    scrcpyService.RuntimeInfo,
                     logService);
                 var screenOffService = new ScreenOffService(
                     scrcpyPath,
                     settings.Timing.ProcessTimeoutMs,
                     adbService,
                     scrcpyLaunchCoordinator,
+                    scrcpyService.RuntimeInfo,
                     logService);
                 var virtualDisplayService = new VirtualDisplayService(
                     adbService,

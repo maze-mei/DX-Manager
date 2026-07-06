@@ -14,12 +14,14 @@ namespace DexManager.Services
         private readonly AdbService _adbService;
         private readonly ScrcpyLaunchCoordinator _launchCoordinator;
         private readonly LogService _logService;
+        private readonly ScrcpyRuntimeInfo _runtimeInfo;
 
         public ScreenOffService(
             string scrcpyPath,
             int processTimeoutMs,
             AdbService adbService,
             ScrcpyLaunchCoordinator launchCoordinator,
+            ScrcpyRuntimeInfo runtimeInfo,
             LogService logService)
         {
             if (string.IsNullOrWhiteSpace(scrcpyPath))
@@ -36,6 +38,8 @@ namespace DexManager.Services
                 throw new ArgumentNullException("adbService");
             _launchCoordinator = launchCoordinator ??
                 throw new ArgumentNullException("launchCoordinator");
+            _runtimeInfo = runtimeInfo ??
+                throw new ArgumentNullException("runtimeInfo");
             _logService = logService ??
                 throw new ArgumentNullException("logService");
         }
@@ -167,8 +171,8 @@ namespace DexManager.Services
                     WindowStyle = ProcessWindowStyle.Hidden,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    StandardOutputEncoding = Encoding.UTF8,
-                    StandardErrorEncoding = Encoding.UTF8
+                    StandardOutputEncoding = _runtimeInfo.OutputEncoding,
+                    StandardErrorEncoding = _runtimeInfo.OutputEncoding
                 }
             };
         }

@@ -466,4 +466,6 @@
   <data name="Settings.GroupInput" xml:space="preserve"><value>입력 보정</value></data>
   <data name="Settings.GroupMonitoring" xml:space="preserve"><value>감시 및 프로세스 시간</value></data>
   <data name="Settings.GroupCapture" xml:space="preserve"><value>자동 숨김 및 캡처</value></data>
+  <data name="Log.Scrcpy.FlexDisplayUnsupported" xml:space="preserve"><value>선택한 Scrcpy 버전이 --flex-display를 지원하지 않아 해당 옵션을 제외했습니다.</value></data>
+  <data name="Log.KeyMapping.RightShiftCompatibility" xml:space="preserve"><value>SDL3용 오른쪽 Shift 호환 입력을 사용합니다.</value></data>
 </root>
