@@ -1,12 +1,12 @@
 # Session Handoff
 
-마지막 갱신: 2026-07-03
+마지막 갱신: 2026-07-06
 
 ## Git
 
 - 저장소: `E:\vs\dex system`
-- 브랜치: `feature/dx-localization-ui`
-- 작업 전 HEAD: `701538a Document project handoff and development workflow`
+- 브랜치: `main`
+- 마지막 기능 커밋: `c48b10b Fix scrcpy compatibility and native text editing`
 - `feature/scrcpy-4-upgrade`: `d946d82`
 - `feature/single-window-mode`: `45b59ef`
 
@@ -33,12 +33,17 @@
 - 화면 설정의 해상도/DPI/비트레이트/FPS를 완전 커스텀 입력기로 교체
 - 메인 화면 스크롤 제거 및 카드 하단선 정렬
 - 잠자기 방지 `-w`, 동적 창 크기 `-x` 축약 표기
+- Scrcpy 3.3.4/4.0 버전 감지와 실행 옵션 자동 호환
+- Scrcpy 4.0/SDL3 오른쪽 Shift 입력을 왼쪽 Shift로 치환
+- 경로와 일반 문자열 필드에 네이티브 편집 엔진 적용
+- 구형 ADB/Scrcpy의 한국어 경로 출력 인코딩 보정
 - Release 빌드 경고 0, 오류 0
 
 ## 결론과 다음 작업
 
-기능 목표는 완료됐다. 개인 사용 기준 완성, 배포 기준 베타다.
-다음 작업은 새 UI 실사용 확인과 아이콘이다.
+기능 목표와 기본 UI는 완료됐다. 개인 사용 기준 완성, 배포 기준 베타다.
+다음 작업은 최신 빌드의 Windows 7 회귀 확인, Scrcpy upstream 오른쪽 Shift
+이슈 보고와 GitHub Release 준비다.
 
 새 채팅 시작 예:
 

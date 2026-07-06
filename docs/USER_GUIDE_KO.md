@@ -153,6 +153,12 @@ IP 자동 감지에 실패하면 휴대폰의 Wi-Fi 상세 화면에서 IPv4 주
 - `Scroll Lock`: 일반 Enter와 Shift+Enter 모드 전환
 - 직접 입력한 Shift+Space를 무시하는 옵션 제공
 
+Windows용 scrcpy 4.0/SDL3에서는 Windows가 물리 오른쪽 Shift를 감지해도
+Android로 전달되지 않을 수 있습니다. DX Manager는 SDL3 scrcpy 창이
+활성화된 동안에만 오른쪽 Shift를 왼쪽 Shift로 변환합니다. 일반적인 Shift
+타이핑은 정상 동작하지만 해당 세션에서 Android는 좌우 Shift를 구분하지
+못합니다.
+
 기본 캡처 단축키는 `F8`, 종료 단축키는 `왼쪽 Alt+F8`입니다. 설정의
 **키 입력** 페이지에서 입력 필드를 선택한 뒤 원하는 키 또는 키 조합을
 누르면 변경할 수 있습니다.

@@ -121,6 +121,17 @@ For complete instructions, see:
 
 The capture and exit shortcuts are configurable.
 
+## Keyboard Compatibility
+
+scrcpy 4.0 migrated its Windows client from SDL2 to SDL3. On tested systems,
+the physical right Shift key is detected by Windows but is not handled
+correctly by scrcpy 4.0. scrcpy 3.3.4 does not show this behavior.
+
+While an SDL3-based scrcpy window is active, DX Manager maps physical right
+Shift events to left Shift events. This preserves normal Shift typing, but an
+Android app cannot distinguish the two Shift sides during that session. The
+mapping is not applied to SDL2-based scrcpy versions or other Windows apps.
+
 ## Building
 
 - Visual Studio 2019
@@ -276,6 +287,18 @@ DLL, 라이선스 파일과 scrcpy 서버 파일이 모두 필요합니다.
 | `Scroll Lock` | 사용 설정 시 일반 Enter와 Shift+Enter 모드 전환 |
 
 캡처 및 종료 단축키는 설정에서 변경할 수 있습니다.
+
+## 키보드 호환성
+
+scrcpy 4.0의 Windows 클라이언트는 SDL2에서 SDL3로 변경되었습니다. 확인한
+환경에서는 Windows가 물리 오른쪽 Shift를 정상 감지하지만 scrcpy 4.0이
+해당 입력을 올바르게 처리하지 못했습니다. scrcpy 3.3.4에서는 같은 문제가
+발생하지 않았습니다.
+
+DX Manager는 SDL3 기반 scrcpy 창이 활성화된 동안 물리 오른쪽 Shift 입력을
+왼쪽 Shift 입력으로 변환합니다. 일반적인 Shift 타이핑은 유지되지만 해당
+세션에서 Android 앱은 좌우 Shift를 구분할 수 없습니다. SDL2 기반 scrcpy와
+다른 Windows 프로그램에는 이 변환을 적용하지 않습니다.
 
 ## 빌드
 

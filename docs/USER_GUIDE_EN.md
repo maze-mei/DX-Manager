@@ -161,6 +161,11 @@ Keyboard correction is only applied while a scrcpy window is active.
 - `Scroll Lock` toggles between normal Enter and Shift+Enter.
 - Direct Shift+Space input can optionally be ignored.
 
+On Windows, scrcpy 4.0/SDL3 may fail to forward the physical right Shift
+key even though Windows detects it. DX Manager maps right Shift to left Shift
+only while an SDL3 scrcpy window is active. Normal Shift typing is preserved,
+but Android cannot distinguish the left and right Shift keys in that session.
+
 The default capture shortcut is `F8`, and the default exit shortcut is
 `Left Alt+F8`. To change one, select its field under **Settings > Keyboard**
 and press the desired key or key combination.

@@ -30,9 +30,11 @@ Windows WinForms 프로그램이다. DeX 화면 한 개와 앱별 단일창 세 
 - 앱 목록, 표시 이름/패키지 저장, 자동 실행
 - 성공적으로 자동 실행한 앱의 공통 최근 목록 보존
 - Scrcpy 4.0 `--flex-display`
+- Scrcpy 3.3.4/4.0 실행 옵션 자동 호환
 - USB 및 TCP/IP 무선 ADB, IP 자동 감지, Android 11 페어링
 - OS별 ADB 선택과 절대 경로 실행
 - 한영키/Enter 보정
+- Scrcpy 4.0/SDL3 오른쪽 Shift 호환 치환
 - F8 전체/영역 캡처와 스마트폰 전송
 - 미입력 자동 숨김과 시스템 트레이
 - 다중 Scrcpy의 화면 끄기, 잠자기 방지, 종료 복구
@@ -46,7 +48,9 @@ Windows WinForms 프로그램이다. DeX 화면 한 개와 앱별 단일창 세 
 동시 실행을 확인했다. Windows 7 SP1/.NET 4.6.2에서 유선 핵심 기능과
 Scrcpy 4.0 실행도 확인했다.
 
-남은 일은 아이콘, 추가 UI 마무리, 버전/라이선스/배포 문서다.
+앱 아이콘, 다국어 UI, 사용자/개발 문서와 제3자 라이선스 고지는 완료됐다.
+남은 일은 최신 빌드의 Windows 7 회귀 확인, upstream 입력 버그 보고와
+GitHub Release 준비다.
 
 ## 제품 원칙
 

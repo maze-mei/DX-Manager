@@ -2,18 +2,16 @@
 
 ## 다음 작업
 
-- [ ] 앱 아이콘 제작 및 exe/창/트레이 적용
-- [ ] 라이트/다크 카드 UI 실사용 확인 후 세부 간격 보정
+- [ ] Windows 7에서 최신 입력/설정 UI 회귀 확인
+- [ ] Scrcpy 4.0/SDL3 오른쪽 Shift 재현 내용을 upstream에 보고
+- [ ] Upstream 수정 시 오른쪽 Shift 치환 우회 제거 여부 검토
 
 ## 배포 준비
 
-- [ ] 제품 버전 정책과 Assembly/File version
-- [ ] Scrcpy, ADB, DLL 라이선스/출처 고지
-- [ ] 최초 USB/무선 연결 안내
 - [ ] Release 폴더 배포 체크리스트
-- [ ] Windows 7/11 최종 회귀 테스트
-- [ ] GitHub 저장소와 첫 Release 운영 방식
-- [ ] 사용자 확인 후 안정 브랜치 병합 및 태그
+- [ ] Windows 7/11 최종 회귀 테스트와 배포용 화면 캡처
+- [ ] GitHub 첫 공개 Release 운영 방식과 공개 시점 결정
+- [ ] 공개 전 DX Manager 자체 소스 라이선스 확정
 
 설치 프로그램은 방향이 정해질 때까지 보류한다.
 핵심 기능에 알려진 미완성 항목은 없다.

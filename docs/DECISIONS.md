@@ -15,6 +15,32 @@ AHK의 `SC1F2::Send +{Space}`에 맞춰 한영키를 scan code로 감지하고
 SendInput scan-code 조합을 우선한다. 오른쪽 Alt를 분리하고 ADB는
 fallback으로 남겼다.
 
+## Scrcpy 4.0 오른쪽 Shift 호환
+
+Windows에서 Scrcpy 3.3.4/SDL2는 오른쪽 Shift가 정상 동작하지만
+Scrcpy 4.0/SDL3는 같은 물리 입력을 처리하지 못하는 현상을 재현했다.
+Windows 저수준 후크에는 `vk=0xA1`, `scan=0x36` 누름/뗌이 모두 들어오므로
+DX Manager의 감지 실패는 아니다.
+
+SDL3 기반 Scrcpy 창이 활성화된 경우에만 원본 오른쪽 Shift를 차단하고
+SendInput scan code 왼쪽 Shift로 치환한다. 오른쪽 Shift를 다시 보내는
+보정은 SDL3의 같은 처리 경로를 반복하므로 사용하지 않는다. 이 우회로 인해
+Android에서는 좌우 Shift를 구분할 수 없지만 일반 타이핑 기능을 우선한다.
+
+## 외부 Scrcpy 버전 호환
+
+지정한 Scrcpy의 `--version` 결과에서 Scrcpy와 SDL 주 버전을 감지한다.
+3.3.4는 잠자기 방지에 `-w`를 사용하고 `--flex-display`를 제외한다.
+4.0 이상은 `--keep-active`와 `--flex-display`를 사용한다. 버전 감지에
+실패하면 번들 기준인 Scrcpy 4.0 동작을 유지한다.
+
+## 일반 텍스트 입력은 네이티브 편집 엔진
+
+경로와 추가 인자처럼 자유 편집이 필요한 필드는 커스텀 둥근 프레임 안에
+테두리 없는 WinForms TextBox를 배치한다. 외형은 DX Manager가 그리되
+선택, 드래그, 가로 스크롤, 실행 취소와 IME는 Windows에 맡긴다. 숫자와
+단축키처럼 동작이 제한된 필드는 기존 커스텀 입력기를 유지한다.
+
 ## 최대 display ID 선택 제거
 
 DeX와 단일창을 함께 쓰면 display가 여러 개다. 생성 전후 차집합과
