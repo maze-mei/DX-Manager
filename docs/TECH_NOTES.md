@@ -27,6 +27,12 @@
 
 프로세스 환경 변수 `ADB`도 같은 절대 경로로 설정한다.
 
+일부 Windows 7 환경에서는 `adb start-server` 직후 ADB 프로세스가 반복
+종료되거나 USB transport를 정상적으로 잡지 못할 수 있다. DX Manager는
+기본적으로 ADB로 먼저 깨우고, 실패 시 설정에 따라 Scrcpy 기반 wake-up을
+사용해 실제 push/shell/stream 경로까지 열어 ADB 연결을 초기화한다. 향후
+첫 Scrcpy 실행 전 ADB 안정화 대기 시간을 초 단위 옵션으로 노출할 수 있다.
+
 ## 무선 ADB
 
 - 승인된 USB 장치가 정확히 하나일 때 준비한다.

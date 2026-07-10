@@ -5,6 +5,7 @@
 - [ ] Windows 7에서 최신 입력/설정 UI 회귀 확인
 - [ ] Scrcpy 4.0/SDL3 오른쪽 Shift 재현 내용을 upstream에 보고
 - [ ] Upstream 수정 시 오른쪽 Shift 치환 우회 제거 여부 검토
+- [ ] Scrcpy 실행 전 ADB 안정화 대기(초) 옵션 추가 검토
 
 ## 배포 준비
 
