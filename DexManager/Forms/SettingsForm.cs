@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
@@ -15,6 +16,8 @@ namespace DexManager.Forms
         private const int CardContentTop = 44;
         private const int CardContentBottom = 18;
         private const int WmMouseWheel = 0x020A;
+        private const string ProjectUrl =
+            "https://github.com/maze-mei/DX-Manager";
 
         private readonly SettingsService _settingsService;
         private readonly AppSettings _settings;
@@ -58,6 +61,9 @@ namespace DexManager.Forms
         private ThemedNumberControl _autoHideSecondsBox;
         private ThemedNumberControl _captureWaitSecondsBox;
         private ThemedNumberControl _processTimeoutBox;
+        private ThemedNumberControl _virtualDisplayTimeoutBox;
+        private Control _advancedOptionsCard;
+        private Button _advancedOptionsButton;
         private ThemedHotkeyControl _captureHotkeyBox;
         private ThemedHotkeyControl _exitHotkeyBox;
         private CheckBox _lowLevelHotkeyBox;
@@ -142,7 +148,6 @@ namespace DexManager.Forms
             _pages.Add(BuildConnectionPage());
             _pages.Add(BuildPathPage());
             _pages.Add(BuildKeyboardPage());
-            _pages.Add(BuildTimingPage());
             _pages.Add(BuildDiagnosticsPage());
             _pages.Add(BuildAboutPage());
             foreach (var page in _pages)
@@ -236,9 +241,22 @@ namespace DexManager.Forms
             var startup = CreateTable();
             _startWithWindowsBox = AddCheck(startup, LocalizationService.Get("Settings.StartWithWindows"));
             _startMinimizedBox = AddCheck(startup, LocalizationService.Get("Settings.StartMinimized"));
-            _wakeUpModeBox = AddCombo<ScrcpyWakeUpMode>(startup, LocalizationService.Get("Settings.WakeUpMode"));
-            _autoHideBox = AddCheck(startup, LocalizationService.Get("Settings.AutoHide"));
             _autoStartDexBox = AddCheck(startup, LocalizationService.Get("Settings.AutoStartDex"));
+            _connectedStartDelayBox = AddNumber(
+                startup,
+                LocalizationService.Get("Settings.StartDelay"),
+                0,
+                60);
+            _autoHideBox = AddCheck(startup, LocalizationService.Get("Settings.AutoHide"));
+            _autoHideSecondsBox = AddNumber(
+                startup,
+                LocalizationService.Get("Settings.HideDelay"),
+                1,
+                3600);
+            _autoHideBox.CheckedChanged += delegate
+            {
+                _autoHideSecondsBox.Enabled = _autoHideBox.Checked;
+            };
             _showConnectedDeviceInfoBox = AddCheck(
                 startup,
                 LocalizationService.Get("Settings.ShowConnectedDeviceInfo"));
@@ -277,6 +295,9 @@ namespace DexManager.Forms
             _screenshotFolderBox = AddPath(paths, LocalizationService.Get("Settings.ScreenshotFolder"), false);
             _deviceScreenshotFolderBox = AddText(paths, LocalizationService.Get("Settings.DeviceFolder"));
             _deviceScreenshotFolderBox.UseMiddleEllipsis = true;
+            _pushCaptureBox = AddCheck(
+                paths,
+                LocalizationService.Get("Settings.PushCapture"));
             _logFolderBox = AddPath(paths, LocalizationService.Get("Settings.LogFolder"), false);
             AddCard(page, LocalizationService.Get("Settings.GroupStorage"), paths);
             return page;
@@ -428,25 +449,6 @@ namespace DexManager.Forms
             return page;
         }
 
-        private Control BuildTimingPage()
-        {
-            var page = CreatePage();
-            var monitoring = CreateTable();
-            _deviceMonitorIntervalBox = AddNumber(monitoring, LocalizationService.Get("Settings.DeviceInterval"), 1, 60);
-            _disconnectMonitorIntervalBox = AddNumber(monitoring, LocalizationService.Get("Settings.DisconnectInterval"), 1, 60);
-            _connectedStartDelayBox = AddNumber(monitoring, LocalizationService.Get("Settings.StartDelay"), 0, 60);
-            _adbWakeUpDelayBox = AddNumber(monitoring, LocalizationService.Get("Settings.WakeDelay"), 0, 60);
-            _processTimeoutBox = AddNumber(monitoring, LocalizationService.Get("Settings.ProcessTimeout"), 1, 120);
-            AddCard(page, LocalizationService.Get("Settings.GroupMonitoring"), monitoring);
-
-            var capture = CreateTable();
-            _autoHideSecondsBox = AddNumber(capture, LocalizationService.Get("Settings.HideDelay"), 1, 3600);
-            _captureWaitSecondsBox = AddNumber(capture, LocalizationService.Get("Settings.CaptureDelay"), 1, 60);
-            _pushCaptureBox = AddCheck(capture, LocalizationService.Get("Settings.PushCapture"));
-            AddCard(page, LocalizationService.Get("Settings.GroupCapture"), capture);
-            return page;
-        }
-
         private Control BuildDiagnosticsPage()
         {
             var page = CreatePage();
@@ -490,6 +492,30 @@ namespace DexManager.Forms
                 BackColor = _theme.CardBackground,
                 Margin = new Padding(0, 24, 0, 10),
                 Text = LocalizationService.Get(
+                    "Settings.AdvancedOptionsGuide")
+            });
+            _advancedOptionsButton = CreateActionButton(
+                LocalizationService.Get("Settings.ShowAdvancedOptions"),
+                220);
+            _advancedOptionsButton.Click += delegate
+            {
+                _advancedOptionsCard.Visible =
+                    !_advancedOptionsCard.Visible;
+                _advancedOptionsButton.Text = LocalizationService.Get(
+                    _advancedOptionsCard.Visible
+                        ? "Settings.HideAdvancedOptions"
+                        : "Settings.ShowAdvancedOptions");
+                page.PerformLayout();
+            };
+            panel.Controls.Add(_advancedOptionsButton);
+            panel.Controls.Add(new Label
+            {
+                AutoSize = true,
+                MaximumSize = new Size(610, 0),
+                ForeColor = _theme.TextTertiary,
+                BackColor = _theme.CardBackground,
+                Margin = new Padding(0, 24, 0, 10),
+                Text = LocalizationService.Get(
                     "Settings.ResetDefaultsGuide")
             });
             var resetButton = CreateActionButton(
@@ -498,6 +524,46 @@ namespace DexManager.Forms
             resetButton.Click += ResetDefaultsButton_Click;
             panel.Controls.Add(resetButton);
             AddCard(page, LocalizationService.Get("Settings.Diagnostics"), panel);
+
+            var advanced = CreateTable();
+            _wakeUpModeBox = AddCombo<ScrcpyWakeUpMode>(
+                advanced,
+                LocalizationService.Get("Settings.WakeUpMode"));
+            _deviceMonitorIntervalBox = AddNumber(
+                advanced,
+                LocalizationService.Get("Settings.DeviceInterval"),
+                1,
+                60);
+            _disconnectMonitorIntervalBox = AddNumber(
+                advanced,
+                LocalizationService.Get("Settings.DisconnectInterval"),
+                1,
+                60);
+            _virtualDisplayTimeoutBox = AddNumber(
+                advanced,
+                LocalizationService.Get("Settings.VirtualDisplayTimeout"),
+                1,
+                60);
+            _adbWakeUpDelayBox = AddNumber(
+                advanced,
+                LocalizationService.Get("Settings.WakeDelay"),
+                0,
+                60);
+            _processTimeoutBox = AddNumber(
+                advanced,
+                LocalizationService.Get("Settings.ProcessTimeout"),
+                1,
+                120);
+            _captureWaitSecondsBox = AddNumber(
+                advanced,
+                LocalizationService.Get("Settings.CaptureDelay"),
+                1,
+                60);
+            _advancedOptionsCard = AddCard(
+                page,
+                LocalizationService.Get("Settings.AdvancedOptions"),
+                advanced);
+            _advancedOptionsCard.Visible = false;
             return page;
         }
 
@@ -518,9 +584,42 @@ namespace DexManager.Forms
             panel.Controls.Add(CreateAboutLabel(
                 LocalizationService.Get("Settings.AboutSummary"),
                 false,
-                new Padding(0, 0, 0, 18)));
+                new Padding(0, 0, 0, 8)));
+            panel.Controls.Add(CreateAboutLabel(
+                LocalizationService.Get("Settings.AboutDeveloper"),
+                false,
+                new Padding(0, 0, 0, 2)));
+            panel.Controls.Add(CreateAboutLabel(
+                LocalizationService.Get("Settings.AboutCopyright"),
+                false,
+                new Padding(0, 0, 0, 2)));
+            panel.Controls.Add(CreateAboutLabel(
+                LocalizationService.Get("Settings.AboutLicense"),
+                false,
+                new Padding(0, 0, 0, 8)));
+
+            var projectLink = new LinkLabel
+            {
+                AutoSize = true,
+                Font = UiFonts.Create(9.5F, FontStyle.Regular),
+                LinkBehavior = LinkBehavior.HoverUnderline,
+                LinkColor = _theme.Accent,
+                ActiveLinkColor = _theme.AccentHover,
+                BackColor = _theme.CardBackground,
+                Margin = new Padding(0, 0, 0, 18),
+                Text = ProjectUrl
+            };
+            projectLink.LinkClicked += delegate
+            {
+                OpenProjectPage();
+            };
+            panel.Controls.Add(projectLink);
             panel.Controls.Add(CreateAboutLabel(
                 LocalizationService.Get("Settings.AboutScrcpy"),
+                false,
+                new Padding(0, 0, 0, 12)));
+            panel.Controls.Add(CreateAboutLabel(
+                LocalizationService.Get("Settings.AboutComponents"),
                 false,
                 new Padding(0, 0, 0, 12)));
             panel.Controls.Add(CreateAboutLabel(
@@ -562,6 +661,28 @@ namespace DexManager.Forms
                 Margin = margin,
                 Text = text
             };
+        }
+
+        private void OpenProjectPage()
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = ProjectUrl,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    string.Format(
+                        LocalizationService.Get("Settings.OpenProjectFailed"),
+                        ex.Message),
+                    LocalizationService.Get("Common.Error"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
 
         private void OpenThirdPartyNotices()
@@ -627,6 +748,7 @@ namespace DexManager.Forms
             _startMinimizedBox.Checked = _settings.Features.StartMinimizedToTray;
             _wakeUpModeBox.SelectedItem = _settings.Features.ScrcpyWakeUpMode;
             _autoHideBox.Checked = _settings.Features.AutoHideEnabled;
+            _autoHideSecondsBox.Enabled = _autoHideBox.Checked;
             _autoStartDexBox.Checked = _settings.Features.AutoStartDexOnDeviceConnected;
             _showConnectedDeviceInfoBox.Checked =
                 _settings.Features.ShowConnectedDeviceInfo;
@@ -651,6 +773,9 @@ namespace DexManager.Forms
             _processTimeoutBox.Value = MillisecondsToSeconds(
                 _settings.Timing.ProcessTimeoutMs,
                 _processTimeoutBox);
+            _virtualDisplayTimeoutBox.Value = MillisecondsToSeconds(
+                _settings.Timing.VirtualDisplayDetectionTimeoutMs,
+                _virtualDisplayTimeoutBox);
 
             _captureHotkeyBox.Text = _settings.KeyMappings.CaptureHotkey;
             _exitHotkeyBox.Text = _settings.KeyMappings.ExitHotkey;
@@ -852,6 +977,8 @@ namespace DexManager.Forms
             settings.Timing.CaptureWaitSeconds = (int)_captureWaitSecondsBox.Value;
             settings.Timing.ProcessTimeoutMs =
                 SecondsToMilliseconds(_processTimeoutBox);
+            settings.Timing.VirtualDisplayDetectionTimeoutMs =
+                SecondsToMilliseconds(_virtualDisplayTimeoutBox);
 
             settings.KeyMappings.CaptureHotkey = _captureHotkeyBox.Text.Trim();
             settings.KeyMappings.ExitHotkey = _exitHotkeyBox.Text.Trim();
@@ -1162,13 +1289,6 @@ namespace DexManager.Forms
             {
                 return LocalizationService.Get("Settings.AdbTypeLegacy");
             }
-            if (PathsEqual(
-                selectedPath,
-                ResolveConfiguredPath(_settings.Paths.ModernAdbPath)))
-            {
-                return LocalizationService.Get("Settings.AdbTypeModern");
-            }
-
             var scrcpyPath = ResolveConfiguredPath(
                 _settings.Paths.ScrcpyPath);
             var scrcpyAdbPath = string.IsNullOrWhiteSpace(scrcpyPath)
@@ -1340,7 +1460,6 @@ namespace DexManager.Forms
                 LocalizationService.Get("Settings.Connection"),
                 LocalizationService.Get("Settings.Paths"),
                 LocalizationService.Get("Settings.Keyboard"),
-                LocalizationService.Get("Settings.Timing"),
                 LocalizationService.Get("Settings.Diagnostics"),
                 LocalizationService.Get("Settings.About")
             };
@@ -1440,7 +1559,7 @@ namespace DexManager.Forms
             };
         }
 
-        private void AddCard(
+        private Control AddCard(
             Control page,
             string title,
             Control content)
@@ -1483,6 +1602,7 @@ namespace DexManager.Forms
             });
             card.Controls.Add(content);
             page.Controls.Add(card);
+            return card;
         }
 
         private static TableLayoutPanel CreateTable()

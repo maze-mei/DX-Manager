@@ -293,7 +293,7 @@ namespace DexManager.Forms
             var color = GetStatusColor(result.Status, theme);
             var row = new Panel
             {
-                Height = 54,
+                Height = 46,
                 Margin = Padding.Empty,
                 BackColor = theme.CardBackground,
                 Tag = result
@@ -301,10 +301,11 @@ namespace DexManager.Forms
             var status = new Label
             {
                 AutoEllipsis = true,
-                Location = new Point(0, 15),
-                Size = new Size(90, 24),
+                Location = new Point(0, 0),
+                Size = new Size(90, 45),
                 ForeColor = color,
                 BackColor = theme.CardBackground,
+                TextAlign = ContentAlignment.MiddleLeft,
                 Font = UiFonts.Create(
                     9.5F,
                     FontStyle.Bold),
@@ -313,19 +314,21 @@ namespace DexManager.Forms
             var name = new Label
             {
                 AutoEllipsis = true,
-                Location = new Point(90, 15),
-                Size = new Size(180, 24),
+                Location = new Point(90, 0),
+                Size = new Size(180, 45),
                 ForeColor = color,
                 BackColor = theme.CardBackground,
+                TextAlign = ContentAlignment.MiddleLeft,
                 Text = result.Name
             };
             var message = new Label
             {
                 AutoEllipsis = true,
-                Location = new Point(270, 15),
-                Size = new Size(450, 24),
+                Location = new Point(270, 0),
+                Size = new Size(450, 45),
                 ForeColor = color,
                 BackColor = theme.CardBackground,
+                TextAlign = ContentAlignment.MiddleLeft,
                 Text = result.Message
             };
             var divider = new Panel
@@ -345,7 +348,9 @@ namespace DexManager.Forms
         {
             var width = Math.Max(
                 _resultPanel.ClientSize.Width -
-                SystemInformation.VerticalScrollBarWidth,
+                (_resultPanel.VerticalScroll.Visible
+                    ? SystemInformation.VerticalScrollBarWidth
+                    : 0) - 1,
                 400);
             foreach (Control row in _resultPanel.Controls)
             {

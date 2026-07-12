@@ -22,8 +22,8 @@
 
 1. 수동 모드면 지정 ADB 사용
 2. Windows 10 미만이면 `tools\adb\legacy\adb.exe`
-3. Windows 10 이상이면 번들 modern ADB와 외부 Scrcpy 폴더의 ADB를
-   비교해 외부가 같거나 더 최신일 때 외부 ADB 사용
+3. Windows 10 이상이면 선택한 Scrcpy 폴더의 `adb.exe` 사용
+4. Scrcpy 폴더의 ADB가 없거나 실행되지 않으면 legacy ADB 사용
 
 프로세스 환경 변수 `ADB`도 같은 절대 경로로 설정한다.
 

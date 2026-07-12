@@ -13,7 +13,7 @@
 
 ### Phone
 
-- A Samsung Galaxy device that supports Samsung DeX
+- A Samsung Galaxy device with One UI 7.0 or later that supports Samsung DeX
 - Developer options enabled
 - USB debugging enabled
 - A data-capable USB cable
@@ -34,6 +34,11 @@ PC.
 5. Wait for the device-connected status.
 6. Select **Start DeX**.
 
+After detecting an authorized USB or wireless device, DX Manager waits for
+the configured device-start delay before sending session start commands. The
+default delay is one second and helps newly connected devices settle before
+scrcpy starts.
+
 Do not copy `DXManager.exe` by itself. Keep the complete distribution,
 including the `tools` directory, scrcpy DLLs, `scrcpy-server`, and license
 files.
@@ -49,6 +54,9 @@ Select **DeX** in the left navigation.
 - **Bitrate**: controls video quality and network usage
 - **Maximum FPS**: select 30 or 60fps
 
+A lower DPI value makes Android UI elements smaller, allowing more information
+to fit on the screen.
+
 Custom resolution values are stored separately from the presets. Selecting a
 preset does not overwrite the last custom width and height.
 
@@ -60,7 +68,16 @@ preset does not overwrite the last custom width and height.
 - **HID mouse (`-M`)**: sends the mouse as an Android input device
 - **Force-stop selected app**: stops the existing app process before launch
 - **Reuse existing virtual display**: reuses a compatible DeX display
-- **Keep active (`-w`)**: keeps the virtual display active during the session
+- **Keep active (`-w`)**: keeps the phone awake during the session
+
+When HID keyboard and HID mouse are disabled, scrcpy uses its non-HID input
+mode. Mouse input is sent like direct touchscreen input, and holding a mouse
+button acts like a long press.
+
+Non-HID keyboard behavior differs slightly from HID mode. English input is
+available, but the Korean/English key may not work. Use left Shift+Space to
+switch the input language. This shortcut may also depend on the Android
+keyboard and system configuration.
 
 When settings have changed, selecting the run button cleans up the existing
 DeX session when necessary and restarts it with the new values.
@@ -91,11 +108,19 @@ the same time.
 - Single-window title: `DX Manager - App name`
 - DeX window title: `DX Manager - DeX Station`
 
+For some games, disabling HID keyboard and HID mouse and using single-window
+mode may provide better input compatibility.
+
 ## 5. USB Connection
 
 USB is the default connection mode.
 
-1. Enable USB debugging on the phone.
+1. Enable USB debugging on the phone. If the option is unavailable or shown
+   in gray, check **Settings > Security and privacy > Auto Blocker** on the
+   Galaxy device. After disabling Auto Blocker, USB debugging can be enabled.
+   If its automatic re-enable option is active, Auto Blocker may turn on again
+   after about 30 minutes and disconnect USB debugging. Menu names and
+   locations may vary by One UI version.
 2. Connect the phone to the PC with a USB cable.
 3. Approve the RSA debugging prompt.
 4. Confirm the connected status in DX Manager.
@@ -156,6 +181,9 @@ Captures are saved to the `screenshot` folder by default. Enable
 **Send captures to phone** to also transfer them to the configured phone
 folder.
 
+The screenshot button on the DeX taskbar does not work on the virtual DeX
+display created by DX Manager. Use DX Manager's `F8` capture feature instead.
+
 ## 8. Keyboard Correction
 
 Keyboard correction is only applied while a scrcpy window is active.
@@ -181,9 +209,9 @@ When automatic hiding is enabled, DX Manager hides the running scrcpy windows
 and its own UI after the configured idle period, then remains in the system
 tray.
 
-Keyboard or mouse activity does not automatically restore the windows.
-Double-click the tray icon or select the open command from its menu to restore
-them.
+Keyboard or mouse activity does not automatically restore the windows. Click
+the scrcpy window on the Windows taskbar, double-click the tray icon, or select
+the open command from the tray menu to restore them.
 
 The window close button hides DX Manager to the tray. Use the exit shortcut
 or the tray menu to terminate it completely.
@@ -207,6 +235,11 @@ The log may include:
 
 Use **Settings > Diagnostics > Run environment check** to verify ADB, scrcpy,
 Windows, device connectivity, and important folders.
+
+Select **Show advanced options** on the Diagnostics page to access device
+monitoring intervals, virtual-display detection timeout, ADB wake-up settings,
+process timeout, and capture selection timeout. These recovery and timing
+values normally do not need to be changed.
 
 Before sharing a saved log, verify that it does not contain private network
 information or other sensitive data.
@@ -241,3 +274,12 @@ by, endorsed by, or distributed by Samsung Electronics or Genymobile.
 Samsung and Samsung DeX are trademarks of Samsung Electronics Co., Ltd.
 scrcpy and bundled dependencies remain under their respective licenses. See
 [`THIRD_PARTY_NOTICES.md`](../DexManager/licenses/THIRD_PARTY_NOTICES.md).
+
+## Developer and Project
+
+- Developer: [maze](https://github.com/maze-mei)
+- GitHub: [maze-mei/DX-Manager](https://github.com/maze-mei/DX-Manager)
+- License: [MIT License](../LICENSE)
+- Copyright © 2026 maze
+
+DX Manager is a personally and independently developed project.

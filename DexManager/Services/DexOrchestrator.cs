@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DexManager.Models;
@@ -21,6 +22,10 @@ namespace DexManager.Services
         private int _shutdownRequested;
         private Task _shutdownTask;
         private ManagedDisplaySession _currentSession;
+        private readonly Dictionary<string, VirtualDisplayLease>
+            _pendingDisplayCleanup =
+                new Dictionary<string, VirtualDisplayLease>(
+                    StringComparer.OrdinalIgnoreCase);
         private int _naturalExitCleanupScheduled;
 
         public DexOrchestrator(
@@ -85,6 +90,15 @@ namespace DexManager.Services
             });
         }
 
+        public Task<bool> RetryDeferredCleanupAsync(string serial)
+        {
+            return Task.Run(delegate
+            {
+                lock (_operationGate)
+                    return RetryDeferredCleanupCore(serial);
+            });
+        }
+
         public void RequestShutdown()
         {
             _scrcpyService.RequestShutdown();
@@ -134,7 +148,6 @@ namespace DexManager.Services
                 return;
             }
 
-            CleanupStaleSession();
             var serial = string.IsNullOrWhiteSpace(requestedSerial)
                 ? _adbService.TargetSerial
                 : requestedSerial;
@@ -145,6 +158,13 @@ namespace DexManager.Services
                     LocalizationService.Get(
                         "Error.Dex.NoAuthorizedDevice"));
             }
+            if (!RetryDeferredCleanupCore(serial))
+            {
+                throw new InvalidOperationException(
+                    LocalizationService.Get(
+                        "Error.Dex.DisplayResetFailed"));
+            }
+            CleanupStaleSession(serial);
 
             VirtualDisplayLease lease = null;
             var scrcpyStarted = false;
@@ -156,7 +176,7 @@ namespace DexManager.Services
                     lease = _virtualDisplayService.EnsureVirtualDisplay(
                         serial,
                         _settings.VirtualDisplay,
-                        _settings.Timing.ConnectedStartDelayMs,
+                        _settings.Timing.VirtualDisplayDetectionTimeoutMs,
                         delegate { return IsShutdownRequested; });
                     ThrowIfShutdownRequested();
                     _scrcpyService.Start(
@@ -239,10 +259,8 @@ namespace DexManager.Services
             if (session != null &&
                 _settings.Features.ResetVirtualDisplayOnStop)
             {
-                if (!_virtualDisplayService.Release(session.DisplayLease))
-                    throw new InvalidOperationException(
-                        LocalizationService.Get(
-                            "Error.Dex.DisplayResetFailed"));
+                if (!ReleaseDisplayLease(session.DisplayLease))
+                    DeferDisplayCleanup(session);
             }
             ClearSession(session);
             _logService.Info(LocalizationService.Get(
@@ -271,8 +289,9 @@ namespace DexManager.Services
                 var session = _currentSession;
                 _scrcpyService.Stop();
                 if (session != null &&
-                    !_virtualDisplayService.Release(session.DisplayLease))
+                    !ReleaseDisplayLease(session.DisplayLease))
                 {
+                    DeferDisplayCleanup(session);
                     throw new InvalidOperationException(
                         LocalizationService.Get(
                             "Error.Dex.DisplayResetFailed"));
@@ -322,11 +341,9 @@ namespace DexManager.Services
 
             if (session != null &&
                 _settings.Features.ResetVirtualDisplayOnStop &&
-                !_virtualDisplayService.Release(session.DisplayLease))
+                !ReleaseDisplayLease(session.DisplayLease))
             {
-                throw new InvalidOperationException(
-                    LocalizationService.Get(
-                        "Error.Dex.DisplayResetFailed"));
+                DeferDisplayCleanup(session);
             }
             ClearSession(session);
             _logService.Info(LocalizationService.Get(
@@ -366,8 +383,9 @@ namespace DexManager.Services
             var session = _currentSession;
             if (session == null) return;
             if (_settings.Features.ResetVirtualDisplayOnStop &&
-                !_virtualDisplayService.Release(session.DisplayLease))
+                !ReleaseDisplayLease(session.DisplayLease))
             {
+                DeferDisplayCleanup(session);
                 _logService.Warning(LocalizationService.Get(
                     "Log.Dex.NaturalExitCleanupDeferred"));
                 return;
@@ -378,15 +396,31 @@ namespace DexManager.Services
                 "Log.Dex.NaturalExitCleanupCompleted"));
         }
 
-        private void CleanupStaleSession()
+        private void CleanupStaleSession(string nextSerial)
         {
             var stale = _currentSession;
             if (stale == null) return;
-            if (!_virtualDisplayService.Release(stale.DisplayLease))
+            if (!_settings.Features.ResetVirtualDisplayOnStop)
+            {
+                ClearSession(stale);
+                return;
+            }
+            if (ReleaseDisplayLease(stale.DisplayLease))
+            {
+                ClearSession(stale);
+                return;
+            }
+
+            DeferDisplayCleanup(stale);
+            if (string.Equals(
+                stale.Serial,
+                nextSerial,
+                StringComparison.OrdinalIgnoreCase))
+            {
                 throw new InvalidOperationException(
                     LocalizationService.Get(
                         "Error.Dex.DisplayResetFailed"));
-            ClearSession(stale);
+            }
         }
 
         private void CleanupFailedStart(
@@ -418,10 +452,10 @@ namespace DexManager.Services
             try
             {
                 if (lease != null &&
-                    !_virtualDisplayService.Release(lease))
+                    !ReleaseDisplayLease(lease))
                 {
-                    if (_currentSession == null)
-                        TrackSession("DeX", lease.Serial, lease);
+                    DeferDisplayCleanup(lease);
+                    ClearSession(_currentSession);
                     return;
                 }
                 ClearSession(_currentSession);
@@ -433,6 +467,60 @@ namespace DexManager.Services
                         "Log.Dex.ShutdownCleanupFailed"),
                     cleanupException);
             }
+        }
+
+        private bool RetryDeferredCleanupCore(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return true;
+            VirtualDisplayLease lease;
+            if (!_pendingDisplayCleanup.TryGetValue(serial, out lease))
+                return true;
+            if (!_settings.Features.ResetVirtualDisplayOnStop)
+            {
+                _pendingDisplayCleanup.Remove(serial);
+                return true;
+            }
+            if (!ReleaseDisplayLease(lease))
+            {
+                _logService.Warning(LocalizationService.Format(
+                    "Log.Dex.DeferredCleanupStillPending",
+                    serial));
+                return false;
+            }
+
+            _pendingDisplayCleanup.Remove(serial);
+            _logService.Info(LocalizationService.Format(
+                "Log.Dex.DeferredCleanupCompleted",
+                serial));
+            return true;
+        }
+
+        private bool ReleaseDisplayLease(VirtualDisplayLease lease)
+        {
+            if (lease == null || !lease.OwnsOverlaySetting) return true;
+            if (string.IsNullOrWhiteSpace(lease.Serial) ||
+                !_adbService.IsAuthorizedDeviceConnected(lease.Serial))
+            {
+                return false;
+            }
+            return _virtualDisplayService.Release(lease);
+        }
+
+        private void DeferDisplayCleanup(ManagedDisplaySession session)
+        {
+            if (session == null) return;
+            DeferDisplayCleanup(session.DisplayLease);
+            ClearSession(session);
+        }
+
+        private void DeferDisplayCleanup(VirtualDisplayLease lease)
+        {
+            if (lease == null || string.IsNullOrWhiteSpace(lease.Serial))
+                return;
+            _pendingDisplayCleanup[lease.Serial] = lease;
+            _logService.Warning(LocalizationService.Format(
+                "Log.Dex.DeferredCleanupStored",
+                lease.Serial));
         }
 
         private static VirtualDisplayLease GetRetainedLease(

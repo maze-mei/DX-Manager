@@ -4,7 +4,6 @@
     "AdbPath": "",
     "AdbSelectionMode": 0,
     "Win7AdbPath": "tools\\adb\\legacy\\adb.exe",
-    "ModernAdbPath": "tools\\adb\\modern\\adb.exe",
     "ScrcpyPath": "tools\\scrcpy\\scrcpy.exe",
     "ScreenshotFolder": "screenshot",
     "DeviceScreenshotFolder": "/sdcard/DCIM/DeX Screenshots",

@@ -1178,6 +1178,20 @@ namespace DexManager.Forms
             base.OnMouseDown(e);
         }
 
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            Cursor = ShowStepButtons && e.X >= Width - 30
+                ? Cursors.Default
+                : Cursors.IBeam;
+            base.OnMouseMove(e);
+        }
+
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            Cursor = Cursors.IBeam;
+            base.OnMouseLeave(e);
+        }
+
         protected override void OnKeyDown(KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Up)

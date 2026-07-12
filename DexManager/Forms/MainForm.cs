@@ -98,7 +98,15 @@ namespace DexManager.Forms
         private Task _stayAwakeUpdateTask = Task.FromResult(0);
         private readonly HashSet<string> _managedSerialHistory =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _deferredPhoneWakeSerials =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _phoneScreenWakeInProgress =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly object _deviceConnectionSync = new object();
+        private readonly Dictionary<string, DateTime> _deviceConnectedAtUtc =
+            new Dictionary<string, DateTime>(
+                StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _disconnectedSerials =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private DeviceState _lastDeviceState;
         private string _connectionError;
@@ -531,6 +539,13 @@ namespace DexManager.Forms
             try
             {
                 var serial = _adbService.TargetSerial;
+                if (string.IsNullOrWhiteSpace(serial))
+                {
+                    throw new InvalidOperationException(
+                        LocalizationService.Get(
+                            "Error.Dex.NoAuthorizedDevice"));
+                }
+                if (!await WaitForDeviceStartDelayAsync(serial)) return;
                 if (_settings.Scrcpy.TurnScreenOff)
                     RememberManagedSerial(serial);
                 await _orchestrator.StartAsync(serial);
@@ -603,6 +618,13 @@ namespace DexManager.Forms
             {
                 var settings = GetSingleWindowSettings(slot);
                 var serial = _adbService.TargetSerial;
+                if (string.IsNullOrWhiteSpace(serial))
+                {
+                    throw new InvalidOperationException(
+                        LocalizationService.Get(
+                            "Error.Dex.NoAuthorizedDevice"));
+                }
+                if (!await WaitForDeviceStartDelayAsync(serial)) return;
                 if (settings.TurnScreenOff)
                     RememberManagedSerial(serial);
                 await Task.Run(delegate
@@ -692,9 +714,7 @@ namespace DexManager.Forms
                                 ? "Wi-Fi"
                                 : "USB"))
                     : LocalizationService.Get("Main.WaitingPhone");
-                if (e.Current.Status == AdbDeviceStatus.Device)
-                    QueueDeviceStayAwakeUpdate();
-                else
+                if (e.Current.Status != AdbDeviceStatus.Device)
                 {
                     System.Threading.Interlocked.Increment(
                         ref _screenOffReapplyGeneration);
@@ -707,13 +727,29 @@ namespace DexManager.Forms
         private void DeviceMonitor_DeviceConnected(object sender, DeviceStateChangedEventArgs e)
         {
             if (_exitInProgress) return;
-            if (IsDeviceSwitch(e)) return;
-            if (_settings.Features.AutoStartDexOnDeviceConnected)
-                RunOnUi(async delegate
+            RecordDeviceConnected(e.Current.Serial);
+            var deviceSwitch = IsDeviceSwitch(e);
+            RunOnUi(async delegate
+            {
+                if (_exitInProgress ||
+                    !await WaitForDeviceStartDelayAsync(e.Current.Serial))
                 {
-                    if (_exitInProgress) return;
+                    return;
+                }
+
+                MarkSerialReconnected(e.Current.Serial);
+                var cleanupReady = await _orchestrator
+                    .RetryDeferredCleanupAsync(
+                    e.Current.Serial);
+                await QueueDeviceStayAwakeUpdate();
+                UpdatePhoneScreenWakeSchedule();
+                if (cleanupReady &&
+                    !deviceSwitch &&
+                    _settings.Features.AutoStartDexOnDeviceConnected)
+                {
                     await StartDexAsync();
-                });
+                }
+            });
         }
 
         private void DeviceMonitor_DeviceDisconnected(object sender, DeviceStateChangedEventArgs e)
@@ -721,22 +757,36 @@ namespace DexManager.Forms
             if (_exitInProgress) return;
             if (IsDeviceSwitch(e))
             {
+                ForgetDeviceConnectionTimestamp(e.Previous.Serial);
                 RunOnUi(async delegate
                 {
+                    var previousStillConnected = await Task.Run(delegate
+                    {
+                        return _adbService.IsAuthorizedDeviceConnected(
+                            e.Previous.Serial);
+                    });
+                    if (previousStillConnected)
+                        MarkSerialAvailable(e.Previous.Serial);
+                    else
+                        MarkSerialDisconnected(e.Previous.Serial);
                     await HandleDeviceSwitchAsync(e);
                 });
                 return;
             }
-            System.Threading.Interlocked.Increment(
-                ref _screenOffReapplyGeneration);
-            if (_orchestrator.IsRunning)
-                RunOnUi(async delegate { await StopDexAsync(); });
-            if (IsAnySingleWindowRunning())
-                Task.Run(delegate
+            ForgetDeviceConnection(e.Previous.Serial);
+            RunOnUi(async delegate
+            {
+                MarkSerialDisconnected(e.Previous.Serial);
+                System.Threading.Interlocked.Increment(
+                    ref _screenOffReapplyGeneration);
+                if (_orchestrator.IsRunning)
+                    await StopDexAsync();
+                if (IsAnySingleWindowRunning())
                 {
                     try
                     {
-                        _singleWindowService.StopAll();
+                        await Task.Run(
+                            (Action)_singleWindowService.StopAll);
                     }
                     catch (Exception ex)
                     {
@@ -746,7 +796,8 @@ namespace DexManager.Forms
                                 "disconnected single-window sessions"),
                             ex);
                     }
-                });
+                }
+            });
         }
 
         private static bool IsDeviceSwitch(DeviceStateChangedEventArgs e)
@@ -760,6 +811,134 @@ namespace DexManager.Forms
                     e.Previous.Serial,
                     e.Current.Serial,
                     StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void RecordDeviceConnected(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return;
+            lock (_deviceConnectionSync)
+            {
+                _deviceConnectedAtUtc[serial] = DateTime.UtcNow;
+                _disconnectedSerials.Remove(serial);
+            }
+        }
+
+        private void ForgetDeviceConnection(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return;
+            lock (_deviceConnectionSync)
+            {
+                _deviceConnectedAtUtc.Remove(serial);
+                _disconnectedSerials.Add(serial);
+            }
+        }
+
+        private void ForgetDeviceConnectionTimestamp(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return;
+            lock (_deviceConnectionSync)
+                _deviceConnectedAtUtc.Remove(serial);
+        }
+
+        private async Task<bool> WaitForDeviceStartDelayAsync(
+            string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return false;
+            DateTime connectedAt;
+            lock (_deviceConnectionSync)
+            {
+                if (!_deviceConnectedAtUtc.TryGetValue(
+                    serial,
+                    out connectedAt))
+                {
+                    connectedAt = DateTime.UtcNow;
+                    _deviceConnectedAtUtc[serial] = connectedAt;
+                }
+            }
+
+            var readyAt = connectedAt.AddMilliseconds(
+                Math.Max(_settings.Timing.ConnectedStartDelayMs, 0));
+            var remaining = readyAt - DateTime.UtcNow;
+            if (remaining > TimeSpan.Zero)
+            {
+                _logService.Info(LocalizationService.Format(
+                    "Log.Main.DeviceStartDelay",
+                    serial,
+                    Math.Max(1, (int)Math.Ceiling(
+                        remaining.TotalMilliseconds))));
+                await Task.Delay(Math.Max(
+                    1,
+                    (int)Math.Ceiling(remaining.TotalMilliseconds)));
+            }
+
+            if (_exitInProgress || IsDisposed ||
+                IsSerialMarkedDisconnected(serial) ||
+                !string.Equals(
+                    _adbService.TargetSerial,
+                    serial,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+            var current = _deviceMonitor.CurrentState;
+            if (current != null &&
+                current.IsConnected &&
+                current.Status == AdbDeviceStatus.Device &&
+                string.Equals(
+                    current.Serial,
+                    serial,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            var authorized = await Task.Run(delegate
+            {
+                return _adbService.IsAuthorizedDeviceConnected(serial);
+            });
+            return authorized &&
+                !_exitInProgress &&
+                !IsSerialMarkedDisconnected(serial) &&
+                string.Equals(
+                    _adbService.TargetSerial,
+                    serial,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void MarkSerialDisconnected(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return;
+            lock (_deviceConnectionSync)
+                _disconnectedSerials.Add(serial);
+
+            var shouldWake = _managedSerialHistory.Remove(serial) ||
+                IsScreenOffRequestedForSerial(serial);
+            if (shouldWake) _deferredPhoneWakeSerials.Add(serial);
+            _phoneScreenWakeInProgress.Remove(serial);
+            UpdatePhoneScreenWakeSchedule();
+        }
+
+        private void MarkSerialReconnected(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return;
+            lock (_deviceConnectionSync)
+                _disconnectedSerials.Remove(serial);
+            if (_deferredPhoneWakeSerials.Remove(serial))
+                _managedSerialHistory.Add(serial);
+        }
+
+        private void MarkSerialAvailable(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return;
+            lock (_deviceConnectionSync)
+                _disconnectedSerials.Remove(serial);
+        }
+
+        private bool IsSerialMarkedDisconnected(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return true;
+            lock (_deviceConnectionSync)
+                return _disconnectedSerials.Contains(serial);
         }
 
         private async Task HandleDeviceSwitchAsync(
@@ -787,6 +966,8 @@ namespace DexManager.Forms
             }
 
             if (_exitInProgress || IsAnyScrcpyRunning()) return;
+            if (!await WaitForDeviceStartDelayAsync(e.Current.Serial))
+                return;
             var current = _deviceMonitor.CurrentState;
             if (!current.IsConnected ||
                 current.Status != AdbDeviceStatus.Device ||
@@ -818,7 +999,7 @@ namespace DexManager.Forms
                 ref _screenOffReapplyGeneration);
 
             foreach (var serial in GetScreenOffSerials())
-                _managedSerialHistory.Add(serial);
+                RememberManagedSerial(serial);
 
             UpdateRunningState();
             QueueDeviceStayAwakeUpdate();
@@ -877,8 +1058,13 @@ namespace DexManager.Forms
 
         private void RememberManagedSerial(string serial)
         {
-            if (!string.IsNullOrWhiteSpace(serial))
-                _managedSerialHistory.Add(serial);
+            if (string.IsNullOrWhiteSpace(serial)) return;
+            if (IsSerialMarkedDisconnected(serial))
+            {
+                _deferredPhoneWakeSerials.Add(serial);
+                return;
+            }
+            _managedSerialHistory.Add(serial);
         }
 
         private bool ShouldReapplyScreenOff(int generation)
@@ -971,6 +1157,7 @@ namespace DexManager.Forms
 
             foreach (var serial in requestedSerials)
             {
+                if (IsSerialMarkedDisconnected(serial)) continue;
                 if (_stayAwakeOriginalValues.ContainsKey(serial)) continue;
                 try
                 {
@@ -1018,7 +1205,10 @@ namespace DexManager.Forms
                 if (!requestedSerials.Contains(serial)) releases.Add(serial);
             }
             foreach (var serial in releases)
-                ReleaseStayAwakeOverride(serial);
+            {
+                if (!IsSerialMarkedDisconnected(serial))
+                    ReleaseStayAwakeOverride(serial);
+            }
         }
 
         private void ReleaseStayAwakeOverride(string serial)

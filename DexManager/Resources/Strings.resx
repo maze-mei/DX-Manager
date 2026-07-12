@@ -122,12 +122,16 @@
   <data name="Settings.Connection" xml:space="preserve"><value>Connection</value></data>
   <data name="Settings.Paths" xml:space="preserve"><value>Paths / ADB</value></data>
   <data name="Settings.Keyboard" xml:space="preserve"><value>Keyboard</value></data>
-  <data name="Settings.Timing" xml:space="preserve"><value>Timing / capture</value></data>
   <data name="Settings.Diagnostics" xml:space="preserve"><value>Diagnostics</value></data>
   <data name="Settings.About" xml:space="preserve"><value>About</value></data>
   <data name="Settings.AboutVersion" xml:space="preserve"><value>DX Manager v1.0.0</value></data>
   <data name="Settings.AboutSummary" xml:space="preserve"><value>An independently developed utility for managing Android device displays and input.</value></data>
+  <data name="Settings.AboutDeveloper" xml:space="preserve"><value>Developer: maze</value></data>
+  <data name="Settings.AboutCopyright" xml:space="preserve"><value>Copyright © 2026 maze</value></data>
+  <data name="Settings.AboutLicense" xml:space="preserve"><value>DX Manager source code is licensed under the MIT License.</value></data>
+  <data name="Settings.OpenProjectFailed" xml:space="preserve"><value>Could not open the project page: {0}</value></data>
   <data name="Settings.AboutScrcpy" xml:space="preserve"><value>This program includes and uses scrcpy 4.0, open-source software distributed by Genymobile and Romain Vimont under the Apache License 2.0.</value></data>
+  <data name="Settings.AboutComponents" xml:space="preserve"><value>Bundled FFmpeg libraries are distributed under LGPL v2.1 or later, SDL3 under the zlib license, and libusb under LGPL v2.1 or later. See the third-party notices for details.</value></data>
   <data name="Settings.AboutSamsung" xml:space="preserve"><value>This program works with Samsung DeX features on compatible Samsung devices, but is not produced, sponsored, endorsed, or distributed by Samsung Electronics. Samsung and Samsung DeX are trademarks of their respective owner.</value></data>
   <data name="Settings.OpenNotices" xml:space="preserve"><value>View third-party notices</value></data>
   <data name="Licenses.Title" xml:space="preserve"><value>DX Manager - Third-party licenses</value></data>
@@ -181,6 +185,7 @@
   <data name="Log.Adb.WakeUpDeviceFound" xml:space="preserve"><value>Detected the ADB device after scrcpy wake-up.</value></data>
   <data name="Log.Adb.WakeUpDeviceMissing" xml:space="preserve"><value>Could not detect an ADB device after scrcpy wake-up.</value></data>
   <data name="Log.Main.Shown" xml:space="preserve"><value>Displayed the main window.</value></data>
+  <data name="Log.Main.DeviceStartDelay" xml:space="preserve"><value>Waiting {1} ms before starting commands for device {0}.</value></data>
   <data name="Log.Main.CaptureHotkeyRegistrationFailed" xml:space="preserve"><value>Could not register the capture hotkey.</value></data>
   <data name="Log.Main.AutoStartApplyFailed" xml:space="preserve"><value>Could not apply the Windows startup setting.</value></data>
   <data name="Log.Main.LogFolderApplyFailed" xml:space="preserve"><value>Could not apply the log folder setting.</value></data>
@@ -251,7 +256,10 @@
   <data name="Log.Dex.ShutdownInProgress" xml:space="preserve"><value>Shutdown cleanup is already in progress.</value></data>
   <data name="Log.Dex.ShutdownCleanupCompleted" xml:space="preserve"><value>Completed ADB cleanup before program exit.</value></data>
   <data name="Log.Dex.NaturalExitCleanupCompleted" xml:space="preserve"><value>Released the DeX virtual display after scrcpy exited.</value></data>
-  <data name="Log.Dex.NaturalExitCleanupDeferred" xml:space="preserve"><value>Scrcpy exited, but the DeX virtual display could not be restored. The lease is retained for retry.</value></data>
+  <data name="Log.Dex.NaturalExitCleanupDeferred" xml:space="preserve"><value>Scrcpy exited, but the DeX virtual display could not be restored. Cleanup is deferred until this device reconnects.</value></data>
+  <data name="Log.Dex.DeferredCleanupStored" xml:space="preserve"><value>Deferred virtual display cleanup for disconnected device: {0}</value></data>
+  <data name="Log.Dex.DeferredCleanupStillPending" xml:space="preserve"><value>Virtual display cleanup is still pending for device: {0}</value></data>
+  <data name="Log.Dex.DeferredCleanupCompleted" xml:space="preserve"><value>Completed deferred virtual display cleanup for device: {0}</value></data>
   <data name="Log.Dex.ShutdownCleanupFailed" xml:space="preserve"><value>ADB cleanup before program exit failed.</value></data>
   <data name="Log.Dex.SessionStarted" xml:space="preserve"><value>Managed session started: {0}</value></data>
   <data name="Log.Dex.SessionEnded" xml:space="preserve"><value>Managed session ended: {0}</value></data>
@@ -278,14 +286,13 @@
   <data name="Log.Path.WindowsDetected" xml:space="preserve"><value>Detected Windows version: {0} ({1})</value></data>
   <data name="Path.Description.ManualAdb" xml:space="preserve"><value>manually specified ADB</value></data>
   <data name="Path.Description.LegacyAdb" xml:space="preserve"><value>Windows 7/8.1 legacy ADB</value></data>
-  <data name="Path.Description.BundledModernAdb" xml:space="preserve"><value>bundled modern ADB</value></data>
-  <data name="Path.Description.ExternalScrcpyAdb" xml:space="preserve"><value>ADB from the specified scrcpy folder</value></data>
+  <data name="Path.Description.ScrcpyAdb" xml:space="preserve"><value>ADB from the selected scrcpy folder</value></data>
   <data name="Path.Mode.Automatic" xml:space="preserve"><value>automatic selection</value></data>
   <data name="Path.Mode.Selected" xml:space="preserve"><value>selection</value></data>
   <data name="Log.Path.AdminRequired" xml:space="preserve"><value>Administrator privileges are required to register the ADB folder in the system PATH.</value></data>
   <data name="Error.Path.SystemEnvironmentUnavailable" xml:space="preserve"><value>Could not open the system environment variables.</value></data>
   <data name="Log.Path.SystemPathRegistered" xml:space="preserve"><value>Registered the ADB folder in the system PATH: {0}</value></data>
-  <data name="Error.Path.ModernAdbNotFound" xml:space="preserve"><value>No runnable modern adb.exe was found. Check the bundled ADB or the specified scrcpy path.</value></data>
+  <data name="Error.Path.AutomaticAdbNotFound" xml:space="preserve"><value>No runnable adb.exe was found beside scrcpy or in the legacy fallback folder.</value></data>
   <data name="Error.Path.AdbUnavailable" xml:space="preserve"><value>{0}: adb.exe could not be executed. Check the path.</value></data>
   <data name="Log.Path.CandidateMissing" xml:space="preserve"><value>{0} file is missing: {1}</value></data>
   <data name="Log.Path.CandidateExecutionFailed" xml:space="preserve"><value>{0} execution failed: {1}</value></data>
@@ -334,6 +341,7 @@
   <data name="Log.Display.RestoreFailed" xml:space="preserve"><value>Could not restore the previous overlay setting: {0}</value></data>
   <data name="Log.Display.Restored" xml:space="preserve"><value>Restored the previous overlay setting.</value></data>
   <data name="Log.Display.RestoreException" xml:space="preserve"><value>An error occurred while restoring the previous overlay setting.</value></data>
+  <data name="Log.Display.RestoreDeferred" xml:space="preserve"><value>Could not restore the previous overlay setting now; cleanup will be deferred: {0}</value></data>
   <data name="Log.Display.SettingApplied" xml:space="preserve"><value>Applied the virtual display setting: {0}</value></data>
   <data name="Log.Display.Reset" xml:space="preserve"><value>Reset the virtual display setting.</value></data>
   <data name="Log.Display.ExistingSelected" xml:space="preserve"><value>Selected existing virtual display ID: {0}</value></data>
@@ -379,7 +387,6 @@
   <data name="Settings.AdbMode" xml:space="preserve"><value>ADB mode</value></data>
   <data name="Settings.CurrentOs" xml:space="preserve"><value>Current OS</value></data>
   <data name="Settings.CurrentAdb" xml:space="preserve"><value>ADB in use</value></data>
-  <data name="Settings.AdbTypeModern" xml:space="preserve"><value>Modern ADB</value></data>
   <data name="Settings.AdbTypeLegacy" xml:space="preserve"><value>Legacy ADB</value></data>
   <data name="Settings.AdbTypeManual" xml:space="preserve"><value>Custom ADB</value></data>
   <data name="Settings.AdbTypeScrcpy" xml:space="preserve"><value>Scrcpy ADB</value></data>
@@ -419,11 +426,16 @@
   <data name="Settings.IgnoreShiftSpace" xml:space="preserve"><value>Ignore direct Shift+Space input</value></data>
   <data name="Settings.DeviceInterval" xml:space="preserve"><value>Device polling interval (sec)</value></data>
   <data name="Settings.DisconnectInterval" xml:space="preserve"><value>Disconnect polling interval (sec)</value></data>
-  <data name="Settings.StartDelay" xml:space="preserve"><value>Delay after connection (sec)</value></data>
+  <data name="Settings.StartDelay" xml:space="preserve"><value>Delay after device connection (sec)</value></data>
   <data name="Settings.WakeDelay" xml:space="preserve"><value>ADB wake-up delay (sec)</value></data>
   <data name="Settings.HideDelay" xml:space="preserve"><value>Auto-hide delay (seconds)</value></data>
   <data name="Settings.CaptureDelay" xml:space="preserve"><value>Capture selection timeout (seconds)</value></data>
   <data name="Settings.ProcessTimeout" xml:space="preserve"><value>Process timeout (sec)</value></data>
+  <data name="Settings.VirtualDisplayTimeout" xml:space="preserve"><value>Virtual display detection timeout (sec)</value></data>
+  <data name="Settings.AdvancedOptions" xml:space="preserve"><value>Advanced options</value></data>
+  <data name="Settings.AdvancedOptionsGuide" xml:space="preserve"><value>These timing and recovery options normally do not need to be changed.</value></data>
+  <data name="Settings.ShowAdvancedOptions" xml:space="preserve"><value>Show advanced options</value></data>
+  <data name="Settings.HideAdvancedOptions" xml:space="preserve"><value>Hide advanced options</value></data>
   <data name="Settings.PushCapture" xml:space="preserve"><value>Send captures to the phone</value></data>
   <data name="Settings.WirelessRequiresIp" xml:space="preserve"><value>Enter the phone IP address when using wireless mode.</value></data>
   <data name="Settings.ManualAdbPathRequired" xml:space="preserve"><value>Enter an ADB executable path when manual ADB selection is enabled.</value></data>
@@ -511,8 +523,6 @@
   <data name="Settings.GroupPairing" xml:space="preserve"><value>Wireless pairing</value></data>
   <data name="Settings.GroupHotkeys" xml:space="preserve"><value>Hotkeys</value></data>
   <data name="Settings.GroupInput" xml:space="preserve"><value>Input correction</value></data>
-  <data name="Settings.GroupMonitoring" xml:space="preserve"><value>Monitoring and process timing</value></data>
-  <data name="Settings.GroupCapture" xml:space="preserve"><value>Auto-hide and capture</value></data>
   <data name="Log.Scrcpy.FlexDisplayUnsupported" xml:space="preserve"><value>The selected scrcpy version does not support --flex-display; the option was skipped.</value></data>
   <data name="Log.KeyMapping.RightShiftCompatibility" xml:space="preserve"><value>Enabled the SDL3 right Shift compatibility mapping.</value></data>
 </root>

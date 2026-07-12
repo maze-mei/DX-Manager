@@ -180,9 +180,10 @@ authors.
 
 ## License
 
-The license for DX Manager's original source code must be selected before the
-repository is made public. Bundled third-party components remain under their
-own licenses. See
+DX Manager's original source code is licensed under the
+[MIT License](LICENSE). Copyright © 2026
+[maze](https://github.com/maze-mei). Bundled third-party components remain
+under their own licenses. See
 [THIRD_PARTY_NOTICES.md](DexManager/licenses/THIRD_PARTY_NOTICES.md).
 
 ---
@@ -350,7 +351,16 @@ scrcpy는 해당 개발자들이 유지·관리하는 독립적인 오픈소스 
 
 ## 라이선스
 
-DX Manager 자체 소스 코드의 라이선스는 저장소 공개 전에 결정해야 합니다.
-동봉된 제3자 구성요소에는 각각의 라이선스가 적용됩니다. 자세한 내용은
+DX Manager 자체 소스 코드는 [MIT License](LICENSE)로 배포됩니다.
+Copyright © 2026 [maze](https://github.com/maze-mei). 동봉된 제3자
+구성요소에는 각각의 라이선스가 적용됩니다. 자세한 내용은
 [THIRD_PARTY_NOTICES.md](DexManager/licenses/THIRD_PARTY_NOTICES.md)를
 참조하십시오.
+
+## 개발자와 프로젝트
+
+- 개발자: [maze](https://github.com/maze-mei)
+- GitHub: [maze-mei/DX-Manager](https://github.com/maze-mei/DX-Manager)
+- Copyright © 2026 maze
+
+DX Manager는 개인이 독립적으로 개발한 프로젝트입니다.

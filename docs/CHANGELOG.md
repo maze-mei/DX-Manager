@@ -4,6 +4,12 @@
 
 ## 2026-07 - 입력 및 사용성 안정화
 
+- DX Manager 자체 소스 라이선스를 MIT로 확정
+- Windows 10 이상에서는 선택한 Scrcpy 폴더의 ADB를 사용하고, 실행할 수
+  없을 때 레거시 ADB로 대체하도록 선택 구조를 단순화
+- 중복으로 동봉하던 별도 modern ADB 제거
+- 출력 리디렉션 없이 실행하는 Scrcpy Wake-up의 인코딩 설정 오류 수정
+- 연결이 끊긴 기기의 overlay 정리는 오류로 처리하지 않고 재연결까지 보류
 - Scrcpy 4.0/SDL3의 오른쪽 Shift 입력 회귀를 왼쪽 Shift 치환으로 우회
 - Scrcpy 버전을 감지해 3.3.4에는 `-w`, 4.0에는 `--keep-active` 적용
 - 미지원 버전에서는 단일창 `--flex-display`를 자동 제외

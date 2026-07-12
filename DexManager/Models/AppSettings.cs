@@ -8,7 +8,7 @@ namespace DexManager.Models
     [DataContract]
     public sealed class AppSettings
     {
-        public const int CurrentSchemaVersion = 17;
+        public const int CurrentSchemaVersion = 18;
 
         [DataMember(Order = 1)] public int SchemaVersion { get; set; }
         [DataMember(Order = 2)] public PathSettings Paths { get; set; }
@@ -38,7 +38,6 @@ namespace DexManager.Models
                     AdbPath = string.Empty,
                     AdbSelectionMode = AdbSelectionMode.Auto,
                     Win7AdbPath = @"tools\adb\legacy\adb.exe",
-                    ModernAdbPath = @"tools\adb\modern\adb.exe",
                     ScrcpyPath = @"tools\scrcpy\scrcpy.exe",
                     ScreenshotFolder = "screenshot",
                     DeviceScreenshotFolder = "/sdcard/DCIM/DeX Screenshots",
@@ -72,11 +71,12 @@ namespace DexManager.Models
                 {
                     DeviceMonitorIntervalMs = 1000,
                     DisconnectMonitorIntervalMs = 2000,
-                    ConnectedStartDelayMs = 3000,
+                    ConnectedStartDelayMs = 1000,
                     AdbWakeUpDelayMs = 3000,
                     AutoHideIdleSeconds = 30,
                     CaptureWaitSeconds = 5,
-                    ProcessTimeoutMs = 15000
+                    ProcessTimeoutMs = 15000,
+                    VirtualDisplayDetectionTimeoutMs = 3000
                 },
                 Features = new FeatureSettings
                 {
@@ -172,7 +172,6 @@ namespace DexManager.Models
             {
                 Paths.AdbSelectionMode = AdbSelectionMode.Auto;
                 Paths.Win7AdbPath = defaults.Paths.Win7AdbPath;
-                Paths.ModernAdbPath = defaults.Paths.ModernAdbPath;
                 SchemaVersion = defaults.SchemaVersion;
             }
             if (oldSchemaVersion < 7)
@@ -282,6 +281,17 @@ namespace DexManager.Models
                     defaults.Features.ShowConnectedDeviceInfo;
                 SchemaVersion = defaults.SchemaVersion;
             }
+            if (oldSchemaVersion < 18)
+            {
+                Timing.VirtualDisplayDetectionTimeoutMs = NormalizeRange(
+                    Timing.ConnectedStartDelayMs,
+                    1000,
+                    60000,
+                    defaults.Timing.VirtualDisplayDetectionTimeoutMs);
+                Timing.ConnectedStartDelayMs =
+                    defaults.Timing.ConnectedStartDelayMs;
+                SchemaVersion = defaults.SchemaVersion;
+            }
             if (VirtualDisplay.CustomWidth <= 0)
                 VirtualDisplay.CustomWidth = VirtualDisplay.Width;
             if (VirtualDisplay.CustomHeight <= 0)
@@ -301,8 +311,6 @@ namespace DexManager.Models
             }
             if (string.IsNullOrWhiteSpace(Paths.Win7AdbPath))
                 Paths.Win7AdbPath = defaults.Paths.Win7AdbPath;
-            if (string.IsNullOrWhiteSpace(Paths.ModernAdbPath))
-                Paths.ModernAdbPath = defaults.Paths.ModernAdbPath;
             if (string.IsNullOrWhiteSpace(Paths.ScrcpyPath))
                 Paths.ScrcpyPath = defaults.Paths.ScrcpyPath;
             if (string.IsNullOrWhiteSpace(Paths.ScreenshotFolder))
@@ -397,6 +405,11 @@ namespace DexManager.Models
                 1000,
                 120000,
                 defaults.Timing.ProcessTimeoutMs);
+            Timing.VirtualDisplayDetectionTimeoutMs = NormalizeRange(
+                Timing.VirtualDisplayDetectionTimeoutMs,
+                1000,
+                60000,
+                defaults.Timing.VirtualDisplayDetectionTimeoutMs);
         }
 
         private static int NormalizeRange(
@@ -539,7 +552,6 @@ namespace DexManager.Models
         [DataMember(Order = 1)] public string AdbPath { get; set; }
         [DataMember(Order = 2)] public AdbSelectionMode AdbSelectionMode { get; set; }
         [DataMember(Order = 3)] public string Win7AdbPath { get; set; }
-        [DataMember(Order = 4)] public string ModernAdbPath { get; set; }
         [DataMember(Order = 5)] public string ScrcpyPath { get; set; }
         [DataMember(Order = 6)] public string ScreenshotFolder { get; set; }
         [DataMember(Order = 7)] public string DeviceScreenshotFolder { get; set; }
@@ -646,6 +658,8 @@ namespace DexManager.Models
         [DataMember(Order = 5)] public int AutoHideIdleSeconds { get; set; }
         [DataMember(Order = 6)] public int CaptureWaitSeconds { get; set; }
         [DataMember(Order = 7)] public int ProcessTimeoutMs { get; set; }
+        [DataMember(Order = 8)]
+        public int VirtualDisplayDetectionTimeoutMs { get; set; }
     }
 
     [DataContract]

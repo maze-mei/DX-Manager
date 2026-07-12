@@ -6,7 +6,9 @@
 
 ## OS별 ADB
 
-Windows 10 미만은 legacy, Windows 10 이상은 modern ADB를 쓴다.
+Windows 10 미만은 legacy ADB를 사용한다. Windows 10 이상은 선택한 Scrcpy
+폴더의 ADB를 사용하고, 해당 ADB를 실행할 수 없을 때 legacy ADB로
+대체한다.
 PATH 의존은 배포 환경 차이를 만들기 때문에 금지한다.
 
 ## 키 보정은 scan code 우선

@@ -52,7 +52,9 @@ namespace DexManager.Services
                     timeoutMs);
             }
 
-            return SelectModernAdb(settings, timeoutMs);
+            return SelectScrcpyAdbWithLegacyFallback(
+                settings,
+                timeoutMs);
         }
 
         public bool IsAdbDirectoryInProcessPath(string adbPath)
@@ -116,27 +118,25 @@ namespace DexManager.Services
             return true;
         }
 
-        private string SelectModernAdb(AppSettings settings, int timeoutMs)
+        private string SelectScrcpyAdbWithLegacyFallback(
+            AppSettings settings,
+            int timeoutMs)
         {
-            var bundled = GetRunnableCandidate(
-                settings.Paths.ModernAdbPath,
-                LocalizationService.Get(
-                    "Path.Description.BundledModernAdb"),
-                timeoutMs);
-            var external = GetExternalScrcpyAdb(settings, timeoutMs);
-
-            AdbPathCandidate selected = bundled;
-            if (external != null &&
-                (bundled == null || IsVersionAtLeast(external.Version, bundled.Version)))
+            var selected = GetScrcpyAdb(settings, timeoutMs);
+            if (selected == null)
             {
-                selected = external;
+                selected = GetRunnableCandidate(
+                    settings.Paths.Win7AdbPath,
+                    LocalizationService.Get(
+                        "Path.Description.LegacyAdb"),
+                    timeoutMs);
             }
 
             if (selected == null)
             {
                 throw new FileNotFoundException(
                     LocalizationService.Get(
-                        "Error.Path.ModernAdbNotFound"));
+                        "Error.Path.AutomaticAdbNotFound"));
             }
 
             LogSelection(
@@ -168,23 +168,13 @@ namespace DexManager.Services
             return candidate.Path;
         }
 
-        private AdbPathCandidate GetExternalScrcpyAdb(
+        private AdbPathCandidate GetScrcpyAdb(
             AppSettings settings,
             int timeoutMs)
         {
             var configuredScrcpy = _settingsService.ResolvePath(
                 settings.Paths.ScrcpyPath);
-            var bundledScrcpy = _settingsService.ResolvePath(
-                @"tools\scrcpy\scrcpy.exe");
-
-            if (string.IsNullOrWhiteSpace(configuredScrcpy) ||
-                string.Equals(
-                    configuredScrcpy,
-                    bundledScrcpy,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return null;
-            }
+            if (string.IsNullOrWhiteSpace(configuredScrcpy)) return null;
 
             var adbPath = Path.Combine(
                 Path.GetDirectoryName(configuredScrcpy),
@@ -192,7 +182,7 @@ namespace DexManager.Services
             return GetRunnableCandidate(
                 adbPath,
                 LocalizationService.Get(
-                    "Path.Description.ExternalScrcpyAdb"),
+                    "Path.Description.ScrcpyAdb"),
                 timeoutMs,
                 true);
         }
@@ -263,13 +253,6 @@ namespace DexManager.Services
             _logService.Info(LocalizationService.Format(
                 "Log.Path.AdbVersion",
                 candidate.VersionText));
-        }
-
-        private static bool IsVersionAtLeast(Version left, Version right)
-        {
-            if (left == null) return false;
-            if (right == null) return true;
-            return left.CompareTo(right) >= 0;
         }
 
         private static Version GetVersionNumber(string output)

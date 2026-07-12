@@ -215,6 +215,13 @@ namespace DexManager.Services
                 lease.OwnsOverlaySetting = false;
                 return true;
             }
+            catch (InvalidOperationException ex)
+            {
+                _logService.Warning(LocalizationService.Format(
+                    "Log.Display.RestoreDeferred",
+                    ex.Message));
+                return false;
+            }
             catch (Exception ex)
             {
                 _logService.Error(

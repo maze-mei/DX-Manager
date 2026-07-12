@@ -42,8 +42,9 @@ DX Manager never relies on an `adb.exe` found through the system `PATH`.
 
 1. A manually configured ADB is used when manual mode is selected.
 2. Windows 7 and 8.1 use the bundled legacy-compatible ADB.
-3. Windows 10 and later use the bundled modern ADB, or a compatible newer ADB
-   beside a user-selected scrcpy executable.
+3. Windows 10 and later use the ADB beside the selected scrcpy executable.
+4. If that ADB is missing or cannot run, the bundled legacy ADB is used as a
+   fallback.
 
 All ADB commands are executed with the selected absolute path.
 

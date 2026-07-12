@@ -727,21 +727,27 @@ namespace DexManager.Services
 
         private Process CreateProcess(string arguments, bool redirectOutput)
         {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = _scrcpyPath,
+                Arguments = arguments,
+                WorkingDirectory = Path.GetDirectoryName(_scrcpyPath),
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Minimized,
+                RedirectStandardOutput = redirectOutput,
+                RedirectStandardError = redirectOutput
+            };
+            if (redirectOutput)
+            {
+                startInfo.StandardOutputEncoding =
+                    _runtimeInfo.OutputEncoding;
+                startInfo.StandardErrorEncoding =
+                    _runtimeInfo.OutputEncoding;
+            }
             return new Process
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = _scrcpyPath,
-                    Arguments = arguments,
-                    WorkingDirectory = Path.GetDirectoryName(_scrcpyPath),
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    WindowStyle = ProcessWindowStyle.Minimized,
-                    RedirectStandardOutput = redirectOutput,
-                    RedirectStandardError = redirectOutput,
-                    StandardOutputEncoding = _runtimeInfo.OutputEncoding,
-                    StandardErrorEncoding = _runtimeInfo.OutputEncoding
-                }
+                StartInfo = startInfo
             };
         }
 
