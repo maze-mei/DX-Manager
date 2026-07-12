@@ -11,7 +11,7 @@ namespace DexManager.Services
         private readonly ScrcpyService _scrcpyService;
         private readonly SingleWindowService _singleWindowService;
         private readonly LogService _logService;
-        private readonly int _idleSeconds;
+        private int _idleSeconds;
         private readonly Timer _timer;
         private bool _minimizedByService;
         private bool _hideRequested;
@@ -34,6 +34,7 @@ namespace DexManager.Services
 
         public void Start()
         {
+            if (_timer.Enabled) return;
             _timer.Start();
             _logService.Info(LocalizationService.Format(
                 "Log.AutoHide.Started",
@@ -45,6 +46,12 @@ namespace DexManager.Services
             _timer.Stop();
             _minimizedByService = false;
             _hideRequested = false;
+        }
+
+        public void ApplySettings(bool enabled, int idleSeconds)
+        {
+            _idleSeconds = Math.Max(idleSeconds, 1);
+            if (enabled) Start(); else Stop();
         }
 
         public void ResetIdleHideState()

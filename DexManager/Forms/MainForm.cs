@@ -12,6 +12,7 @@ namespace DexManager.Forms
     public sealed class MainForm : Form
     {
         private const int MaxRememberedApps = 20;
+        private const string MissingStayAwakeValue = "<missing>";
 
         private static string NoStartAppText
         {
@@ -26,10 +27,12 @@ namespace DexManager.Forms
         private readonly ScrcpyService _scrcpyService;
         private readonly SingleWindowService _singleWindowService;
         private readonly ScreenOffService _screenOffService;
+        private readonly ScrcpyLaunchCoordinator _launchCoordinator;
         private readonly DeviceMonitorService _deviceMonitor;
         private readonly DexOrchestrator _orchestrator;
         private readonly CaptureCoordinator _captureCoordinator;
         private readonly AutoHideService _autoHideService;
+        private readonly AutoStartService _autoStartService;
         private readonly EnvironmentCheckService _environmentCheckService;
         private readonly KeyMappingService _keyMappingService;
         private readonly bool _isAutoRun;
@@ -85,16 +88,24 @@ namespace DexManager.Forms
         private ThemedButton _singleModeButton3;
         private int _selectedMode;
         private int _phoneScreenWakeSuppression;
-        private int _lastManagedScrcpyCount;
         private int _screenOffReapplyGeneration;
         private bool _loadingRunSettings;
         private bool _resolutionSelectionInitialized;
         private bool _resolutionWasCustom;
-        private bool? _lastAppliedStayAwakeState;
+        private readonly object _stayAwakeTaskLock = new object();
+        private readonly Dictionary<string, string> _stayAwakeOriginalValues =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private Task _stayAwakeUpdateTask = Task.FromResult(0);
+        private readonly HashSet<string> _managedSerialHistory =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _phoneScreenWakeInProgress =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private DeviceState _lastDeviceState;
         private string _connectionError;
         private bool _allowExit;
         private bool _exitInProgress;
+        private Task _exitCleanupTask;
+        private bool _forcedCloseContinuationScheduled;
         private readonly bool[] _modeSettingsDirty = new bool[4];
         private LogForm _logForm;
         private SettingsForm _settingsForm;
@@ -109,10 +120,12 @@ namespace DexManager.Forms
             ScrcpyService scrcpyService,
             SingleWindowService singleWindowService,
             ScreenOffService screenOffService,
+            ScrcpyLaunchCoordinator launchCoordinator,
             DeviceMonitorService deviceMonitor,
             DexOrchestrator orchestrator,
             CaptureCoordinator captureCoordinator,
             AutoHideService autoHideService,
+            AutoStartService autoStartService,
             EnvironmentCheckService environmentCheckService,
             KeyMappingService keyMappingService,
             bool isAutoRun)
@@ -125,10 +138,12 @@ namespace DexManager.Forms
             _scrcpyService = scrcpyService;
             _singleWindowService = singleWindowService;
             _screenOffService = screenOffService;
+            _launchCoordinator = launchCoordinator;
             _deviceMonitor = deviceMonitor;
             _orchestrator = orchestrator;
             _captureCoordinator = captureCoordinator;
             _autoHideService = autoHideService;
+            _autoStartService = autoStartService;
             _environmentCheckService = environmentCheckService;
             _keyMappingService = keyMappingService;
             _isAutoRun = isAutoRun;
@@ -405,6 +420,7 @@ namespace DexManager.Forms
             }
 
             await InitializeAdbAndMonitorAsync();
+            if (_exitInProgress || IsDisposed) return;
             if (_isAutoRun && _settings.Features.StartMinimizedToTray)
                 BeginInvoke((Action)HideToTray);
         }
@@ -465,7 +481,11 @@ namespace DexManager.Forms
                     LocalizationService.Get("Status.Error"),
                     _connectionError);
             }
-            finally { _deviceMonitor.Start(); }
+            finally
+            {
+                if (!_exitInProgress && !IsDisposed)
+                    _deviceMonitor.Start();
+            }
         }
 
         private async void StartButton_Click(object sender, EventArgs e)
@@ -486,6 +506,7 @@ namespace DexManager.Forms
 
         private async Task StartDexAsync()
         {
+            if (_exitInProgress || _orchestrator.IsShutdownRequested) return;
             try
             {
                 if (_selectedMode == 0) ApplyRunSettings(false);
@@ -509,7 +530,11 @@ namespace DexManager.Forms
                 LocalizationService.Get("Main.DexPreparing"));
             try
             {
-                await _orchestrator.StartAsync();
+                var serial = _adbService.TargetSerial;
+                if (_settings.Scrcpy.TurnScreenOff)
+                    RememberManagedSerial(serial);
+                await _orchestrator.StartAsync(serial);
+                if (_exitInProgress || !_orchestrator.IsRunning) return;
                 RememberStartedApp(
                     _settings.Scrcpy.StartAppPackage,
                     _settings.Scrcpy.StartAppName);
@@ -517,11 +542,18 @@ namespace DexManager.Forms
             }
             catch (Exception ex)
             {
-                ShowError(
-                    LocalizationService.Get("Error.StartDex"),
-                    ex);
+                if (!_exitInProgress)
+                {
+                    ShowError(
+                        LocalizationService.Get("Error.StartDex"),
+                        ex);
+                }
             }
-            finally { UpdateRunningState(); }
+            finally
+            {
+                UpdateRunningState();
+                UpdatePhoneScreenWakeSchedule();
+            }
         }
 
         private async Task StopDexAsync()
@@ -546,6 +578,7 @@ namespace DexManager.Forms
 
         private async Task StartSingleWindowAsync(int slot)
         {
+            if (_exitInProgress) return;
             try { ApplyRunSettings(false); }
             catch (Exception ex)
             {
@@ -569,10 +602,15 @@ namespace DexManager.Forms
             try
             {
                 var settings = GetSingleWindowSettings(slot);
+                var serial = _adbService.TargetSerial;
+                if (settings.TurnScreenOff)
+                    RememberManagedSerial(serial);
                 await Task.Run(delegate
                 {
-                    _singleWindowService.Start(slot, settings);
+                    _singleWindowService.Start(slot, settings, serial);
                 });
+                if (_exitInProgress ||
+                    !_singleWindowService.IsRunning(slot)) return;
                 RememberStartedApp(
                     settings.StartAppPackage,
                     settings.StartAppName);
@@ -580,15 +618,19 @@ namespace DexManager.Forms
             }
             catch (Exception ex)
             {
-                ShowError(
-                    LocalizationService.Format(
-                        "Error.StartSingle",
-                        slot),
-                    ex);
+                if (!_exitInProgress)
+                {
+                    ShowError(
+                        LocalizationService.Format(
+                            "Error.StartSingle",
+                            slot),
+                        ex);
+                }
             }
             finally
             {
                 UpdateRunningState();
+                UpdatePhoneScreenWakeSchedule();
             }
         }
 
@@ -629,6 +671,7 @@ namespace DexManager.Forms
         {
             RunOnUi(delegate
             {
+                if (_exitInProgress || IsDisposed) return;
                 _lastDeviceState = e.Current;
                 _adbStatusValue.Text =
                     e.Current.Status == AdbDeviceStatus.Unknown
@@ -650,10 +693,9 @@ namespace DexManager.Forms
                                 : "USB"))
                     : LocalizationService.Get("Main.WaitingPhone");
                 if (e.Current.Status == AdbDeviceStatus.Device)
-                    UpdateDeviceStayAwakeState();
+                    QueueDeviceStayAwakeUpdate();
                 else
                 {
-                    _lastAppliedStayAwakeState = null;
                     System.Threading.Interlocked.Increment(
                         ref _screenOffReapplyGeneration);
                 }
@@ -664,18 +706,100 @@ namespace DexManager.Forms
 
         private void DeviceMonitor_DeviceConnected(object sender, DeviceStateChangedEventArgs e)
         {
+            if (_exitInProgress) return;
+            if (IsDeviceSwitch(e)) return;
             if (_settings.Features.AutoStartDexOnDeviceConnected)
-                RunOnUi(async delegate { await StartDexAsync(); });
+                RunOnUi(async delegate
+                {
+                    if (_exitInProgress) return;
+                    await StartDexAsync();
+                });
         }
 
         private void DeviceMonitor_DeviceDisconnected(object sender, DeviceStateChangedEventArgs e)
         {
+            if (_exitInProgress) return;
+            if (IsDeviceSwitch(e))
+            {
+                RunOnUi(async delegate
+                {
+                    await HandleDeviceSwitchAsync(e);
+                });
+                return;
+            }
             System.Threading.Interlocked.Increment(
                 ref _screenOffReapplyGeneration);
             if (_orchestrator.IsRunning)
                 RunOnUi(async delegate { await StopDexAsync(); });
             if (IsAnySingleWindowRunning())
-                Task.Run(delegate { _singleWindowService.StopAll(); });
+                Task.Run(delegate
+                {
+                    try
+                    {
+                        _singleWindowService.StopAll();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logService.Error(
+                            LocalizationService.Format(
+                                "Log.Main.CleanupFailed",
+                                "disconnected single-window sessions"),
+                            ex);
+                    }
+                });
+        }
+
+        private static bool IsDeviceSwitch(DeviceStateChangedEventArgs e)
+        {
+            return e != null &&
+                e.Previous != null &&
+                e.Current != null &&
+                e.Previous.IsConnected &&
+                e.Current.IsConnected &&
+                !string.Equals(
+                    e.Previous.Serial,
+                    e.Current.Serial,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task HandleDeviceSwitchAsync(
+            DeviceStateChangedEventArgs e)
+        {
+            if (_exitInProgress) return;
+            if (_orchestrator.IsRunning)
+                await StopDexAsync();
+
+            if (IsAnySingleWindowRunning())
+            {
+                try
+                {
+                    await Task.Run(
+                        (Action)_singleWindowService.StopAll);
+                }
+                catch (Exception ex)
+                {
+                    _logService.Error(
+                        LocalizationService.Get(
+                            "Log.Main.DeviceSwitchCleanupFailed"),
+                        ex);
+                    return;
+                }
+            }
+
+            if (_exitInProgress || IsAnyScrcpyRunning()) return;
+            var current = _deviceMonitor.CurrentState;
+            if (!current.IsConnected ||
+                current.Status != AdbDeviceStatus.Device ||
+                !string.Equals(
+                    current.Serial,
+                    e.Current.Serial,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (_settings.Features.AutoStartDexOnDeviceConnected)
+                await StartDexAsync();
         }
 
         private void ScrcpyService_RunningChanged(object sender, EventArgs e)
@@ -690,17 +814,16 @@ namespace DexManager.Forms
 
         private void HandleScrcpyRunningChanged()
         {
-            var previousCount = _lastManagedScrcpyCount;
-            var currentCount = GetManagedScrcpyCount();
-            _lastManagedScrcpyCount = currentCount;
             var generation = System.Threading.Interlocked.Increment(
                 ref _screenOffReapplyGeneration);
 
+            foreach (var serial in GetScreenOffSerials())
+                _managedSerialHistory.Add(serial);
+
             UpdateRunningState();
-            UpdateDeviceStayAwakeState();
+            QueueDeviceStayAwakeUpdate();
             UpdatePhoneScreenWakeSchedule();
-            if (currentCount < previousCount &&
-                ShouldReapplyScreenOff(generation))
+            if (ShouldReapplyScreenOff(generation))
             {
                 ScheduleScreenOffReapply(generation);
             }
@@ -714,8 +837,48 @@ namespace DexManager.Forms
 
         private bool IsScreenOffRequested()
         {
-            return _scrcpyService.IsScreenOffRequested ||
-                _singleWindowService.IsScreenOffRequested;
+            return GetScreenOffSerials().Count > 0;
+        }
+
+        private IList<string> GetManagedSerials()
+        {
+            var serials = new List<string>();
+            var dexSession = _scrcpyService.GetSessionSnapshot();
+            if (dexSession.IsRunning)
+                AddSerial(serials, dexSession.Serial);
+            foreach (var serial in _singleWindowService.GetRunningSerials())
+                AddSerial(serials, serial);
+            return serials;
+        }
+
+        private IList<string> GetScreenOffSerials()
+        {
+            var serials = new List<string>();
+            var dexSession = _scrcpyService.GetSessionSnapshot();
+            if (dexSession.ScreenOffRequested)
+                AddSerial(serials, dexSession.Serial);
+            foreach (var serial in _singleWindowService.GetScreenOffSerials())
+                AddSerial(serials, serial);
+            return serials;
+        }
+
+        private static void AddSerial(IList<string> serials, string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return;
+            foreach (var existing in serials)
+            {
+                if (string.Equals(
+                    existing,
+                    serial,
+                    StringComparison.OrdinalIgnoreCase)) return;
+            }
+            serials.Add(serial);
+        }
+
+        private void RememberManagedSerial(string serial)
+        {
+            if (!string.IsNullOrWhiteSpace(serial))
+                _managedSerialHistory.Add(serial);
         }
 
         private bool ShouldReapplyScreenOff(int generation)
@@ -729,8 +892,7 @@ namespace DexManager.Forms
                     0,
                     0) == 0 &&
                 GetManagedScrcpyCount() > 0 &&
-                IsScreenOffRequested() &&
-                _adbService.IsAuthorizedDeviceConnected();
+                IsScreenOffRequested();
         }
 
         private void ScheduleScreenOffReapply(int generation)
@@ -742,11 +904,18 @@ namespace DexManager.Forms
 
                 try
                 {
-                    _screenOffService.Reapply(
-                        delegate
-                        {
-                            return ShouldReapplyScreenOff(generation);
-                        });
+                    foreach (var serial in GetScreenOffSerials())
+                    {
+                        var targetSerial = serial;
+                        _screenOffService.Reapply(
+                            targetSerial,
+                            delegate
+                            {
+                                return ShouldReapplyScreenOff(generation) &&
+                                    IsScreenOffRequestedForSerial(
+                                        targetSerial);
+                            });
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -758,28 +927,148 @@ namespace DexManager.Forms
             });
         }
 
-        private void UpdateDeviceStayAwakeState()
+        private bool IsScreenOffRequestedForSerial(string serial)
         {
-            if (_lastDeviceState == null ||
-                _lastDeviceState.Status != AdbDeviceStatus.Device)
+            foreach (var candidate in GetScreenOffSerials())
             {
-                _lastAppliedStayAwakeState = null;
-                return;
+                if (string.Equals(
+                    candidate,
+                    serial,
+                    StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
+        }
+
+        private Task QueueDeviceStayAwakeUpdate()
+        {
+            lock (_stayAwakeTaskLock)
+            {
+                _stayAwakeUpdateTask = _stayAwakeUpdateTask.ContinueWith(
+                    delegate
+                    {
+                        UpdateDeviceStayAwakeStateCore();
+                    },
+                    System.Threading.CancellationToken.None,
+                    TaskContinuationOptions.None,
+                    TaskScheduler.Default);
+                return _stayAwakeUpdateTask;
+            }
+        }
+
+        private void UpdateDeviceStayAwakeStateCore()
+        {
+            var requestedSerials = new HashSet<string>(
+                StringComparer.OrdinalIgnoreCase);
+            var dexSession = _scrcpyService.GetSessionSnapshot();
+            if (dexSession.StayAwakeRequested)
+                requestedSerials.Add(dexSession.Serial);
+            foreach (var serial in
+                _singleWindowService.GetStayAwakeSerials())
+            {
+                requestedSerials.Add(serial);
+            }
+            requestedSerials.RemoveWhere(string.IsNullOrWhiteSpace);
+
+            foreach (var serial in requestedSerials)
+            {
+                if (_stayAwakeOriginalValues.ContainsKey(serial)) continue;
+                try
+                {
+                    var originalResult = _adbService.ShellForSerial(
+                        serial,
+                        "settings get global stay_on_while_plugged_in",
+                        false);
+                    if (!originalResult.IsSuccess) continue;
+
+                    var original = NormalizeStayAwakeValue(
+                        originalResult.StandardOutput);
+                    if (original == null) continue;
+                    if (string.Equals(
+                        original,
+                        "7",
+                        StringComparison.Ordinal)) continue;
+                    var result = _adbService.ShellForSerial(
+                        serial,
+                        "settings put global stay_on_while_plugged_in 7",
+                        true);
+                    if (!result.IsSuccess)
+                    {
+                        _logService.Warning(LocalizationService.Format(
+                            "Log.Main.StayAwakeCommandFailed",
+                            result.StandardError));
+                        continue;
+                    }
+
+                    _stayAwakeOriginalValues[serial] = original;
+                    _logService.Info(LocalizationService.Get(
+                        "Log.Main.StayAwakeEnabled"));
+                }
+                catch (Exception ex)
+                {
+                    _logService.Error(
+                        LocalizationService.Get(
+                            "Log.Main.StayAwakeChangeFailed"),
+                        ex);
+                }
             }
 
-            var requested = _scrcpyService.IsStayAwakeRequested ||
-                _singleWindowService.IsStayAwakeRequested;
-            if (_lastAppliedStayAwakeState.HasValue &&
-                _lastAppliedStayAwakeState.Value == requested)
+            var releases = new List<string>();
+            foreach (var serial in _stayAwakeOriginalValues.Keys)
             {
+                if (!requestedSerials.Contains(serial)) releases.Add(serial);
+            }
+            foreach (var serial in releases)
+                ReleaseStayAwakeOverride(serial);
+        }
+
+        private void ReleaseStayAwakeOverride(string serial)
+        {
+            string original;
+            if (!_stayAwakeOriginalValues.TryGetValue(serial, out original))
+                return;
+
+            if (!_settings.Features.DisableStayAwakeOnStop)
+            {
+                _stayAwakeOriginalValues.Remove(serial);
                 return;
             }
 
             try
             {
-                var result = _adbService.Shell(
-                    "settings put global stay_on_while_plugged_in " +
-                    (requested ? "7" : "0"));
+                var currentResult = _adbService.ShellForSerial(
+                    serial,
+                    "settings get global stay_on_while_plugged_in",
+                    false);
+                if (!currentResult.IsSuccess)
+                {
+                    _logService.Warning(LocalizationService.Format(
+                        "Log.Main.StayAwakeCommandFailed",
+                        currentResult.StandardError));
+                    return;
+                }
+
+                var current = NormalizeStayAwakeValue(
+                    currentResult.StandardOutput);
+                if (!string.Equals(
+                    current,
+                    "7",
+                    StringComparison.Ordinal))
+                {
+                    _stayAwakeOriginalValues.Remove(serial);
+                    _logService.Warning(LocalizationService.Format(
+                        "Log.Main.StayAwakeRestoreSkipped",
+                        current ?? string.Empty));
+                    return;
+                }
+
+                var command = original == MissingStayAwakeValue
+                    ? "settings delete global stay_on_while_plugged_in"
+                    : "settings put global stay_on_while_plugged_in " +
+                        original;
+                var result = _adbService.ShellForSerial(
+                    serial,
+                    command,
+                    true);
                 if (!result.IsSuccess)
                 {
                     _logService.Warning(LocalizationService.Format(
@@ -788,13 +1077,9 @@ namespace DexManager.Forms
                     return;
                 }
 
-                _lastAppliedStayAwakeState = requested;
-                _logService.Info(
-                    requested
-                        ? LocalizationService.Get(
-                            "Log.Main.StayAwakeEnabled")
-                        : LocalizationService.Get(
-                            "Log.Main.StayAwakeDisabled"));
+                _stayAwakeOriginalValues.Remove(serial);
+                _logService.Info(LocalizationService.Get(
+                    "Log.Main.StayAwakeDisabled"));
             }
             catch (Exception ex)
             {
@@ -805,10 +1090,28 @@ namespace DexManager.Forms
             }
         }
 
+        private static string NormalizeStayAwakeValue(string value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(normalized) ||
+                string.Equals(
+                    normalized,
+                    "null",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return MissingStayAwakeValue;
+            }
+
+            int parsed;
+            return int.TryParse(normalized, out parsed)
+                ? parsed.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : null;
+        }
+
         private void UpdatePhoneScreenWakeSchedule()
         {
             _phoneScreenWakeTimer.Stop();
-            if (IsAnyScrcpyRunning() ||
+            if (_managedSerialHistory.Count == 0 ||
                 System.Threading.Interlocked.CompareExchange(
                     ref _phoneScreenWakeSuppression,
                     0,
@@ -823,32 +1126,87 @@ namespace DexManager.Forms
         private void PhoneScreenWakeTimer_Tick(object sender, EventArgs e)
         {
             _phoneScreenWakeTimer.Stop();
-            if (IsAnyScrcpyRunning() ||
-                System.Threading.Interlocked.CompareExchange(
+            if (System.Threading.Interlocked.CompareExchange(
                     ref _phoneScreenWakeSuppression,
                     0,
-                    0) > 0 ||
-                !_adbService.IsAuthorizedDeviceConnected())
+                    0) > 0)
             {
                 return;
             }
 
-            Task.Run((Action)WakePhoneScreen);
+            var serials = new List<string>();
+            foreach (var serial in _managedSerialHistory)
+            {
+                if (!IsScreenOffRequestedForSerial(serial) &&
+                    !_phoneScreenWakeInProgress.Contains(serial))
+                {
+                    AddSerial(serials, serial);
+                    _phoneScreenWakeInProgress.Add(serial);
+                }
+            }
+            if (serials.Count > 0)
+            {
+                Task.Run(delegate
+                {
+                    IList<string> woken;
+                    try
+                    {
+                        woken = WakePhoneScreens(serials);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logService.Error(
+                            LocalizationService.Get(
+                                "Log.Main.PhoneScreenWakeFailed"),
+                            ex);
+                        woken = new List<string>();
+                    }
+                    RunOnUi(delegate
+                    {
+                        foreach (var serial in serials)
+                            _phoneScreenWakeInProgress.Remove(serial);
+                        foreach (var serial in woken)
+                            _managedSerialHistory.Remove(serial);
+                        _phoneScreenWakeTimer.Interval =
+                            woken.Count == serials.Count ? 600 : 3000;
+                        UpdatePhoneScreenWakeSchedule();
+                    });
+                });
+            }
         }
 
-        private void WakePhoneScreen()
+        private IList<string> WakePhoneScreens(IList<string> serials)
         {
+            var woken = new List<string>();
+            _launchCoordinator.RunExclusive(delegate
+            {
+                foreach (var serial in serials)
+                {
+                    if (!IsScreenOffRequestedForSerial(serial) &&
+                        WakePhoneScreen(serial))
+                    {
+                        woken.Add(serial);
+                    }
+                }
+            });
+            return woken;
+        }
+
+        private bool WakePhoneScreen(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return false;
             try
             {
-                if (_settings.Features.DisableStayAwakeOnStop)
-                {
-                    _adbService.Shell(
-                        "settings put global stay_on_while_plugged_in 0");
-                }
-                var result = _adbService.Shell("input keyevent 224");
+                var result = _adbService.ShellForSerial(
+                    serial,
+                    "input keyevent 224",
+                    true);
                 if (result.IsSuccess)
+                {
                     _logService.Info(LocalizationService.Get(
                         "Log.Main.PhoneScreenWoken"));
+                    return true;
+                }
                 else
                     _logService.Warning(LocalizationService.Format(
                         "Log.Main.PhoneScreenWakeCommandFailed",
@@ -861,6 +1219,7 @@ namespace DexManager.Forms
                         "Log.Main.PhoneScreenWakeFailed"),
                     ex);
             }
+            return false;
         }
 
         private void BeginPhoneScreenWakeSuppression()
@@ -892,25 +1251,132 @@ namespace DexManager.Forms
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            _deviceMonitor.Dispose();
-            _captureCoordinator.Dispose();
-            _autoHideService.Dispose();
-            _keyMappingService.Dispose();
-            _phoneScreenWakeTimer.Dispose();
-            _screenOffService.Dispose();
-            _singleWindowService.Dispose();
-            _scrcpyService.Dispose();
-            _trayService.Dispose();
-            if (_logForm != null) _logForm.Dispose();
-            if (_settingsForm != null) _settingsForm.Dispose();
-            if (_environmentCheckForm != null) _environmentCheckForm.Dispose();
+            _deviceMonitor.StateChanged -= DeviceMonitor_StateChanged;
+            _deviceMonitor.DeviceConnected -= DeviceMonitor_DeviceConnected;
+            _deviceMonitor.DeviceDisconnected -= DeviceMonitor_DeviceDisconnected;
+            _scrcpyService.RunningChanged -= ScrcpyService_RunningChanged;
+            _singleWindowService.RunningChanged -=
+                SingleWindowService_RunningChanged;
+            _captureCoordinator.ExitHotkeyPressed -=
+                CaptureCoordinator_ExitHotkeyPressed;
+            _autoHideService.IdleHideRequested -=
+                AutoHideService_IdleHideRequested;
+            _phoneScreenWakeTimer.Tick -= PhoneScreenWakeTimer_Tick;
+
+            _orchestrator.RequestShutdown();
+            _singleWindowService.RequestShutdown();
+            _screenOffService.RequestShutdown();
+            var cleanupStillRunning = _exitCleanupTask != null &&
+                !_exitCleanupTask.IsCompleted;
+            if (!cleanupStillRunning)
+                TryCleanup("device monitor", _deviceMonitor.Dispose);
+            TryCleanup("capture coordinator", _captureCoordinator.Dispose);
+            TryCleanup("automatic hide", _autoHideService.Dispose);
+            TryCleanup("key mapping", _keyMappingService.Dispose);
+            TryCleanup("phone screen timer", _phoneScreenWakeTimer.Dispose);
+            if (!cleanupStillRunning)
+            {
+                TryCleanup("screen-off service", _screenOffService.Dispose);
+                TryCleanup(
+                    "single-window service",
+                    _singleWindowService.Dispose);
+                TryCleanup("scrcpy service", _scrcpyService.Dispose);
+                TryCleanup("DeX finalization", delegate
+                {
+                    _orchestrator.ShutdownAsync()
+                        .GetAwaiter()
+                        .GetResult();
+                });
+            }
+            TryCleanup("tray service", _trayService.Dispose);
+            if (_logForm != null)
+                TryCleanup("log window", _logForm.Dispose);
+            if (_settingsForm != null)
+                TryCleanup("settings window", _settingsForm.Dispose);
+            if (_environmentCheckForm != null)
+                TryCleanup(
+                    "environment check window",
+                    _environmentCheckForm.Dispose);
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             if (_allowExit) return;
-            e.Cancel = true;
-            HideToTray();
+            if (e.CloseReason == CloseReason.UserClosing)
+            {
+                e.Cancel = true;
+                if (!_exitInProgress) HideToTray();
+                return;
+            }
+
+            _exitInProgress = true;
+            _allowExit = true;
+            _orchestrator.RequestShutdown();
+            _singleWindowService.RequestShutdown();
+            _screenOffService.RequestShutdown();
+            TryCleanup("capture coordinator", _captureCoordinator.Stop);
+            TryCleanup("key mapping", _keyMappingService.Stop);
+            BeginPhoneScreenWakeSuppression();
+            _phoneScreenWakeTimer.Stop();
+
+            if (_exitCleanupTask == null)
+            {
+                var wakeSerials = CaptureWakeSerials();
+                _exitCleanupTask = RunExitCleanupAsync(wakeSerials);
+            }
+            try
+            {
+                if (!_exitCleanupTask.Wait(5000))
+                {
+                    e.Cancel = true;
+                    _allowExit = false;
+                    _logService.Warning(LocalizationService.Get(
+                        "Log.Main.CleanupDeferredForShutdown"));
+                    ScheduleCloseAfterExitCleanup();
+                }
+            }
+            catch (AggregateException ex)
+            {
+                _logService.Error(
+                    LocalizationService.Format(
+                        "Log.Main.CleanupFailed",
+                        "system shutdown"),
+                    ex.GetBaseException());
+            }
+        }
+
+        private void ScheduleCloseAfterExitCleanup()
+        {
+            if (_forcedCloseContinuationScheduled ||
+                _exitCleanupTask == null)
+            {
+                return;
+            }
+            _forcedCloseContinuationScheduled = true;
+            _exitCleanupTask.ContinueWith(delegate
+            {
+                RunOnUi(delegate
+                {
+                    _allowExit = true;
+                    if (!IsDisposed) Close();
+                });
+            }, TaskScheduler.Default);
+        }
+
+        private void TryCleanup(string operation, Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                _logService.Error(
+                    LocalizationService.Format(
+                        "Log.Main.CleanupFailed",
+                        operation),
+                    ex);
+            }
         }
 
         private void UpdateRunningState()
@@ -1451,62 +1917,72 @@ namespace DexManager.Forms
         private void ApplyRunSettings(bool showMessage)
         {
             var bitRate = ((int)_bitRateBox.Value).ToString() + "M";
-
-            if (_selectedMode == 0)
+            ScrcpyService.ValidateAdditionalArguments(
+                _additionalArgumentsBox.Text);
+            _settingsService.UpdateAndSave(_settings, delegate(
+                AppSettings candidate)
             {
-                _settings.VirtualDisplay.Width = (int)_widthBox.Value;
-                _settings.VirtualDisplay.Height = (int)_heightBox.Value;
-                if (IsCustomResolutionSelected())
+                if (_selectedMode == 0)
                 {
-                    _settings.VirtualDisplay.CustomWidth =
-                        (int)_widthBox.Value;
-                    _settings.VirtualDisplay.CustomHeight =
-                        (int)_heightBox.Value;
+                    candidate.VirtualDisplay.Width = (int)_widthBox.Value;
+                    candidate.VirtualDisplay.Height = (int)_heightBox.Value;
+                    if (IsCustomResolutionSelected())
+                    {
+                        candidate.VirtualDisplay.CustomWidth =
+                            (int)_widthBox.Value;
+                        candidate.VirtualDisplay.CustomHeight =
+                            (int)_heightBox.Value;
+                    }
+                    candidate.VirtualDisplay.Dpi = (int)_dpiBox.Value;
+                    candidate.VirtualDisplay.ReuseExistingDisplay =
+                        _reuseDisplayBox.Checked;
+                    candidate.Scrcpy.BitRate = bitRate;
+                    candidate.Scrcpy.MaxFps = GetSelectedMaxFps();
+                    candidate.Scrcpy.TurnScreenOff =
+                        _turnScreenOffBox.Checked;
+                    candidate.Scrcpy.StayAwake = _stayAwakeBox.Checked;
+                    candidate.Scrcpy.UseHidKeyboard =
+                        _useHidKeyboardBox.Checked;
+                    candidate.Scrcpy.UseHidMouse =
+                        _useHidMouseBox.Checked;
+                    candidate.Scrcpy.ForceStopStartApp =
+                        _forceStopAppBox.Checked;
+                    var selectedPackage = GetSelectedAppPackage();
+                    var selectedName = GetSelectedAppName(selectedPackage);
+                    candidate.Scrcpy.StartAppPackage = selectedPackage;
+                    candidate.Scrcpy.StartAppName = selectedName;
+                    candidate.Scrcpy.AdditionalArguments =
+                        _additionalArgumentsBox.Text.Trim();
                 }
-                _settings.VirtualDisplay.Dpi = (int)_dpiBox.Value;
-                _settings.VirtualDisplay.ReuseExistingDisplay =
-                    _reuseDisplayBox.Checked;
-                _settings.Scrcpy.BitRate = bitRate;
-                _settings.Scrcpy.MaxFps = GetSelectedMaxFps();
-                _settings.Scrcpy.TurnScreenOff = _turnScreenOffBox.Checked;
-                _settings.Scrcpy.StayAwake = _stayAwakeBox.Checked;
-                _settings.Scrcpy.UseHidKeyboard = _useHidKeyboardBox.Checked;
-                _settings.Scrcpy.UseHidMouse = _useHidMouseBox.Checked;
-                _settings.Scrcpy.ForceStopStartApp = _forceStopAppBox.Checked;
-                var selectedPackage = GetSelectedAppPackage();
-                var selectedName = GetSelectedAppName(selectedPackage);
-                _settings.Scrcpy.StartAppPackage = selectedPackage;
-                _settings.Scrcpy.StartAppName = selectedName;
-                _settings.Scrcpy.AdditionalArguments =
-                    _additionalArgumentsBox.Text.Trim();
-            }
-            else
-            {
-                var slot = GetSingleWindowSettings(_selectedMode);
-                slot.Width = (int)_widthBox.Value;
-                slot.Height = (int)_heightBox.Value;
-                if (IsCustomResolutionSelected())
+                else
                 {
-                    slot.CustomWidth = (int)_widthBox.Value;
-                    slot.CustomHeight = (int)_heightBox.Value;
+                    var slot = GetSingleWindowSettings(
+                        candidate,
+                        _selectedMode);
+                    slot.Width = (int)_widthBox.Value;
+                    slot.Height = (int)_heightBox.Value;
+                    if (IsCustomResolutionSelected())
+                    {
+                        slot.CustomWidth = (int)_widthBox.Value;
+                        slot.CustomHeight = (int)_heightBox.Value;
+                    }
+                    slot.Dpi = (int)_dpiBox.Value;
+                    slot.BitRate = bitRate;
+                    slot.MaxFps = GetSelectedMaxFps();
+                    slot.TurnScreenOff = _turnScreenOffBox.Checked;
+                    slot.StayAwake = _stayAwakeBox.Checked;
+                    slot.UseHidKeyboard = _useHidKeyboardBox.Checked;
+                    slot.UseHidMouse = _useHidMouseBox.Checked;
+                    slot.ForceStopStartApp = _forceStopAppBox.Checked;
+                    slot.FlexDisplay = _flexDisplayBox.Checked;
+                    var selectedPackage = GetSelectedAppPackage();
+                    var selectedName = GetSelectedAppName(selectedPackage);
+                    slot.StartAppPackage = selectedPackage;
+                    slot.StartAppName = selectedName;
+                    slot.AdditionalArguments =
+                        _additionalArgumentsBox.Text.Trim();
                 }
-                slot.Dpi = (int)_dpiBox.Value;
-                slot.BitRate = bitRate;
-                slot.MaxFps = GetSelectedMaxFps();
-                slot.TurnScreenOff = _turnScreenOffBox.Checked;
-                slot.StayAwake = _stayAwakeBox.Checked;
-                slot.UseHidKeyboard = _useHidKeyboardBox.Checked;
-                slot.UseHidMouse = _useHidMouseBox.Checked;
-                slot.ForceStopStartApp = _forceStopAppBox.Checked;
-                slot.FlexDisplay = _flexDisplayBox.Checked;
-                var selectedPackage = GetSelectedAppPackage();
-                var selectedName = GetSelectedAppName(selectedPackage);
-                slot.StartAppPackage = selectedPackage;
-                slot.StartAppName = selectedName;
-                slot.AdditionalArguments =
-                    _additionalArgumentsBox.Text.Trim();
-            }
-            _settingsService.Save(_settings);
+            });
             _logService.Info(
                 _selectedMode == 0
                     ? LocalizationService.Get(
@@ -1641,18 +2117,34 @@ namespace DexManager.Forms
         {
             var packageName = GetSelectedAppPackage();
             var appName = GetSelectedAppName(packageName);
-            if (_selectedMode == 0)
+            var selectedMode = _selectedMode;
+            try
             {
-                _settings.Scrcpy.StartAppPackage = packageName;
-                _settings.Scrcpy.StartAppName = appName;
+                _settingsService.UpdateAndSave(_settings, delegate(
+                    AppSettings candidate)
+                {
+                    if (selectedMode == 0)
+                    {
+                        candidate.Scrcpy.StartAppPackage = packageName;
+                        candidate.Scrcpy.StartAppName = appName;
+                    }
+                    else
+                    {
+                        var slot = GetSingleWindowSettings(
+                            candidate,
+                            selectedMode);
+                        slot.StartAppPackage = packageName;
+                        slot.StartAppName = appName;
+                    }
+                });
             }
-            else
+            catch (Exception ex)
             {
-                var slot = GetSingleWindowSettings(_selectedMode);
-                slot.StartAppPackage = packageName;
-                slot.StartAppName = appName;
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Main.AppIdentitySaveFailed"),
+                    ex);
             }
-            _settingsService.Save(_settings);
         }
 
         private void RememberStartedApp(
@@ -1665,45 +2157,59 @@ namespace DexManager.Forms
             appName = string.IsNullOrWhiteSpace(appName)
                 ? packageName
                 : appName.Trim();
-            if (_settings.RememberedApps == null)
+            try
             {
-                _settings.RememberedApps =
-                    new List<RememberedAppSettings>();
-            }
-
-            for (var index = _settings.RememberedApps.Count - 1;
-                index >= 0;
-                index--)
-            {
-                var remembered = _settings.RememberedApps[index];
-                if (remembered == null ||
-                    string.IsNullOrWhiteSpace(
-                        remembered.PackageName) ||
-                    string.Equals(
-                        remembered.PackageName,
-                        packageName,
-                        StringComparison.OrdinalIgnoreCase))
+                _settingsService.UpdateAndSave(_settings, delegate(
+                    AppSettings candidate)
                 {
-                    _settings.RememberedApps.RemoveAt(index);
-                }
-            }
+                    if (candidate.RememberedApps == null)
+                    {
+                        candidate.RememberedApps =
+                            new List<RememberedAppSettings>();
+                    }
 
-            _settings.RememberedApps.Insert(
-                0,
-                new RememberedAppSettings
-                {
-                    Name = appName,
-                    PackageName = packageName
+                    for (var index = candidate.RememberedApps.Count - 1;
+                        index >= 0;
+                        index--)
+                    {
+                        var remembered = candidate.RememberedApps[index];
+                        if (remembered == null ||
+                            string.IsNullOrWhiteSpace(
+                                remembered.PackageName) ||
+                            string.Equals(
+                                remembered.PackageName,
+                                packageName,
+                                StringComparison.OrdinalIgnoreCase))
+                        {
+                            candidate.RememberedApps.RemoveAt(index);
+                        }
+                    }
+
+                    candidate.RememberedApps.Insert(
+                        0,
+                        new RememberedAppSettings
+                        {
+                            Name = appName,
+                            PackageName = packageName
+                        });
+                    while (candidate.RememberedApps.Count >
+                        MaxRememberedApps)
+                    {
+                        candidate.RememberedApps.RemoveAt(
+                            candidate.RememberedApps.Count - 1);
+                    }
                 });
-            while (_settings.RememberedApps.Count >
-                MaxRememberedApps)
+            }
+            catch (Exception ex)
             {
-                _settings.RememberedApps.RemoveAt(
-                    _settings.RememberedApps.Count - 1);
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Main.RememberedAppSaveFailed"),
+                    ex);
+                return;
             }
 
             AddRememberedAppItems();
-            _settingsService.Save(_settings);
         }
 
         private void AddRememberedAppItems()
@@ -2222,9 +2728,18 @@ namespace DexManager.Forms
 
         private SingleWindowSlotSettings GetSingleWindowSettings(int slot)
         {
-            if (slot < 1 || slot > _settings.SingleWindowSlots.Count)
+            return GetSingleWindowSettings(_settings, slot);
+        }
+
+        private static SingleWindowSlotSettings GetSingleWindowSettings(
+            AppSettings settings,
+            int slot)
+        {
+            if (settings == null)
+                throw new ArgumentNullException("settings");
+            if (slot < 1 || slot > settings.SingleWindowSlots.Count)
                 throw new ArgumentOutOfRangeException("slot");
-            return _settings.SingleWindowSlots[slot - 1];
+            return settings.SingleWindowSlots[slot - 1];
         }
 
         private bool IsCustomResolutionSelected()
@@ -2251,16 +2766,23 @@ namespace DexManager.Forms
         {
             var width = (int)_widthBox.Value;
             var height = (int)_heightBox.Value;
-            if (_selectedMode == 0)
+            var selectedMode = _selectedMode;
+            _settingsService.UpdateInMemory(_settings, delegate(
+                AppSettings settings)
             {
-                _settings.VirtualDisplay.CustomWidth = width;
-                _settings.VirtualDisplay.CustomHeight = height;
-                return;
-            }
+                if (selectedMode == 0)
+                {
+                    settings.VirtualDisplay.CustomWidth = width;
+                    settings.VirtualDisplay.CustomHeight = height;
+                    return;
+                }
 
-            var slot = GetSingleWindowSettings(_selectedMode);
-            slot.CustomWidth = width;
-            slot.CustomHeight = height;
+                var slot = GetSingleWindowSettings(
+                    settings,
+                    selectedMode);
+                slot.CustomWidth = width;
+                slot.CustomHeight = height;
+            });
         }
 
         private bool IsSelectedModeRunning()
@@ -2454,7 +2976,20 @@ namespace DexManager.Forms
         private void RunOnUi(Action action)
         {
             if (IsDisposed || !IsHandleCreated) return;
-            if (InvokeRequired) BeginInvoke(action); else action();
+            if (!InvokeRequired)
+            {
+                action();
+                return;
+            }
+
+            try
+            {
+                BeginInvoke(action);
+            }
+            catch (InvalidOperationException)
+            {
+                // The form handle can be destroyed between the checks above.
+            }
         }
 
         private void HideToTray() { HideToTray(true); }
@@ -2508,7 +3043,7 @@ namespace DexManager.Forms
                         ShowLogForm,
                         ShowEnvironmentCheck,
                         ApplyThemeSelection,
-                        UpdateRunningState);
+                        ApplyGeneralSettingsChanges);
                     _settingsForm.FormClosed += delegate { _settingsForm = null; };
                 }
                 if (!_settingsForm.Visible) _settingsForm.Show();
@@ -2516,6 +3051,58 @@ namespace DexManager.Forms
                 _settingsForm.BringToFront();
                 _settingsForm.Activate();
             });
+        }
+
+        private void ApplyGeneralSettingsChanges()
+        {
+            try
+            {
+                _captureCoordinator.ReloadHotkeys();
+            }
+            catch (Exception ex)
+            {
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Main.CaptureHotkeyRegistrationFailed"),
+                    ex);
+                _trayService.ShowBalloon(
+                    LocalizationService.Get("App.Name"),
+                    LocalizationService.Get("Main.CaptureHotkeyFailed"));
+            }
+
+            try
+            {
+                _autoStartService.Apply(
+                    _settings.Features.StartWithWindows);
+            }
+            catch (Exception ex)
+            {
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Main.AutoStartApplyFailed"),
+                    ex);
+            }
+
+            _autoHideService.ApplySettings(
+                _settings.Features.AutoHideEnabled,
+                _settings.Timing.AutoHideIdleSeconds);
+            _wirelessAdbService.SynchronizeTargetWithSettings();
+
+            try
+            {
+                _logService.SetLogDirectory(
+                    _settingsService.ResolvePath(
+                        _settings.Paths.LogFolder));
+            }
+            catch (Exception ex)
+            {
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Main.LogFolderApplyFailed"),
+                    ex);
+            }
+
+            UpdateRunningState();
         }
 
         private void ShowEnvironmentCheck()
@@ -2547,19 +3134,92 @@ namespace DexManager.Forms
         {
             if (InvokeRequired) { BeginInvoke((Action)ExitApplication); return; }
             if (_exitInProgress) return;
+
             _exitInProgress = true;
-            _captureCoordinator.Stop();
+            _orchestrator.RequestShutdown();
+            _singleWindowService.RequestShutdown();
+            _screenOffService.RequestShutdown();
+            var wakeSerials = CaptureWakeSerials();
+            TryCleanup("capture coordinator", _captureCoordinator.Stop);
+            TryCleanup("key mapping", _keyMappingService.Stop);
             BeginPhoneScreenWakeSuppression();
+            _phoneScreenWakeTimer.Stop();
             _dexStatusValue.Text =
                 LocalizationService.Get("Status.ShuttingDown");
             Enabled = false;
-            _deviceMonitor.Stop();
-            await Task.Run(delegate { _singleWindowService.StopAll(); });
-            await _orchestrator.ShutdownAsync();
-            if (_adbService.IsAuthorizedDeviceConnected())
-                await Task.Run((Action)WakePhoneScreen);
-            _allowExit = true;
-            Close();
+
+            try
+            {
+                _exitCleanupTask = RunExitCleanupAsync(wakeSerials);
+                await _exitCleanupTask;
+            }
+            finally
+            {
+                _allowExit = true;
+                if (!IsDisposed) Close();
+            }
+        }
+
+        private IList<string> CaptureWakeSerials()
+        {
+            var serials = new List<string>(_managedSerialHistory);
+            foreach (var serial in GetScreenOffSerials())
+                AddSerial(serials, serial);
+            return serials;
+        }
+
+        private async Task RunExitCleanupAsync(IList<string> wakeSerials)
+        {
+            await TryCleanupAsync(
+                "DeX session",
+                _orchestrator.ShutdownAsync).ConfigureAwait(false);
+            await TryCleanupAsync(
+                "single-window sessions",
+                delegate
+                {
+                    return Task.Run(
+                        (Action)_singleWindowService.StopAll);
+                }).ConfigureAwait(false);
+            var supplementalCleanup = new[]
+            {
+                TryCleanupAsync(
+                    "device monitor",
+                    delegate
+                    {
+                        return Task.Run((Action)_deviceMonitor.Stop);
+                    }),
+                TryCleanupAsync(
+                    "stay-awake setting",
+                    QueueDeviceStayAwakeUpdate),
+                TryCleanupAsync(
+                    "phone screen wake",
+                    delegate
+                    {
+                        return Task.Run(delegate
+                        {
+                            WakePhoneScreens(wakeSerials);
+                        });
+                    })
+            };
+            await Task.WhenAll(supplementalCleanup).ConfigureAwait(false);
+        }
+
+        private async Task TryCleanupAsync(
+            string operation,
+            Func<Task> action)
+        {
+            try
+            {
+                await action().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logService.Error(
+                    LocalizationService.Format(
+                        "Log.Main.CleanupFailed",
+                        operation),
+                    ex);
+            }
         }
 
         private sealed class ResolutionPreset

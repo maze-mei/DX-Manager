@@ -680,11 +680,24 @@ namespace DexManager.Forms
 
         private void SaveButton_Click(object sender, EventArgs e)
         {
+            var previousTheme = _settings.Theme;
             try
             {
-                var previousTheme = _settings.Theme;
-                SaveValues();
-                _settingsService.Save(_settings);
+                _settingsService.UpdateAndSave(_settings, SaveValues);
+            }
+            catch (Exception ex)
+            {
+                ShowSaveStatus(
+                    LocalizationService.Format(
+                        "Settings.SaveFailedInline",
+                        ex.Message),
+                    Color.Firebrick,
+                    5000);
+                return;
+            }
+
+            try
+            {
                 if (previousTheme != _settings.Theme &&
                     _applyTheme != null)
                 {
@@ -700,7 +713,7 @@ namespace DexManager.Forms
             {
                 ShowSaveStatus(
                     LocalizationService.Format(
-                        "Settings.SaveFailedInline",
+                        "Settings.SavedApplyFailedInline",
                         ex.Message),
                     Color.Firebrick,
                     5000);
@@ -721,35 +734,45 @@ namespace DexManager.Forms
                 MessageBoxDefaultButton.Button2);
             if (result != DialogResult.Yes) return;
 
-            ApplyDefaultSettings();
-            _settingsService.Save(_settings);
-            LoadValues();
-            if (_applyTheme != null)
-                _applyTheme(_settings.Theme);
-            if (_settingsChanged != null) _settingsChanged();
-            ShowSaveStatus(
-                LocalizationService.Get(
-                    "Settings.ResetDefaultsDone"),
-                Color.DarkGreen,
-                5000);
-        }
+            var previousTheme = _settings.Theme;
+            try
+            {
+                var defaults = AppSettings.CreateDefault();
+                _settingsService.SaveAndApply(_settings, defaults);
+            }
+            catch (Exception ex)
+            {
+                ShowSaveStatus(
+                    LocalizationService.Format(
+                        "Settings.SaveFailedInline",
+                        ex.Message),
+                    Color.Firebrick,
+                    5000);
+                return;
+            }
 
-        private void ApplyDefaultSettings()
-        {
-            var defaults = AppSettings.CreateDefault();
-            _settings.SchemaVersion = defaults.SchemaVersion;
-            _settings.Paths = defaults.Paths;
-            _settings.VirtualDisplay = defaults.VirtualDisplay;
-            _settings.Scrcpy = defaults.Scrcpy;
-            _settings.Timing = defaults.Timing;
-            _settings.Features = defaults.Features;
-            _settings.KeyMappings = defaults.KeyMappings;
-            _settings.LastSuccess = defaults.LastSuccess;
-            _settings.SingleWindowSlots = defaults.SingleWindowSlots;
-            _settings.Connection = defaults.Connection;
-            _settings.Language = defaults.Language;
-            _settings.Theme = defaults.Theme;
-            _settings.RememberedApps = defaults.RememberedApps;
+            try
+            {
+                LoadValues();
+                if (previousTheme != _settings.Theme &&
+                    _applyTheme != null)
+                    _applyTheme(_settings.Theme);
+                if (_settingsChanged != null) _settingsChanged();
+                ShowSaveStatus(
+                    LocalizationService.Get(
+                        "Settings.ResetDefaultsDone"),
+                    Color.DarkGreen,
+                    5000);
+            }
+            catch (Exception ex)
+            {
+                ShowSaveStatus(
+                    LocalizationService.Format(
+                        "Settings.SavedApplyFailedInline",
+                        ex.Message),
+                    Color.Firebrick,
+                    5000);
+            }
         }
 
         private void ShowSaveStatus(
@@ -765,68 +788,104 @@ namespace DexManager.Forms
             _saveStatusTimer.Start();
         }
 
-        private void SaveValues()
+        private void SaveValues(AppSettings settings)
         {
             var language = _languageBox.SelectedItem as LanguageOption;
-            _settings.Language = language == null
+            settings.Language = language == null
                 ? AppLanguage.Auto
                 : language.Value;
             var theme = _themeBox.SelectedItem as ThemeOption;
-            _settings.Theme = theme == null
+            settings.Theme = theme == null
                 ? AppTheme.Auto
                 : theme.Value;
-            _settings.Paths.AdbSelectionMode = _manualAdbBox.Checked
+            var manualAdbPath = ToConfiguredPath(
+                _manualAdbPathBox.Text);
+            var scrcpyPath = ToConfiguredPath(
+                _scrcpyPathBox.Text);
+            if (_manualAdbBox.Checked &&
+                string.IsNullOrWhiteSpace(manualAdbPath))
+            {
+                throw new InvalidOperationException(
+                    LocalizationService.Get(
+                        "Settings.ManualAdbPathRequired"));
+            }
+            if (string.IsNullOrWhiteSpace(scrcpyPath))
+            {
+                throw new InvalidOperationException(
+                    LocalizationService.Get(
+                        "Settings.ScrcpyPathRequired"));
+            }
+            if (_manualAdbBox.Checked)
+                EnsureExecutableExists(manualAdbPath);
+            EnsureExecutableExists(scrcpyPath);
+            settings.Paths.AdbSelectionMode = _manualAdbBox.Checked
                 ? AdbSelectionMode.Manual
                 : AdbSelectionMode.Auto;
-            _settings.Paths.AdbPath = ToConfiguredPath(
-                _manualAdbPathBox.Text);
-            _settings.Paths.ScrcpyPath = ToConfiguredPath(
-                _scrcpyPathBox.Text);
-            _settings.Paths.ScreenshotFolder = ToConfiguredPath(
+            settings.Paths.AdbPath = manualAdbPath;
+            settings.Paths.ScrcpyPath = scrcpyPath;
+            settings.Paths.ScreenshotFolder = ToConfiguredPath(
                 _screenshotFolderBox.Text);
-            _settings.Paths.DeviceScreenshotFolder = _deviceScreenshotFolderBox.Text.Trim();
-            _settings.Paths.LogFolder = ToConfiguredPath(
+            settings.Paths.DeviceScreenshotFolder = _deviceScreenshotFolderBox.Text.Trim();
+            settings.Paths.LogFolder = ToConfiguredPath(
                 _logFolderBox.Text);
 
-            _settings.Features.StartWithWindows = _startWithWindowsBox.Checked;
-            _settings.Features.StartMinimizedToTray = _startMinimizedBox.Checked;
-            _settings.Features.ScrcpyWakeUpMode = (ScrcpyWakeUpMode)_wakeUpModeBox.SelectedItem;
-            _settings.Features.AutoHideEnabled = _autoHideBox.Checked;
-            _settings.Features.AutoStartDexOnDeviceConnected = _autoStartDexBox.Checked;
-            _settings.Features.ShowConnectedDeviceInfo =
+            settings.Features.StartWithWindows = _startWithWindowsBox.Checked;
+            settings.Features.StartMinimizedToTray = _startMinimizedBox.Checked;
+            settings.Features.ScrcpyWakeUpMode = (ScrcpyWakeUpMode)_wakeUpModeBox.SelectedItem;
+            settings.Features.AutoHideEnabled = _autoHideBox.Checked;
+            settings.Features.AutoStartDexOnDeviceConnected = _autoStartDexBox.Checked;
+            settings.Features.ShowConnectedDeviceInfo =
                 _showConnectedDeviceInfoBox.Checked;
-            _settings.Features.ResetVirtualDisplayOnStop = _resetDisplayOnStopBox.Checked;
-            _settings.Features.DisableStayAwakeOnStop = _disableStayAwakeBox.Checked;
-            _settings.Features.PushCaptureToDevice = _pushCaptureBox.Checked;
+            settings.Features.ResetVirtualDisplayOnStop = _resetDisplayOnStopBox.Checked;
+            settings.Features.DisableStayAwakeOnStop = _disableStayAwakeBox.Checked;
+            settings.Features.PushCaptureToDevice = _pushCaptureBox.Checked;
 
-            _settings.Timing.DeviceMonitorIntervalMs =
+            settings.Timing.DeviceMonitorIntervalMs =
                 SecondsToMilliseconds(_deviceMonitorIntervalBox);
-            _settings.Timing.DisconnectMonitorIntervalMs =
+            settings.Timing.DisconnectMonitorIntervalMs =
                 SecondsToMilliseconds(_disconnectMonitorIntervalBox);
-            _settings.Timing.ConnectedStartDelayMs =
+            settings.Timing.ConnectedStartDelayMs =
                 SecondsToMilliseconds(_connectedStartDelayBox);
-            _settings.Timing.AdbWakeUpDelayMs =
+            settings.Timing.AdbWakeUpDelayMs =
                 SecondsToMilliseconds(_adbWakeUpDelayBox);
-            _settings.Timing.AutoHideIdleSeconds = (int)_autoHideSecondsBox.Value;
-            _settings.Timing.CaptureWaitSeconds = (int)_captureWaitSecondsBox.Value;
-            _settings.Timing.ProcessTimeoutMs =
+            settings.Timing.AutoHideIdleSeconds = (int)_autoHideSecondsBox.Value;
+            settings.Timing.CaptureWaitSeconds = (int)_captureWaitSecondsBox.Value;
+            settings.Timing.ProcessTimeoutMs =
                 SecondsToMilliseconds(_processTimeoutBox);
 
-            _settings.KeyMappings.CaptureHotkey = _captureHotkeyBox.Text.Trim();
-            _settings.KeyMappings.ExitHotkey = _exitHotkeyBox.Text.Trim();
-            _settings.KeyMappings.UseLowLevelHotkeys = _lowLevelHotkeyBox.Checked;
-            _settings.KeyMappings.LogKeyboardDiagnostics = _keyboardDiagnosticsBox.Checked;
+            settings.KeyMappings.CaptureHotkey = _captureHotkeyBox.Text.Trim();
+            settings.KeyMappings.ExitHotkey = _exitHotkeyBox.Text.Trim();
+            if (!HotkeyService.IsValidShortcut(
+                    settings.KeyMappings.CaptureHotkey) ||
+                !HotkeyService.IsValidShortcut(
+                    settings.KeyMappings.ExitHotkey))
+            {
+                throw new InvalidOperationException(
+                    LocalizationService.Get(
+                        "Settings.InvalidHotkey"));
+            }
+            if (HotkeyService.ShortcutsConflict(
+                settings.KeyMappings.CaptureHotkey,
+                settings.KeyMappings.ExitHotkey,
+                _lowLevelHotkeyBox.Checked))
+            {
+                throw new InvalidOperationException(
+                    LocalizationService.Get(
+                        "Settings.HotkeysMustDiffer"));
+            }
+            settings.KeyMappings.UseLowLevelHotkeys = _lowLevelHotkeyBox.Checked;
+            settings.KeyMappings.LogKeyboardDiagnostics = _keyboardDiagnosticsBox.Checked;
             var keyInputMode = (KeyInputMode)_keyInputModeBox.SelectedItem;
-            _settings.KeyMappings.KoreanEnglishInputMode = keyInputMode;
-            _settings.KeyMappings.EnterInputMode = keyInputMode;
-            _settings.KeyMappings.ConvertKoreanEnglishKey = _convertHangulBox.Checked;
-            _settings.KeyMappings.HandleRightWindowsKey = _rightWindowsBox.Checked;
-            _settings.KeyMappings.ConvertEnterToShiftEnter = _convertEnterBox.Checked;
-            _settings.KeyMappings.IgnoreShiftSpace = _ignoreShiftSpaceBox.Checked;
-            SaveConnectionValues();
+            settings.KeyMappings.KoreanEnglishInputMode = keyInputMode;
+            settings.KeyMappings.EnterInputMode = keyInputMode;
+            settings.KeyMappings.ConvertKoreanEnglishKey = _convertHangulBox.Checked;
+            settings.KeyMappings.HandleRightWindowsKey = _rightWindowsBox.Checked;
+            settings.KeyMappings.ConvertEnterToShiftEnter = _convertEnterBox.Checked;
+            settings.KeyMappings.IgnoreShiftSpace = _ignoreShiftSpaceBox.Checked;
+            SaveConnectionValues(settings);
         }
 
-        private void SaveConnectionValues()
+        private void SaveConnectionValues(AppSettings settings)
         {
             if (_wirelessConnectionBox.Checked &&
                 string.IsNullOrWhiteSpace(_wirelessHostBox.Text))
@@ -835,10 +894,10 @@ namespace DexManager.Forms
                     LocalizationService.Get(
                         "Settings.WirelessRequiresIp"));
             }
-            _settings.Connection.Mode = _wirelessConnectionBox.Checked
+            settings.Connection.Mode = _wirelessConnectionBox.Checked
                 ? AdbConnectionMode.Wireless
                 : AdbConnectionMode.Usb;
-            SaveConnectionDetails();
+            SaveConnectionDetails(settings);
         }
 
         private string ResolveDisplayPath(string configuredPath)
@@ -875,20 +934,35 @@ namespace DexManager.Forms
                 }
                 return fullPath;
             }
-            catch
+            catch (Exception ex)
             {
-                return value;
+                throw new InvalidOperationException(
+                    LocalizationService.Format(
+                        "Settings.InvalidPath",
+                        value),
+                    ex);
             }
         }
 
-        private void SaveConnectionDetails()
+        private void SaveConnectionDetails(AppSettings settings)
         {
-            _settings.Connection.WirelessHost =
-                _wirelessHostBox.Text.Trim();
-            _settings.Connection.WirelessPort =
-                (int)_wirelessPortBox.Value;
-            _settings.Connection.AutoReconnect =
+            var host = _wirelessHostBox.Text.Trim();
+            var port = (int)_wirelessPortBox.Value;
+            if (!string.IsNullOrWhiteSpace(host))
+                WirelessAdbService.BuildEndpoint(host, port);
+            settings.Connection.WirelessHost = host;
+            settings.Connection.WirelessPort = port;
+            settings.Connection.AutoReconnect =
                 _wirelessAutoReconnectBox.Checked;
+        }
+
+        private void EnsureExecutableExists(string configuredPath)
+        {
+            var fullPath = _settingsService.ResolvePath(configuredPath);
+            if (File.Exists(fullPath)) return;
+            throw new InvalidOperationException(LocalizationService.Format(
+                "Settings.ExecutableNotFound",
+                fullPath));
         }
 
         private void UpdateManualAdbControls()
@@ -933,6 +1007,7 @@ namespace DexManager.Forms
                     host,
                     port);
             });
+            if (IsDisposed) return;
             _wirelessHostBox.Text =
                 _settings.Connection.WirelessHost ?? string.Empty;
         }
@@ -959,7 +1034,9 @@ namespace DexManager.Forms
             {
                 return _wirelessAdbService.Disconnect();
             });
-            _usbConnectionBox.Checked = true;
+            if (IsDisposed) return;
+            _usbConnectionBox.Checked =
+                !_wirelessAdbService.IsWirelessMode;
         }
 
         private async void PairButton_Click(
@@ -976,13 +1053,13 @@ namespace DexManager.Forms
                     port,
                     pairingCode);
             });
+            if (IsDisposed) return;
             _pairingCodeBox.Clear();
         }
 
         private async Task RunWirelessOperationAsync(
             Func<WirelessConnectionResult> operation)
         {
-            SaveConnectionDetails();
             SetWirelessButtonsEnabled(false);
             UseWaitCursor = true;
             try

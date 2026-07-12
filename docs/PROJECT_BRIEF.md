@@ -15,7 +15,7 @@ Windows WinForms 프로그램이다. DeX 화면 한 개와 앱별 단일창 세 
 - .NET Framework 4.6.2
 - 외부 NuGet 패키지 없음
 - 번들 Scrcpy 4.0
-- 지원 목표: Windows 7 SP1부터 Windows 11
+- 지원 목표: 64비트 Windows 7 SP1부터 Windows 11(32비트 Windows 제외)
 
 산출물은 `DexManager\bin\Release`에 생성된다. 실행 파일만 복사하지 말고
 `tools`, Scrcpy DLL과 `scrcpy-server`를 포함한 폴더 전체를 배포한다.
@@ -45,11 +45,11 @@ Windows WinForms 프로그램이다. DeX 화면 한 개와 앱별 단일창 세 
 ## 현재 상태
 
 핵심 기능은 완료된 베타다. Windows 11에서 유선/무선 DeX와 단일창 3개
-동시 실행을 확인했다. Windows 7 SP1/.NET 4.6.2에서 유선 핵심 기능과
+동시 실행을 확인했다. 64비트 Windows 7 SP1/.NET 4.6.2에서 유선 핵심 기능과
 Scrcpy 4.0 실행도 확인했다.
 
 앱 아이콘, 다국어 UI, 사용자/개발 문서와 제3자 라이선스 고지는 완료됐다.
-남은 일은 최신 빌드의 Windows 7 회귀 확인, upstream 입력 버그 보고와
+남은 일은 최신 빌드의 64비트 Windows 7 회귀 확인, upstream 입력 버그 보고와
 GitHub Release 준비다.
 
 ## 제품 원칙
@@ -57,6 +57,6 @@ GitHub Release 준비다.
 - DeX와 단일창의 가상 디스플레이 생성 방식을 섞지 않는다.
 - 모호한 display ID를 가장 큰 숫자로 추측하지 않는다.
 - PATH의 `adb.exe`에 의존하지 않는다.
-- Windows 7/.NET 4.6.2 호환성을 유지한다.
+- 64비트 Windows 7/.NET 4.6.2 호환성을 유지한다.
 - 한 Scrcpy 종료가 나머지 창의 화면 상태를 깨뜨리지 않아야 한다.
 - 사용자 설정과 미커밋 변경을 덮어쓰지 않는다.

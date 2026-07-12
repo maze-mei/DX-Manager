@@ -8,6 +8,8 @@ namespace DexManager.Models
     [DataContract]
     public sealed class AppSettings
     {
+        public const int CurrentSchemaVersion = 17;
+
         [DataMember(Order = 1)] public int SchemaVersion { get; set; }
         [DataMember(Order = 2)] public PathSettings Paths { get; set; }
         [DataMember(Order = 3)] public VirtualDisplaySettings VirtualDisplay { get; set; }
@@ -27,7 +29,7 @@ namespace DexManager.Models
         {
             return new AppSettings
             {
-                SchemaVersion = 17,
+                SchemaVersion = CurrentSchemaVersion,
                 Language = AppLanguage.Auto,
                 Theme = AppTheme.Auto,
                 RememberedApps = new List<RememberedAppSettings>(),
@@ -301,9 +303,23 @@ namespace DexManager.Models
                 Paths.Win7AdbPath = defaults.Paths.Win7AdbPath;
             if (string.IsNullOrWhiteSpace(Paths.ModernAdbPath))
                 Paths.ModernAdbPath = defaults.Paths.ModernAdbPath;
+            if (string.IsNullOrWhiteSpace(Paths.ScrcpyPath))
+                Paths.ScrcpyPath = defaults.Paths.ScrcpyPath;
+            if (string.IsNullOrWhiteSpace(Paths.ScreenshotFolder))
+                Paths.ScreenshotFolder = defaults.Paths.ScreenshotFolder;
+            if (string.IsNullOrWhiteSpace(Paths.DeviceScreenshotFolder))
+                Paths.DeviceScreenshotFolder =
+                    defaults.Paths.DeviceScreenshotFolder;
+            if (string.IsNullOrWhiteSpace(Paths.LogFolder))
+                Paths.LogFolder = defaults.Paths.LogFolder;
             if (!System.Enum.IsDefined(
                 typeof(AdbSelectionMode),
                 Paths.AdbSelectionMode))
+            {
+                Paths.AdbSelectionMode = AdbSelectionMode.Auto;
+            }
+            if (Paths.AdbSelectionMode == AdbSelectionMode.Manual &&
+                string.IsNullOrWhiteSpace(Paths.AdbPath))
             {
                 Paths.AdbSelectionMode = AdbSelectionMode.Auto;
             }
@@ -317,15 +333,95 @@ namespace DexManager.Models
                 Language = defaults.Language;
             if (!System.Enum.IsDefined(typeof(AppTheme), Theme))
                 Theme = defaults.Theme;
+            if (!System.Enum.IsDefined(
+                typeof(ScrcpyWakeUpMode),
+                Features.ScrcpyWakeUpMode))
+            {
+                Features.ScrcpyWakeUpMode =
+                    defaults.Features.ScrcpyWakeUpMode;
+            }
             if (Connection.WirelessPort < 1 ||
                 Connection.WirelessPort > 65535)
             {
                 Connection.WirelessPort = 5555;
             }
+            if (Connection.Mode == AdbConnectionMode.Wireless &&
+                !IsValidWirelessHost(Connection.WirelessHost))
+            {
+                Connection.Mode = AdbConnectionMode.Usb;
+            }
             if (!System.Enum.IsDefined(typeof(KeyInputMode), KeyMappings.KoreanEnglishInputMode))
                 KeyMappings.KoreanEnglishInputMode = defaults.KeyMappings.KoreanEnglishInputMode;
             if (!System.Enum.IsDefined(typeof(KeyInputMode), KeyMappings.EnterInputMode))
                 KeyMappings.EnterInputMode = defaults.KeyMappings.EnterInputMode;
+            if (string.Equals(
+                KeyMappings.CaptureHotkey,
+                KeyMappings.ExitHotkey,
+                System.StringComparison.OrdinalIgnoreCase))
+            {
+                KeyMappings.ExitHotkey = defaults.KeyMappings.ExitHotkey;
+            }
+
+            Timing.DeviceMonitorIntervalMs = NormalizeRange(
+                Timing.DeviceMonitorIntervalMs,
+                1000,
+                60000,
+                defaults.Timing.DeviceMonitorIntervalMs);
+            Timing.DisconnectMonitorIntervalMs = NormalizeRange(
+                Timing.DisconnectMonitorIntervalMs,
+                1000,
+                60000,
+                defaults.Timing.DisconnectMonitorIntervalMs);
+            Timing.ConnectedStartDelayMs = NormalizeRange(
+                Timing.ConnectedStartDelayMs,
+                0,
+                60000,
+                defaults.Timing.ConnectedStartDelayMs);
+            Timing.AdbWakeUpDelayMs = NormalizeRange(
+                Timing.AdbWakeUpDelayMs,
+                0,
+                60000,
+                defaults.Timing.AdbWakeUpDelayMs);
+            Timing.AutoHideIdleSeconds = NormalizeRange(
+                Timing.AutoHideIdleSeconds,
+                1,
+                3600,
+                defaults.Timing.AutoHideIdleSeconds);
+            Timing.CaptureWaitSeconds = NormalizeRange(
+                Timing.CaptureWaitSeconds,
+                1,
+                60,
+                defaults.Timing.CaptureWaitSeconds);
+            Timing.ProcessTimeoutMs = NormalizeRange(
+                Timing.ProcessTimeoutMs,
+                1000,
+                120000,
+                defaults.Timing.ProcessTimeoutMs);
+        }
+
+        private static int NormalizeRange(
+            int value,
+            int minimum,
+            int maximum,
+            int fallback)
+        {
+            return value < minimum || value > maximum
+                ? fallback
+                : value;
+        }
+
+        private static bool IsValidWirelessHost(string host)
+        {
+            if (string.IsNullOrWhiteSpace(host)) return false;
+            var value = host.Trim();
+            if (value.StartsWith("[", System.StringComparison.Ordinal) &&
+                value.EndsWith("]", System.StringComparison.Ordinal))
+            {
+                value = value.Substring(1, value.Length - 2);
+            }
+            return value.Length > 0 && Regex.IsMatch(
+                value,
+                @"^[A-Za-z0-9._:%-]+$");
         }
 
         private static void AddRememberedApp(

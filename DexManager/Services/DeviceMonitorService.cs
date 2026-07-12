@@ -11,25 +11,33 @@ namespace DexManager.Services
         private readonly WirelessAdbService _wirelessAdbService;
         private readonly LogService _logService;
         private readonly int _intervalMs;
+        private readonly int _disconnectConfirmationMs;
         private readonly object _stateLock = new object();
+        private readonly object _lifecycleLock = new object();
         private readonly Dictionary<string, string> _deviceNameCache =
             new Dictionary<string, string>(
                 StringComparer.OrdinalIgnoreCase);
         private Timer _timer;
         private int _polling;
-        private DateTime _wirelessMissingSinceUtc = DateTime.MinValue;
+        private int _stopping = 1;
+        private int _disposed;
+        private DateTime _missingSinceUtc = DateTime.MinValue;
         private DeviceState _currentState = DeviceState.Disconnected();
 
         public DeviceMonitorService(
             AdbService adbService,
             WirelessAdbService wirelessAdbService,
             LogService logService,
-            int intervalMs)
+            int intervalMs,
+            int disconnectConfirmationMs)
         {
             _adbService = adbService;
             _wirelessAdbService = wirelessAdbService;
             _logService = logService;
             _intervalMs = Math.Max(intervalMs, 500);
+            _disconnectConfirmationMs = Math.Max(
+                disconnectConfirmationMs,
+                _intervalMs);
         }
 
         public event EventHandler<DeviceStateChangedEventArgs> StateChanged;
@@ -49,63 +57,107 @@ namespace DexManager.Services
 
         public void Start()
         {
-            if (_timer != null) return;
-            _logService.Info(LocalizationService.Get(
-                "Log.DeviceMonitor.Started"));
-            _timer = new Timer(Poll, null, 0, _intervalMs);
+            lock (_lifecycleLock)
+            {
+                if (Interlocked.CompareExchange(ref _disposed, 0, 0) != 0)
+                    throw new ObjectDisposedException(
+                        "DeviceMonitorService");
+                if (_timer != null) return;
+                Interlocked.Exchange(ref _stopping, 0);
+                _missingSinceUtc = DateTime.MinValue;
+                _timer = new Timer(Poll, null, 0, _intervalMs);
+                _logService.Info(LocalizationService.Get(
+                    "Log.DeviceMonitor.Started"));
+            }
         }
 
         public void Stop()
         {
-            var timer = Interlocked.Exchange(ref _timer, null);
-            if (timer == null) return;
-            timer.Dispose();
-            _logService.Info(LocalizationService.Get(
-                "Log.DeviceMonitor.Stopped"));
+            lock (_lifecycleLock)
+            {
+                StopTimer();
+            }
         }
 
         public void Dispose()
         {
-            Stop();
+            lock (_lifecycleLock)
+            {
+                if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+                StopTimer();
+            }
+        }
+
+        private void StopTimer()
+        {
+            Interlocked.Exchange(ref _stopping, 1);
+            var timer = Interlocked.Exchange(ref _timer, null);
+            if (timer == null) return;
+
+            using (var completed = new ManualResetEvent(false))
+            {
+                if (timer.Dispose(completed)) completed.WaitOne();
+            }
+            _logService.Info(LocalizationService.Get(
+                "Log.DeviceMonitor.Stopped"));
         }
 
         private void Poll(object state)
         {
-            if (Interlocked.Exchange(ref _polling, 1) == 1) return;
+            if (IsStopping ||
+                Interlocked.Exchange(ref _polling, 1) == 1) return;
 
             try
             {
-                var devices = _adbService.GetDevices(false);
-                var preferred =
-                    _wirelessAdbService.SelectPreferredDevice(devices);
+                IList<AdbDeviceInfo> devices;
+                if (!_adbService.TryGetDevices(false, out devices) ||
+                    IsStopping)
+                {
+                    return;
+                }
+
+                var preferred = _wirelessAdbService.FindPreferredDevice(
+                    devices,
+                    _adbService.TargetSerial);
                 if (preferred == null &&
                     _wirelessAdbService.TryReconnect(false))
                 {
-                    devices = _adbService.GetDevices(false);
-                    preferred =
-                        _wirelessAdbService.SelectPreferredDevice(devices);
+                    if (!_adbService.TryGetDevices(false, out devices) ||
+                        IsStopping)
+                    {
+                        return;
+                    }
+                    preferred = _wirelessAdbService.FindPreferredDevice(
+                        devices,
+                        _adbService.TargetSerial);
                 }
-                if (_wirelessAdbService.IsWirelessMode &&
-                    preferred == null)
+
+                if (IsStopping) return;
+                var selection = _wirelessAdbService
+                    .SelectPreferredDeviceWithGeneration(devices);
+                preferred = selection.Device;
+
+                if (preferred == null)
                 {
-                    if (_wirelessMissingSinceUtc == DateTime.MinValue)
-                        _wirelessMissingSinceUtc = DateTime.UtcNow;
-                    if ((DateTime.UtcNow -
-                        _wirelessMissingSinceUtc).TotalSeconds < 3)
+                    if (_missingSinceUtc == DateTime.MinValue)
+                        _missingSinceUtc = DateTime.UtcNow;
+                    if ((DateTime.UtcNow - _missingSinceUtc).TotalMilliseconds <
+                        _disconnectConfirmationMs)
                     {
                         return;
                     }
                 }
                 else
                 {
-                    _wirelessMissingSinceUtc = DateTime.MinValue;
+                    _missingSinceUtc = DateTime.MinValue;
                 }
 
                 var next = preferred == null
                     ? DeviceState.Disconnected()
                     : new DeviceState
                     {
-                        IsConnected = preferred.Status == AdbDeviceStatus.Device,
+                        IsConnected =
+                            preferred.Status == AdbDeviceStatus.Device,
                         Serial = preferred.Serial,
                         DisplayName =
                             preferred.Status == AdbDeviceStatus.Device
@@ -114,15 +166,22 @@ namespace DexManager.Services
                         Status = preferred.Status
                     };
 
-                PublishIfChanged(next);
+                if (!IsStopping &&
+                    _wirelessAdbService.IsTransitionGenerationCurrent(
+                        selection.TransitionGeneration))
+                {
+                    PublishIfChanged(next);
+                }
             }
             catch (Exception ex)
             {
-                _logService.Error(
-                    LocalizationService.Get(
-                        "Log.DeviceMonitor.Failed"),
-                    ex);
-                PublishIfChanged(DeviceState.Disconnected());
+                if (!IsStopping)
+                {
+                    _logService.Error(
+                        LocalizationService.Get(
+                            "Log.DeviceMonitor.Failed"),
+                        ex);
+                }
             }
             finally
             {
@@ -130,11 +189,24 @@ namespace DexManager.Services
             }
         }
 
+        private bool IsStopping
+        {
+            get
+            {
+                return Interlocked.CompareExchange(
+                    ref _stopping,
+                    0,
+                    0) != 0;
+            }
+        }
+
         private void PublishIfChanged(DeviceState next)
         {
+            if (IsStopping) return;
             DeviceState previous;
             lock (_stateLock)
             {
+                if (IsStopping) return;
                 previous = _currentState;
                 if (StatesEqual(previous, next)) return;
                 _currentState = next;
@@ -153,7 +225,18 @@ namespace DexManager.Services
                 CopyState(next));
             Raise(StateChanged, args);
 
-            if (!previous.IsConnected && next.IsConnected)
+            var serialChanged = previous.IsConnected &&
+                next.IsConnected &&
+                !string.Equals(
+                    previous.Serial,
+                    next.Serial,
+                    StringComparison.OrdinalIgnoreCase);
+            if (serialChanged)
+            {
+                Raise(DeviceDisconnected, args);
+                Raise(DeviceConnected, args);
+            }
+            else if (!previous.IsConnected && next.IsConnected)
                 Raise(DeviceConnected, args);
             else if (previous.IsConnected && !next.IsConnected)
                 Raise(DeviceDisconnected, args);
@@ -163,7 +246,7 @@ namespace DexManager.Services
             EventHandler<DeviceStateChangedEventArgs> handler,
             DeviceStateChangedEventArgs args)
         {
-            if (handler != null) handler(this, args);
+            if (!IsStopping && handler != null) handler(this, args);
         }
 
         private static bool StatesEqual(DeviceState left, DeviceState right)
@@ -174,7 +257,10 @@ namespace DexManager.Services
                     left.DisplayName,
                     right.DisplayName,
                     StringComparison.CurrentCulture) &&
-                string.Equals(left.Serial, right.Serial, StringComparison.OrdinalIgnoreCase);
+                string.Equals(
+                    left.Serial,
+                    right.Serial,
+                    StringComparison.OrdinalIgnoreCase);
         }
 
         private string GetDeviceDisplayName(string serial)
@@ -204,7 +290,9 @@ namespace DexManager.Services
 
     public sealed class DeviceStateChangedEventArgs : EventArgs
     {
-        public DeviceStateChangedEventArgs(DeviceState previous, DeviceState current)
+        public DeviceStateChangedEventArgs(
+            DeviceState previous,
+            DeviceState current)
         {
             Previous = previous;
             Current = current;

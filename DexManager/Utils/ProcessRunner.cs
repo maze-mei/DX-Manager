@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using DexManager.Models;
 using DexManager.Services;
@@ -85,30 +86,37 @@ namespace DexManager.Utils
                     fileName,
                     startInfo.Arguments));
 
-            using (var process = new Process { StartInfo = startInfo })
+            var process = new Process { StartInfo = startInfo };
+            try
             {
                 process.OutputDataReceived += delegate(object sender, DataReceivedEventArgs e)
                 {
-                    if (e.Data != null) output.AppendLine(e.Data);
+                    if (e.Data != null)
+                    {
+                        lock (output) output.AppendLine(e.Data);
+                    }
                 };
                 process.ErrorDataReceived += delegate(object sender, DataReceivedEventArgs e)
                 {
-                    if (e.Data != null) error.AppendLine(e.Data);
+                    if (e.Data != null)
+                    {
+                        lock (error) error.AppendLine(e.Data);
+                    }
                 };
 
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
-                var exited = process.WaitForExit(timeoutMs);
-                if (!exited)
+                var timedOut = !process.WaitForExit(timeoutMs);
+                var terminated = !timedOut;
+                if (timedOut)
                 {
-                    try { process.Kill(); }
-                    catch (Exception ex)
+                    terminated = TryTerminateProcess(process);
+                    if (!terminated)
                     {
-                        _logService.Warning(LocalizationService.Format(
-                            "Log.Process.KillTimedOutFailed",
-                            ex.Message));
+                        ScheduleProcessReaper(process);
+                        process = null;
                     }
                 }
                 else
@@ -117,20 +125,83 @@ namespace DexManager.Utils
                 }
 
                 stopwatch.Stop();
+                string standardOutput;
+                string standardError;
+                lock (output) standardOutput = output.ToString().Trim();
+                lock (error) standardError = error.ToString().Trim();
                 var result = new ProcessResult
                 {
                     FileName = fileName,
                     Arguments = startInfo.Arguments,
-                    ExitCode = exited ? process.ExitCode : -1,
-                    StandardOutput = output.ToString().Trim(),
-                    StandardError = error.ToString().Trim(),
-                    TimedOut = !exited,
+                    ExitCode = !timedOut && terminated
+                        ? process.ExitCode
+                        : -1,
+                    StandardOutput = standardOutput,
+                    StandardError = standardError,
+                    TimedOut = timedOut,
                     Duration = stopwatch.Elapsed
                 };
 
                 if (writeLog) LogResult(result);
                 return result;
             }
+            finally
+            {
+                if (process != null) process.Dispose();
+            }
+        }
+
+        private bool TryTerminateProcess(Process process)
+        {
+            try
+            {
+                if (!process.HasExited) process.Kill();
+                if (!process.WaitForExit(2000)) return false;
+                process.WaitForExit();
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                try { process.WaitForExit(); }
+                catch (InvalidOperationException) { }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logService.Warning(LocalizationService.Format(
+                    "Log.Process.KillTimedOutFailed",
+                    ex.Message));
+                return false;
+            }
+        }
+
+        private void ScheduleProcessReaper(Process process)
+        {
+            _logService.Warning(LocalizationService.Get(
+                "Log.Process.TerminationDeferred"));
+            Task.Run(delegate
+            {
+                var terminated = false;
+                try
+                {
+                    for (var attempt = 0; attempt < 5 && !terminated; attempt++)
+                    {
+                        if (attempt > 0) Thread.Sleep(500);
+                        terminated = TryTerminateProcess(process);
+                    }
+                    if (!terminated)
+                    {
+                        _logService.Error(
+                            LocalizationService.Get(
+                                "Log.Process.TerminationFailed"),
+                            new TimeoutException());
+                    }
+                }
+                finally
+                {
+                    process.Dispose();
+                }
+            });
         }
 
         public Task<ProcessResult> RunAsync(

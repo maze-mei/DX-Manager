@@ -25,6 +25,11 @@ namespace DexManager.Services
         private bool _rightShiftMapped;
         private bool _rightShiftMappingLogged;
 
+        private KeyMappingSettings Settings
+        {
+            get { return _appSettings.KeyMappings ?? _settings; }
+        }
+
         public KeyMappingService(
             ScrcpyService scrcpyService,
             SingleWindowService singleWindowService,
@@ -64,7 +69,7 @@ namespace DexManager.Services
 
             _logService.Info(LocalizationService.Get(
                 "Log.KeyMapping.Started"));
-            if (_settings.ConvertEnterToShiftEnter)
+            if (Settings.ConvertEnterToShiftEnter)
             {
                 _enterShiftMode = false;
                 _logService.Info(LocalizationService.Get(
@@ -79,8 +84,11 @@ namespace DexManager.Services
 
         public void Stop()
         {
-            if (_hookHandle == IntPtr.Zero) return;
             ReleaseRightShiftMapping();
+            _enterHeld = false;
+            _hangulHeld = false;
+            _scrollLockHeld = false;
+            if (_hookHandle == IntPtr.Zero) return;
             NativeMethods.UnhookWindowsHookEx(_hookHandle);
             _hookHandle = IntPtr.Zero;
             _logService.Info(LocalizationService.Get(
@@ -94,7 +102,7 @@ namespace DexManager.Services
 
         private IntPtr HookCallback(int code, IntPtr wParam, IntPtr lParam)
         {
-            if (code < 0 || !IsScrcpyForeground())
+            if (code < 0)
                 return NativeMethods.CallNextHookEx(
                     _hookHandle,
                     code,
@@ -117,7 +125,17 @@ namespace DexManager.Services
             var keyUp = message == NativeMethods.WmKeyUp ||
                 message == NativeMethods.WmSysKeyUp;
 
-            if (_settings.LogKeyboardDiagnostics &&
+            if (keyUp && ReleaseOwnedKey(data)) return new IntPtr(1);
+
+            IntPtr foreground;
+            if (!IsScrcpyForeground(out foreground))
+                return NativeMethods.CallNextHookEx(
+                    _hookHandle,
+                    code,
+                    wParam,
+                    lParam);
+
+            if (Settings.LogKeyboardDiagnostics &&
                 IsKeyboardDiagnosticTarget(data))
             {
                 LogKeyboardDiagnostic(data, message);
@@ -152,16 +170,9 @@ namespace DexManager.Services
                     return new IntPtr(1);
                 }
 
-                if (keyUp && _rightShiftMapped)
-                {
-                    _rightShiftMapped = false;
-                    if (!SendLeftShiftCompatibility(true))
-                        KeyUp(NativeMethods.VkLShift);
-                    return new IntPtr(1);
-                }
             }
 
-            if (_settings.ConvertEnterToShiftEnter &&
+            if (Settings.ConvertEnterToShiftEnter &&
                 data.VirtualKey == NativeMethods.VkScroll)
             {
                 if (keyDown && !_scrollLockHeld)
@@ -175,77 +186,63 @@ namespace DexManager.Services
                             : LocalizationService.Get(
                                 "KeyMapping.NormalEnter")));
                 }
-                else if (keyUp)
-                {
-                    _scrollLockHeld = false;
-                }
-
                 return new IntPtr(1);
             }
 
-            if (_settings.ConvertKoreanEnglishKey && IsHangulScanCode(data))
+            if (Settings.ConvertKoreanEnglishKey && IsHangulScanCode(data))
             {
                 if (keyDown && !_hangulHeld)
                 {
                     _hangulHeld = true;
+                    var targetWindow = foreground;
                     ThreadPool.QueueUserWorkItem(delegate
                     {
-                        try
-                        {
-                            SendKeyCombination(
-                                "Hangul Shift+Space",
-                                _settings.KoreanEnglishInputMode,
-                                NativeMethods.VkSpace,
-                                NativeMethods.SpaceScanCode,
-                                "keycombination -t 20 59 62",
-                                true);
-                        }
-                        finally
-                        {
-                            _hangulHeld = false;
-                        }
+                        if (!IsExpectedForeground(targetWindow)) return;
+                        SendKeyCombination(
+                            "Hangul Shift+Space",
+                            Settings.KoreanEnglishInputMode,
+                            NativeMethods.VkSpace,
+                            NativeMethods.SpaceScanCode,
+                            "keycombination -t 20 59 62",
+                            true,
+                            targetWindow);
                     });
-                }
-                else if (keyUp)
-                {
-                    _hangulHeld = false;
                 }
                 return new IntPtr(1);
             }
 
-            if (_settings.IgnoreShiftSpace &&
+            if (Settings.IgnoreShiftSpace &&
                 data.VirtualKey == NativeMethods.VkSpace &&
                 IsKeyDown(NativeMethods.VkShift))
             {
                 return new IntPtr(1);
             }
 
-            if (_settings.ConvertEnterToShiftEnter &&
+            if (Settings.ConvertEnterToShiftEnter &&
                 data.VirtualKey == NativeMethods.VkReturn &&
                 _enterShiftMode)
             {
                 if (keyDown && !_enterHeld)
                 {
                     _enterHeld = true;
+                    var targetWindow = foreground;
                     ThreadPool.QueueUserWorkItem(delegate
                     {
+                        if (!IsExpectedForeground(targetWindow)) return;
                         SendKeyCombination(
                             "Shift+Enter",
-                            _settings.EnterInputMode,
+                            Settings.EnterInputMode,
                             NativeMethods.VkReturn,
                             NativeMethods.EnterScanCode,
                             "keycombination -t 20 59 66",
-                            false);
+                            false,
+                            targetWindow);
                     });
-                }
-                else if (keyUp)
-                {
-                    _enterHeld = false;
                 }
                 return new IntPtr(1);
             }
 
-            if (_settings.HandleRightWindowsKey &&
+            if (Settings.HandleRightWindowsKey &&
                 data.VirtualKey == NativeMethods.VkRwin &&
                 keyUp)
             {
@@ -259,13 +256,50 @@ namespace DexManager.Services
                 lParam);
         }
 
-        private bool IsScrcpyForeground()
+        private bool IsScrcpyForeground(out IntPtr foreground)
         {
-            var foreground = NativeMethods.GetForegroundWindow();
+            foreground = NativeMethods.GetForegroundWindow();
             var scrcpyHandle = _scrcpyService.MainWindowHandle;
             return foreground != IntPtr.Zero &&
                 (foreground == scrcpyHandle ||
                     _singleWindowService.ContainsWindowHandle(foreground));
+        }
+
+        private static bool IsExpectedForeground(IntPtr expected)
+        {
+            return expected != IntPtr.Zero &&
+                NativeMethods.GetForegroundWindow() == expected;
+        }
+
+        private bool ReleaseOwnedKey(LowLevelKeyboardInput data)
+        {
+            if (data.VirtualKey == NativeMethods.VkRShift &&
+                data.ScanCode == NativeMethods.RightShiftScanCode &&
+                _rightShiftMapped)
+            {
+                ReleaseRightShiftMapping();
+                return true;
+            }
+
+            if (data.VirtualKey == NativeMethods.VkReturn && _enterHeld)
+            {
+                _enterHeld = false;
+                return true;
+            }
+
+            if (data.VirtualKey == NativeMethods.VkScroll && _scrollLockHeld)
+            {
+                _scrollLockHeld = false;
+                return true;
+            }
+
+            if (IsHangulScanCode(data) && _hangulHeld)
+            {
+                _hangulHeld = false;
+                return true;
+            }
+
+            return false;
         }
 
         private static bool IsKeyDown(int virtualKey)
@@ -313,41 +347,88 @@ namespace DexManager.Services
             int keyVirtualKey,
             ushort keyScanCode,
             string inputCommand,
-            bool writeProcessLog)
+            bool writeProcessLog,
+            IntPtr targetWindow)
         {
+            if (!IsExpectedForeground(targetWindow)) return;
+
             if (mode == KeyInputMode.SendInputVirtualKey)
             {
-                if (SendShiftKeyByVirtualKey(description, keyVirtualKey)) return;
+                if (SendShiftKeyByVirtualKey(
+                        description,
+                        keyVirtualKey,
+                        targetWindow))
+                {
+                    return;
+                }
                 _logService.Warning(description + " SendInput VK failed. ADB fallback.");
             }
             else if (mode == KeyInputMode.SendInputScanCode)
             {
-                if (SendShiftKeyByScanCode(description, keyScanCode)) return;
+                if (SendShiftKeyByScanCode(
+                        description,
+                        keyScanCode,
+                        targetWindow))
+                {
+                    return;
+                }
                 _logService.Warning(description + " SendInput scan-code failed. ADB fallback.");
             }
 
-            SendKeyCombinationToAndroid(description, inputCommand, writeProcessLog);
+            SendKeyCombinationToAndroid(
+                description,
+                inputCommand,
+                writeProcessLog,
+                targetWindow);
         }
 
         private void SendKeyCombinationToAndroid(
             string description,
             string inputCommand,
-            bool writeProcessLog)
+            bool writeProcessLog,
+            IntPtr targetWindow)
         {
             try
             {
-                var displayId = _appSettings.LastSuccess == null
-                    ? 0
-                    : _appSettings.LastSuccess.DisplayId;
-                var displayArgument = displayId > 0
-                    ? "-d " + displayId + " "
-                    : string.Empty;
+                if (!IsExpectedForeground(targetWindow)) return;
+
+                string serial;
+                int displayId;
+                if (!TryResolveAdbTarget(
+                        targetWindow,
+                        out serial,
+                        out displayId))
+                {
+                    _logService.Warning(LocalizationService.Format(
+                        "Log.KeyMapping.AdbTargetUnavailable",
+                        description));
+                    return;
+                }
+
+                var displayArgument = "-d " + displayId + " ";
                 var command = "input " + displayArgument + inputCommand;
 
                 if (writeProcessLog)
                     _logService.Info(description + " ADB command: adb shell " + command);
 
-                var result = _adbService.Shell(
+                string currentSerial;
+                int currentDisplayId;
+                if (!TryResolveAdbTarget(
+                        targetWindow,
+                        out currentSerial,
+                        out currentDisplayId) ||
+                    !string.Equals(
+                        serial,
+                        currentSerial,
+                        StringComparison.Ordinal) ||
+                    displayId != currentDisplayId ||
+                    !IsExpectedForeground(targetWindow))
+                {
+                    return;
+                }
+
+                var result = _adbService.ShellForSerial(
+                    serial,
                     command,
                     writeProcessLog);
 
@@ -370,6 +451,31 @@ namespace DexManager.Services
             }
         }
 
+        private bool TryResolveAdbTarget(
+            IntPtr targetWindow,
+            out string serial,
+            out int displayId)
+        {
+            serial = null;
+            displayId = 0;
+
+            var session = _scrcpyService.GetSessionSnapshot();
+            if (session.IsRunning &&
+                session.DisplayId > 0 &&
+                !string.IsNullOrWhiteSpace(session.Serial) &&
+                targetWindow == _scrcpyService.MainWindowHandle)
+            {
+                serial = session.Serial;
+                displayId = session.DisplayId;
+                return true;
+            }
+
+            return _singleWindowService.TryGetAdbTargetForWindow(
+                targetWindow,
+                out serial,
+                out displayId);
+        }
+
         private static string GetCommandError(ProcessResult result)
         {
             if (!string.IsNullOrWhiteSpace(result.StandardError))
@@ -379,7 +485,10 @@ namespace DexManager.Services
             return "ExitCode=" + result.ExitCode + ", Timeout=" + result.TimedOut;
         }
 
-        private bool SendShiftKeyByVirtualKey(string description, int keyVirtualKey)
+        private bool SendShiftKeyByVirtualKey(
+            string description,
+            int keyVirtualKey,
+            IntPtr targetWindow)
         {
             var inputs = new[]
             {
@@ -390,16 +499,26 @@ namespace DexManager.Services
             };
 
             var inputSize = Marshal.SizeOf(typeof(Input));
+            if (!IsExpectedForeground(targetWindow)) return true;
             var sent = NativeMethods.SendInput(
                 (uint)inputs.Length,
                 inputs,
                 inputSize);
             if (sent != inputs.Length)
+            {
                 LogSendInputFailure(description, "VK", sent, inputs.Length, inputSize);
+                RecoverPartialVirtualKeyInput(
+                    description,
+                    sent,
+                    keyVirtualKey);
+            }
             return sent == inputs.Length;
         }
 
-        private bool SendShiftKeyByScanCode(string description, ushort keyScanCode)
+        private bool SendShiftKeyByScanCode(
+            string description,
+            ushort keyScanCode,
+            IntPtr targetWindow)
         {
             var inputs = new[]
             {
@@ -410,13 +529,77 @@ namespace DexManager.Services
             };
 
             var inputSize = Marshal.SizeOf(typeof(Input));
+            if (!IsExpectedForeground(targetWindow)) return true;
             var sent = NativeMethods.SendInput(
                 (uint)inputs.Length,
                 inputs,
                 inputSize);
             if (sent != inputs.Length)
+            {
                 LogSendInputFailure(description, "ScanCode", sent, inputs.Length, inputSize);
+                RecoverPartialScanCodeInput(
+                    description,
+                    sent,
+                    keyScanCode);
+            }
             return sent == inputs.Length;
+        }
+
+        private void RecoverPartialVirtualKeyInput(
+            string description,
+            uint sent,
+            int keyVirtualKey)
+        {
+            if (sent == 0 || sent >= 4) return;
+            var releases = sent == 2
+                ? new[]
+                {
+                    CreateVirtualKeyInput(keyVirtualKey, true),
+                    CreateVirtualKeyInput(NativeMethods.VkShift, true)
+                }
+                : new[]
+                {
+                    CreateVirtualKeyInput(NativeMethods.VkShift, true)
+                };
+            LogRecoveryResult(description, "VK", releases);
+        }
+
+        private void RecoverPartialScanCodeInput(
+            string description,
+            uint sent,
+            ushort keyScanCode)
+        {
+            if (sent == 0 || sent >= 4) return;
+            var releases = sent == 2
+                ? new[]
+                {
+                    CreateScanCodeInput(keyScanCode, true),
+                    CreateScanCodeInput(NativeMethods.LeftShiftScanCode, true)
+                }
+                : new[]
+                {
+                    CreateScanCodeInput(NativeMethods.LeftShiftScanCode, true)
+                };
+            LogRecoveryResult(description, "ScanCode", releases);
+        }
+
+        private void LogRecoveryResult(
+            string description,
+            string mode,
+            Input[] releases)
+        {
+            var recovered = NativeMethods.SendInput(
+                (uint)releases.Length,
+                releases,
+                Marshal.SizeOf(typeof(Input)));
+            if (recovered != releases.Length)
+            {
+                _logService.Warning(
+                    description + " " + mode +
+                    " partial-input recovery failed: sent=" +
+                    recovered + "/" + releases.Length +
+                    ", Win32Error=" + Marshal.GetLastWin32Error());
+            }
         }
 
         private bool SendLeftShiftCompatibility(bool keyUp)

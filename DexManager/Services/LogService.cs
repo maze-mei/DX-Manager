@@ -27,7 +27,6 @@ namespace DexManager.Services
         {
             if (string.IsNullOrWhiteSpace(directory)) return;
             _logDirectory = Path.GetFullPath(directory);
-            DeleteLegacyLogs();
         }
 
         public string[] GetSessionEntries()
@@ -96,24 +95,21 @@ namespace DexManager.Services
             var handler = EntryWritten;
             if (handler != null)
             {
-                handler(this, new LogEventArgs(timestamp, level, line));
+                var args = new LogEventArgs(timestamp, level, line);
+                foreach (var subscriber in handler.GetInvocationList())
+                {
+                    try
+                    {
+                        ((EventHandler<LogEventArgs>)subscriber)(this, args);
+                    }
+                    catch
+                    {
+                        // Logging subscribers must not change application state.
+                    }
+                }
             }
         }
 
-        private void DeleteLegacyLogs()
-        {
-            try
-            {
-                if (!Directory.Exists(_logDirectory)) return;
-
-                foreach (var path in Directory.GetFiles(_logDirectory, "*.log"))
-                    File.Delete(path);
-            }
-            catch
-            {
-                // Old logs must never prevent application startup.
-            }
-        }
     }
 
     public sealed class LogEventArgs : EventArgs

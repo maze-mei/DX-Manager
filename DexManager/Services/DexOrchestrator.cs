@@ -10,16 +10,24 @@ namespace DexManager.Services
         private readonly AdbService _adbService;
         private readonly VirtualDisplayService _virtualDisplayService;
         private readonly ScrcpyService _scrcpyService;
+        private readonly ScrcpyLaunchCoordinator _launchCoordinator;
         private readonly SettingsService _settingsService;
         private readonly LogService _logService;
         private readonly AppSettings _settings;
-        private int _operationRunning;
+        private readonly object _operationGate = new object();
+        private readonly object _shutdownTaskLock = new object();
+        private readonly ManualResetEvent _shutdownSignal =
+            new ManualResetEvent(false);
+        private int _shutdownRequested;
+        private Task _shutdownTask;
         private ManagedDisplaySession _currentSession;
+        private int _naturalExitCleanupScheduled;
 
         public DexOrchestrator(
             AdbService adbService,
             VirtualDisplayService virtualDisplayService,
             ScrcpyService scrcpyService,
+            ScrcpyLaunchCoordinator launchCoordinator,
             SettingsService settingsService,
             LogService logService,
             AppSettings settings)
@@ -27,9 +35,12 @@ namespace DexManager.Services
             _adbService = adbService;
             _virtualDisplayService = virtualDisplayService;
             _scrcpyService = scrcpyService;
+            _launchCoordinator = launchCoordinator;
             _settingsService = settingsService;
             _logService = logService;
             _settings = settings;
+            _scrcpyService.RunningChanged +=
+                ScrcpyService_RunningChanged;
         }
 
         public bool IsRunning
@@ -42,115 +53,213 @@ namespace DexManager.Services
             get { return _currentSession; }
         }
 
+        public bool IsShutdownRequested
+        {
+            get
+            {
+                return Interlocked.CompareExchange(
+                    ref _shutdownRequested,
+                    0,
+                    0) != 0;
+            }
+        }
+
         public Task StartAsync()
         {
-            return Task.Run((Action)StartCore);
+            return StartAsync(null);
+        }
+
+        public Task StartAsync(string serial)
+        {
+            return Task.Run(delegate
+            {
+                lock (_operationGate) StartCore(serial);
+            });
         }
 
         public Task StopAsync()
         {
-            return Task.Run((Action)StopCore);
+            return Task.Run(delegate
+            {
+                lock (_operationGate) StopCore();
+            });
+        }
+
+        public void RequestShutdown()
+        {
+            _scrcpyService.RequestShutdown();
+            if (Interlocked.Exchange(ref _shutdownRequested, 1) == 0)
+                _shutdownSignal.Set();
         }
 
         public Task ShutdownAsync()
         {
-            return Task.Run((Action)ShutdownCore);
+            RequestShutdown();
+            lock (_shutdownTaskLock)
+            {
+                if (_shutdownTask == null ||
+                    _shutdownTask.IsFaulted ||
+                    _shutdownTask.IsCanceled)
+                {
+                    _shutdownTask = Task.Run(delegate
+                    {
+                        lock (_operationGate) ShutdownCore();
+                    });
+                }
+                return _shutdownTask;
+            }
         }
 
         public Task<bool> ApplyRuntimeSettingsAsync()
         {
-            return Task.Run((Func<bool>)ApplyRuntimeSettingsCore);
+            return Task.Run(delegate
+            {
+                lock (_operationGate)
+                    return ApplyRuntimeSettingsCore();
+            });
         }
 
         private void StartCore()
         {
-            if (Interlocked.Exchange(ref _operationRunning, 1) == 1)
+            StartCore(null);
+        }
+
+        private void StartCore(string requestedSerial)
+        {
+            if (IsShutdownRequested) return;
+            if (_scrcpyService.IsRunning)
             {
                 _logService.Warning(LocalizationService.Get(
-                    "Log.Dex.OperationInProgress"));
+                    "Log.Dex.AlreadyRunning"));
                 return;
             }
 
+            CleanupStaleSession();
+            var serial = string.IsNullOrWhiteSpace(requestedSerial)
+                ? _adbService.TargetSerial
+                : requestedSerial;
+            if (string.IsNullOrWhiteSpace(serial) ||
+                !_adbService.IsAuthorizedDeviceConnected(serial))
+            {
+                throw new InvalidOperationException(
+                    LocalizationService.Get(
+                        "Error.Dex.NoAuthorizedDevice"));
+            }
+
+            VirtualDisplayLease lease = null;
+            var scrcpyStarted = false;
             try
             {
-                if (_scrcpyService.IsRunning)
+                _launchCoordinator.RunExclusive(delegate
                 {
-                    _logService.Warning(LocalizationService.Get(
-                        "Log.Dex.AlreadyRunning"));
-                    return;
-                }
+                    ThrowIfShutdownRequested();
+                    lease = _virtualDisplayService.EnsureVirtualDisplay(
+                        serial,
+                        _settings.VirtualDisplay,
+                        _settings.Timing.ConnectedStartDelayMs,
+                        delegate { return IsShutdownRequested; });
+                    ThrowIfShutdownRequested();
+                    _scrcpyService.Start(
+                        _settings.Scrcpy,
+                        lease.DisplayId,
+                        serial);
+                    scrcpyStarted = true;
+                });
 
-                if (!_adbService.IsAuthorizedDeviceConnected())
+                if (IsShutdownRequested)
+                    throw new OperationCanceledException();
+
+                if (!_scrcpyService.IsRunning)
                     throw new InvalidOperationException(
                         LocalizationService.Get(
-                            "Error.Dex.NoAuthorizedDevice"));
+                            "Error.Scrcpy.ExitedBeforeWindow"));
 
-                var displayId = _virtualDisplayService.EnsureVirtualDisplay(
-                    _settings.VirtualDisplay,
-                    _settings.Timing.ConnectedStartDelayMs);
-                _scrcpyService.Start(_settings.Scrcpy, displayId);
-                TrackSession("DeX", displayId);
-                SaveLastSuccess(displayId);
+                TrackSession("DeX", serial, lease);
+                if (!_scrcpyService.IsRunning)
+                    throw new InvalidOperationException(
+                        LocalizationService.Get(
+                            "Error.Scrcpy.ExitedBeforeWindow"));
+                try
+                {
+                    SaveLastSuccess(serial, lease.DisplayId);
+                }
+                catch (Exception saveException)
+                {
+                    _logService.Error(
+                        LocalizationService.Get(
+                            "Log.Dex.LastSuccessSaveFailed"),
+                        saveException);
+                }
                 _logService.Info(LocalizationService.Get(
                     "Log.Dex.StartCompleted"));
             }
+            catch (OperationCanceledException ex)
+            {
+                lease = GetRetainedLease(ex, lease);
+                CleanupFailedStart(scrcpyStarted, lease);
+                _logService.Info(LocalizationService.Get(
+                    "Log.Dex.StartCancelled"));
+            }
             catch (Exception ex)
             {
+                lease = GetRetainedLease(ex, lease);
+                CleanupFailedStart(scrcpyStarted, lease);
                 _logService.Error(
                     LocalizationService.Get("Log.Dex.StartFailed"),
                     ex);
                 throw;
             }
-            finally
-            {
-                Interlocked.Exchange(ref _operationRunning, 0);
-            }
         }
 
         private void StopCore()
         {
-            if (Interlocked.Exchange(ref _operationRunning, 1) == 1)
-            {
-                _logService.Warning(LocalizationService.Get(
-                    "Log.Dex.OperationInProgress"));
-                return;
-            }
-
+            var session = _currentSession;
+            Exception stopException = null;
             try
             {
                 _scrcpyService.Stop();
-                ClearSession();
-
-                if (_settings.Features.ResetVirtualDisplayOnStop)
-                    _virtualDisplayService.Reset();
-
-                if (_settings.Features.DisableStayAwakeOnStop)
-                {
-                    _adbService.Shell(
-                        "settings put global stay_on_while_plugged_in 0");
-                }
-
-                _logService.Info(LocalizationService.Get(
-                    "Log.Dex.StopCleanupCompleted"));
             }
-            finally
+            catch (Exception ex)
             {
-                Interlocked.Exchange(ref _operationRunning, 0);
+                stopException = ex;
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Dex.StopProcessFailed"),
+                    ex);
             }
+
+            if (_scrcpyService.IsRunning)
+            {
+                if (stopException != null) throw stopException;
+                throw new InvalidOperationException(
+                    LocalizationService.Get(
+                        "Error.Scrcpy.StopTimeout"));
+            }
+
+            if (session != null &&
+                _settings.Features.ResetVirtualDisplayOnStop)
+            {
+                if (!_virtualDisplayService.Release(session.DisplayLease))
+                    throw new InvalidOperationException(
+                        LocalizationService.Get(
+                            "Error.Dex.DisplayResetFailed"));
+            }
+            ClearSession(session);
+            _logService.Info(LocalizationService.Get(
+                "Log.Dex.StopCleanupCompleted"));
+            if (stopException != null) throw stopException;
         }
 
         private bool ApplyRuntimeSettingsCore()
         {
-            if (Interlocked.Exchange(ref _operationRunning, 1) == 1)
-            {
-                _logService.Warning(LocalizationService.Get(
-                    "Log.Dex.ApplyInProgress"));
-                return false;
-            }
-
+            if (IsShutdownRequested) return false;
             try
             {
-                if (!_adbService.IsAuthorizedDeviceConnected())
+                var serial = _currentSession == null
+                    ? _adbService.TargetSerial
+                    : _currentSession.Serial;
+                if (string.IsNullOrWhiteSpace(serial) ||
+                    !_adbService.IsAuthorizedDeviceConnected(serial))
                 {
                     _logService.Warning(LocalizationService.Get(
                         "Log.Dex.ApplyDeferredNoDevice"));
@@ -159,21 +268,20 @@ namespace DexManager.Services
 
                 _logService.Info(LocalizationService.Get(
                     "Log.Dex.RemovingDisplayForApply"));
+                var session = _currentSession;
                 _scrcpyService.Stop();
-                ClearSession();
-                if (!_virtualDisplayService.Reset())
+                if (session != null &&
+                    !_virtualDisplayService.Release(session.DisplayLease))
+                {
                     throw new InvalidOperationException(
                         LocalizationService.Get(
                             "Error.Dex.DisplayResetFailed"));
+                }
+                ClearSession(session);
 
-                Thread.Sleep(1000);
-
-                var displayId = _virtualDisplayService.EnsureVirtualDisplay(
-                    _settings.VirtualDisplay,
-                    _settings.Timing.ConnectedStartDelayMs);
-                _scrcpyService.Start(_settings.Scrcpy, displayId);
-                TrackSession("DeX", displayId);
-                SaveLastSuccess(displayId);
+                if (_shutdownSignal.WaitOne(1000)) return false;
+                StartCore(serial);
+                if (!_scrcpyService.IsRunning) return false;
                 _logService.Info(LocalizationService.Get(
                     "Log.Dex.ApplyCompleted"));
                 return true;
@@ -185,81 +293,212 @@ namespace DexManager.Services
                     ex);
                 throw;
             }
-            finally
-            {
-                Interlocked.Exchange(ref _operationRunning, 0);
-            }
         }
 
         private void ShutdownCore()
         {
-            if (Interlocked.Exchange(ref _operationRunning, 1) == 1)
+            var session = _currentSession;
+            Exception stopException = null;
+            try
+            {
+                _scrcpyService.Stop();
+            }
+            catch (Exception ex)
+            {
+                stopException = ex;
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Dex.StopProcessFailed"),
+                    ex);
+            }
+
+            if (_scrcpyService.IsRunning)
+            {
+                if (stopException != null) throw stopException;
+                throw new InvalidOperationException(
+                    LocalizationService.Get(
+                        "Error.Scrcpy.StopTimeout"));
+            }
+
+            if (session != null &&
+                _settings.Features.ResetVirtualDisplayOnStop &&
+                !_virtualDisplayService.Release(session.DisplayLease))
+            {
+                throw new InvalidOperationException(
+                    LocalizationService.Get(
+                        "Error.Dex.DisplayResetFailed"));
+            }
+            ClearSession(session);
+            _logService.Info(LocalizationService.Get(
+                "Log.Dex.ShutdownCleanupCompleted"));
+        }
+
+        private void ScrcpyService_RunningChanged(
+            object sender,
+            EventArgs e)
+        {
+            if (_scrcpyService.IsRunning) return;
+            if (Interlocked.Exchange(
+                ref _naturalExitCleanupScheduled,
+                1) != 0) return;
+
+            Task.Run(delegate
+            {
+                try
+                {
+                    lock (_operationGate)
+                    {
+                        if (!_scrcpyService.IsRunning)
+                            CleanupNaturallyEndedSession();
+                    }
+                }
+                finally
+                {
+                    Interlocked.Exchange(
+                        ref _naturalExitCleanupScheduled,
+                        0);
+                }
+            });
+        }
+
+        private void CleanupNaturallyEndedSession()
+        {
+            var session = _currentSession;
+            if (session == null) return;
+            if (_settings.Features.ResetVirtualDisplayOnStop &&
+                !_virtualDisplayService.Release(session.DisplayLease))
             {
                 _logService.Warning(LocalizationService.Get(
-                    "Log.Dex.ShutdownInProgress"));
+                    "Log.Dex.NaturalExitCleanupDeferred"));
+                return;
+            }
+
+            ClearSession(session);
+            _logService.Info(LocalizationService.Get(
+                "Log.Dex.NaturalExitCleanupCompleted"));
+        }
+
+        private void CleanupStaleSession()
+        {
+            var stale = _currentSession;
+            if (stale == null) return;
+            if (!_virtualDisplayService.Release(stale.DisplayLease))
+                throw new InvalidOperationException(
+                    LocalizationService.Get(
+                        "Error.Dex.DisplayResetFailed"));
+            ClearSession(stale);
+        }
+
+        private void CleanupFailedStart(
+            bool scrcpyStarted,
+            VirtualDisplayLease lease)
+        {
+            if (scrcpyStarted || _scrcpyService.IsRunning)
+            {
+                try
+                {
+                    _scrcpyService.Stop();
+                }
+                catch (Exception cleanupException)
+                {
+                    _logService.Error(
+                        LocalizationService.Get(
+                            "Log.Dex.StopProcessFailed"),
+                        cleanupException);
+                }
+            }
+
+            if (_scrcpyService.IsRunning)
+            {
+                if (_currentSession == null && lease != null)
+                    TrackSession("DeX", lease.Serial, lease);
                 return;
             }
 
             try
             {
-                _scrcpyService.Stop();
-                ClearSession();
-                _virtualDisplayService.Reset();
-                _adbService.Shell(
-                    "settings put global stay_on_while_plugged_in 0");
-                Thread.Sleep(500);
-                _logService.Info(LocalizationService.Get(
-                    "Log.Dex.ShutdownCleanupCompleted"));
+                if (lease != null &&
+                    !_virtualDisplayService.Release(lease))
+                {
+                    if (_currentSession == null)
+                        TrackSession("DeX", lease.Serial, lease);
+                    return;
+                }
+                ClearSession(_currentSession);
             }
-            catch (Exception ex)
+            catch (Exception cleanupException)
             {
                 _logService.Error(
                     LocalizationService.Get(
                         "Log.Dex.ShutdownCleanupFailed"),
-                    ex);
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _operationRunning, 0);
+                    cleanupException);
             }
         }
 
-        private void SaveLastSuccess(int displayId)
+        private static VirtualDisplayLease GetRetainedLease(
+            Exception error,
+            VirtualDisplayLease current)
         {
-            _settings.LastSuccess.Width = _settings.VirtualDisplay.Width;
-            _settings.LastSuccess.Height = _settings.VirtualDisplay.Height;
-            _settings.LastSuccess.Dpi = _settings.VirtualDisplay.Dpi;
-            _settings.LastSuccess.AdbPath = _adbService.AdbPath;
-            _settings.LastSuccess.ScrcpyPath = _scrcpyService.ScrcpyPath;
-            _settings.LastSuccess.ScrcpyArguments =
-                _scrcpyService.BuildArguments(_settings.Scrcpy, displayId);
-            _settings.LastSuccess.DisplayId = displayId;
-            _settings.LastSuccess.SavedAtUtc = DateTime.UtcNow.ToString("o");
-            _settingsService.Save(_settings);
+            if (current != null || error == null) return current;
+            return error.Data[VirtualDisplayService.RetainedLeaseDataKey]
+                as VirtualDisplayLease;
         }
 
-        private void TrackSession(string mode, int displayId)
+        private void ThrowIfShutdownRequested()
+        {
+            if (IsShutdownRequested)
+                throw new OperationCanceledException();
+        }
+
+        private void SaveLastSuccess(string serial, int displayId)
+        {
+            _settingsService.UpdateAndSave(_settings, delegate(
+                AppSettings settings)
+            {
+                settings.LastSuccess.Width = settings.VirtualDisplay.Width;
+                settings.LastSuccess.Height = settings.VirtualDisplay.Height;
+                settings.LastSuccess.Dpi = settings.VirtualDisplay.Dpi;
+                settings.LastSuccess.AdbPath = _adbService.AdbPath;
+                settings.LastSuccess.ScrcpyPath =
+                    _scrcpyService.ScrcpyPath;
+                settings.LastSuccess.ScrcpyArguments =
+                    _scrcpyService.BuildArguments(
+                        settings.Scrcpy,
+                        displayId,
+                        serial);
+                settings.LastSuccess.DisplayId = displayId;
+                settings.LastSuccess.SavedAtUtc =
+                    DateTime.UtcNow.ToString("o");
+            });
+        }
+
+        private void TrackSession(
+            string mode,
+            string serial,
+            VirtualDisplayLease lease)
         {
             _currentSession = new ManagedDisplaySession
             {
                 Mode = mode,
+                Serial = serial,
                 AppPackage = _settings.Scrcpy.StartAppPackage,
-                DisplayId = displayId,
+                DisplayId = lease.DisplayId,
                 ScrcpyProcessId = _scrcpyService.CurrentProcessId,
-                CreatedAtUtc = DateTime.UtcNow.ToString("o")
+                CreatedAtUtc = DateTime.UtcNow.ToString("o"),
+                DisplayLease = lease
             };
             _logService.Info(LocalizationService.Format(
                 "Log.Dex.SessionStarted",
                 _currentSession));
         }
 
-        private void ClearSession()
+        private void ClearSession(ManagedDisplaySession session)
         {
-            if (_currentSession == null) return;
-
+            if (session == null ||
+                !ReferenceEquals(_currentSession, session)) return;
             _logService.Info(LocalizationService.Format(
                 "Log.Dex.SessionEnded",
-                _currentSession));
+                session));
             _currentSession = null;
         }
     }

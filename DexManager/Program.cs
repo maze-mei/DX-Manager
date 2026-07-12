@@ -48,7 +48,18 @@ namespace DexManager
                     logService,
                     processRunner);
                 var autoStartService = new AutoStartService(logService);
-                autoStartService.Apply(settings.Features.StartWithWindows);
+                try
+                {
+                    autoStartService.Apply(
+                        settings.Features.StartWithWindows);
+                }
+                catch (Exception ex)
+                {
+                    logService.Error(
+                        LocalizationService.Get(
+                            "Log.Main.AutoStartApplyFailed"),
+                        ex);
+                }
                 var adbPath = pathService.SelectAdbPath(
                     settings,
                     settings.Timing.ProcessTimeoutMs);
@@ -101,6 +112,7 @@ namespace DexManager
                     adbService,
                     virtualDisplayService,
                     scrcpyService,
+                    scrcpyLaunchCoordinator,
                     settingsService,
                     logService,
                     settings);
@@ -108,10 +120,11 @@ namespace DexManager
                     adbService,
                     wirelessAdbService,
                     logService,
-                    settings.Timing.DeviceMonitorIntervalMs);
+                    settings.Timing.DeviceMonitorIntervalMs,
+                    settings.Timing.DisconnectMonitorIntervalMs);
                 var hotkeyService = new HotkeyService(
                     logService,
-                    settings.KeyMappings);
+                    settings);
                 var captureService = new CaptureService(
                     adbService,
                     settingsService,
@@ -153,10 +166,12 @@ namespace DexManager
                     scrcpyService,
                     singleWindowService,
                     screenOffService,
+                    scrcpyLaunchCoordinator,
                     deviceMonitor,
                     orchestrator,
                     captureCoordinator,
                     autoHideService,
+                    autoStartService,
                     environmentCheckService,
                     keyMappingService,
                     IsAutoRun(args)));

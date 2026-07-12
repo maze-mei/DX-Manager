@@ -4,9 +4,12 @@
 
 ### PC
 
-- Windows 7 SP1, 8.1, 10, or 11
+- 64-bit Windows 7 SP1, 8.1, 10, or 11 (32-bit Windows is not supported)
 - .NET Framework 4.6.2 or later
+- Windows 7/8.1: Universal CRT updates required by the bundled legacy ADB
 - Enough disk space to extract the complete release archive
+- A user-writable extraction folder; DX Manager stores config, logs, and
+  screenshots beside the executable
 
 ### Phone
 
@@ -21,7 +24,9 @@ PC.
 
 ## 2. Installation and First Run
 
-1. Extract the complete release ZIP to a folder.
+1. Extract the complete release ZIP to a folder your account can write to.
+   Avoid protected locations such as `Program Files` unless write permission
+   has been configured.
 2. Run `DXManager.exe`.
 3. If Windows displays a security warning, verify the file source before
    allowing it to run.

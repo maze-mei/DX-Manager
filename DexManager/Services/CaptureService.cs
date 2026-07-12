@@ -28,6 +28,13 @@ namespace DexManager.Services
 
         public CaptureResult CaptureWindow(IntPtr windowHandle)
         {
+            return CaptureWindow(windowHandle, _adbService.TargetSerial);
+        }
+
+        public CaptureResult CaptureWindow(
+            IntPtr windowHandle,
+            string serial)
+        {
             if (windowHandle == IntPtr.Zero)
                 throw new InvalidOperationException(
                     LocalizationService.Get(
@@ -48,10 +55,21 @@ namespace DexManager.Services
                 clientOrigin.Y,
                 clientRect.Right - clientRect.Left,
                 clientRect.Bottom - clientRect.Top);
-            return CaptureRectangle(rectangle, "DeX_Full");
+            return CaptureRectangle(rectangle, "DeX_Full", serial);
         }
 
         public CaptureResult CaptureRectangle(Rectangle rectangle, string prefix)
+        {
+            return CaptureRectangle(
+                rectangle,
+                prefix,
+                _adbService.TargetSerial);
+        }
+
+        public CaptureResult CaptureRectangle(
+            Rectangle rectangle,
+            string prefix,
+            string serial)
         {
             if (rectangle.Width <= 0 || rectangle.Height <= 0)
                 throw new ArgumentException(
@@ -89,25 +107,34 @@ namespace DexManager.Services
             var transferred = false;
             var remotePath = string.Empty;
 
-            if (_settings.Features.PushCaptureToDevice)
+            if (_settings.Features.PushCaptureToDevice &&
+                !string.IsNullOrWhiteSpace(serial))
             {
                 remotePath = CombineDevicePath(
                     _settings.Paths.DeviceScreenshotFolder,
                     fileName);
-                TransferToDevice(localPath, remotePath);
+                TransferToDevice(localPath, remotePath, serial);
                 transferred = true;
+            }
+            else if (_settings.Features.PushCaptureToDevice)
+            {
+                _logService.Warning(LocalizationService.Get(
+                    "Log.Capture.PushSkippedNoTarget"));
             }
 
             return new CaptureResult(localPath, remotePath, transferred);
         }
 
-        private void TransferToDevice(string localPath, string remotePath)
+        private void TransferToDevice(
+            string localPath,
+            string remotePath,
+            string serial)
         {
             var remoteFolder = _settings.Paths.DeviceScreenshotFolder.TrimEnd('/');
-            var pushResult = _adbService.Push(localPath, remotePath);
+            var pushResult = Push(serial, localPath, remotePath);
             if (!pushResult.IsSuccess)
             {
-                var mkdirResult = _adbService.Shell(
+                var mkdirResult = Shell(serial,
                     "mkdir -p " + ShellQuote(remoteFolder));
                 if (!mkdirResult.IsSuccess)
                 {
@@ -117,7 +144,7 @@ namespace DexManager.Services
                             GetCommandError(mkdirResult)));
                 }
 
-                pushResult = _adbService.Push(localPath, remotePath);
+                pushResult = Push(serial, localPath, remotePath);
                 if (!pushResult.IsSuccess)
                 {
                     throw new InvalidOperationException(
@@ -128,7 +155,7 @@ namespace DexManager.Services
             }
 
             var mediaUri = "file://" + remotePath;
-            var scanResult = _adbService.Shell(
+            var scanResult = Shell(serial,
                 "am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d " +
                 ShellQuote(mediaUri));
             if (!scanResult.IsSuccess)
@@ -138,6 +165,22 @@ namespace DexManager.Services
             _logService.Info(LocalizationService.Format(
                 "Log.Capture.Pushed",
                 remotePath));
+        }
+
+        private ProcessResult Push(
+            string serial,
+            string localPath,
+            string remotePath)
+        {
+            return _adbService.PushForSerial(
+                serial,
+                localPath,
+                remotePath);
+        }
+
+        private ProcessResult Shell(string serial, string command)
+        {
+            return _adbService.ShellForSerial(serial, command, true);
         }
 
         private static string CombineDevicePath(string folder, string fileName)

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using DexManager.Models;
 
@@ -11,6 +12,9 @@ namespace DexManager.Services
 {
     public sealed class SingleWindowService : IDisposable
     {
+        private static readonly Regex NewDisplayIdRegex = new Regex(
+            @"New display:.*\(id=(\d+)\)",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private readonly object _syncRoot = new object();
         private readonly string _scrcpyPath;
         private readonly int _processTimeoutMs;
@@ -25,6 +29,13 @@ namespace DexManager.Services
             new Dictionary<int, bool>();
         private readonly Dictionary<int, bool> _screenOffRequests =
             new Dictionary<int, bool>();
+        private readonly Dictionary<int, string> _targetSerials =
+            new Dictionary<int, string>();
+        private readonly Dictionary<int, int> _displayIds =
+            new Dictionary<int, int>();
+        private readonly HashSet<int> _stoppingSlots = new HashSet<int>();
+        private int _shutdownRequested;
+        private int _disposed;
 
         public SingleWindowService(
             string scrcpyPath,
@@ -54,18 +65,18 @@ namespace DexManager.Services
 
         public event EventHandler RunningChanged;
 
+        public void RequestShutdown()
+        {
+            Interlocked.Exchange(ref _shutdownRequested, 1);
+        }
+
         public bool IsRunning(int slot)
         {
             lock (_syncRoot)
             {
                 Process process;
                 if (!_processes.TryGetValue(slot, out process)) return false;
-                if (IsProcessRunning(process)) return true;
-                _processes.Remove(slot);
-                _stayAwakeRequests.Remove(slot);
-                _screenOffRequests.Remove(slot);
-                process.Dispose();
-                return false;
+                return IsProcessRunning(process);
             }
         }
 
@@ -131,6 +142,62 @@ namespace DexManager.Services
             }
         }
 
+        public IList<string> GetRunningSerials()
+        {
+            var serials = new List<string>();
+            lock (_syncRoot)
+            {
+                foreach (var item in _processes)
+                {
+                    string serial;
+                    if (!IsProcessRunning(item.Value) ||
+                        !_targetSerials.TryGetValue(item.Key, out serial) ||
+                        string.IsNullOrWhiteSpace(serial) ||
+                        serials.Contains(serial))
+                    {
+                        continue;
+                    }
+                    serials.Add(serial);
+                }
+            }
+            return serials;
+        }
+
+        public IList<string> GetStayAwakeSerials()
+        {
+            return GetRequestedSerials(_stayAwakeRequests);
+        }
+
+        public IList<string> GetScreenOffSerials()
+        {
+            return GetRequestedSerials(_screenOffRequests);
+        }
+
+        private IList<string> GetRequestedSerials(
+            IDictionary<int, bool> requests)
+        {
+            var serials = new List<string>();
+            lock (_syncRoot)
+            {
+                foreach (var item in _processes)
+                {
+                    bool requested;
+                    string serial;
+                    if (!IsProcessRunning(item.Value) ||
+                        !requests.TryGetValue(item.Key, out requested) ||
+                        !requested ||
+                        !_targetSerials.TryGetValue(item.Key, out serial) ||
+                        string.IsNullOrWhiteSpace(serial) ||
+                        serials.Contains(serial))
+                    {
+                        continue;
+                    }
+                    serials.Add(serial);
+                }
+            }
+            return serials;
+        }
+
         public IntPtr MainWindowHandle(int slot)
         {
             lock (_syncRoot)
@@ -166,7 +233,82 @@ namespace DexManager.Services
             return false;
         }
 
+        public bool TryGetAdbTargetForWindow(
+            IntPtr windowHandle,
+            out string serial,
+            out int displayId)
+        {
+            serial = null;
+            displayId = 0;
+            if (windowHandle == IntPtr.Zero) return false;
+
+            lock (_syncRoot)
+            {
+                foreach (var item in _processes)
+                {
+                    if (!IsProcessRunning(item.Value) ||
+                        GetMainWindowHandle(item.Value) != windowHandle)
+                    {
+                        continue;
+                    }
+
+                    string targetSerial;
+                    int targetDisplayId;
+                    if (!_targetSerials.TryGetValue(
+                            item.Key,
+                            out targetSerial) ||
+                        string.IsNullOrWhiteSpace(targetSerial) ||
+                        !_displayIds.TryGetValue(
+                            item.Key,
+                            out targetDisplayId) ||
+                        targetDisplayId <= 0)
+                    {
+                        return false;
+                    }
+
+                    serial = targetSerial;
+                    displayId = targetDisplayId;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool TryGetSerialForWindow(
+            IntPtr windowHandle,
+            out string serial)
+        {
+            serial = null;
+            if (windowHandle == IntPtr.Zero) return false;
+            lock (_syncRoot)
+            {
+                foreach (var item in _processes)
+                {
+                    string targetSerial;
+                    if (IsProcessRunning(item.Value) &&
+                        GetMainWindowHandle(item.Value) == windowHandle &&
+                        _targetSerials.TryGetValue(
+                            item.Key,
+                            out targetSerial) &&
+                        !string.IsNullOrWhiteSpace(targetSerial))
+                    {
+                        serial = targetSerial;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         public void Start(int slot, SingleWindowSlotSettings settings)
+        {
+            Start(slot, settings, _adbService.TargetSerial);
+        }
+
+        public void Start(
+            int slot,
+            SingleWindowSlotSettings settings,
+            string requestedSerial)
         {
             if (slot < 1 || slot > 3)
                 throw new ArgumentOutOfRangeException("slot");
@@ -185,43 +327,74 @@ namespace DexManager.Services
             var started = false;
             _launchCoordinator.RunExclusive(delegate
             {
-                Process process;
-                lock (_syncRoot)
+                if (Interlocked.CompareExchange(
+                    ref _shutdownRequested,
+                    0,
+                    0) != 0 ||
+                    Interlocked.CompareExchange(ref _disposed, 0, 0) != 0)
                 {
-                    if (IsRunning(slot))
+                    throw new InvalidOperationException(
+                        LocalizationService.Get(
+                            "Error.Scrcpy.ShutdownRequested"));
+                }
+
+                CleanupStaleSlot(slot);
+                Process process = null;
+                try
+                {
+                    lock (_syncRoot)
                     {
-                        _logService.Warning(LocalizationService.Format(
-                            "Log.SingleWindow.AlreadyRunning",
-                            slot));
-                        return;
+                        Process existing;
+                        if (_processes.TryGetValue(slot, out existing) &&
+                            IsProcessRunning(existing))
+                        {
+                            _logService.Warning(LocalizationService.Format(
+                                "Log.SingleWindow.AlreadyRunning",
+                                slot));
+                            return;
+                        }
+
+                        var serial = requestedSerial;
+                        if (string.IsNullOrWhiteSpace(serial) ||
+                            !_adbService.IsAuthorizedDeviceConnected(serial))
+                        {
+                            throw new InvalidOperationException(
+                                LocalizationService.Get(
+                                    "Error.Dex.NoAuthorizedDevice"));
+                        }
+                        var arguments = BuildArguments(
+                            slot,
+                            settings,
+                            serial);
+                        process = CreateProcess(arguments);
+                        process.EnableRaisingEvents = true;
+                        process.Exited += Process_Exited;
+                        process.OutputDataReceived +=
+                            Process_OutputDataReceived;
+                        process.ErrorDataReceived +=
+                            Process_ErrorDataReceived;
+                        _processes[slot] = process;
+                        _stayAwakeRequests[slot] = settings.StayAwake;
+                        _screenOffRequests[slot] = settings.TurnScreenOff;
+                        _targetSerials[slot] = serial;
+                        _displayIds.Remove(slot);
+                        _stoppingSlots.Remove(slot);
+
+                        _logService.Info(LocalizationService.Format(
+                            "Log.SingleWindow.Start",
+                            slot,
+                            arguments));
                     }
 
-                    var arguments = BuildArguments(slot, settings);
-                    process = CreateProcess(arguments);
-                    process.EnableRaisingEvents = true;
-                    process.Exited += Process_Exited;
-                    process.OutputDataReceived += Process_OutputDataReceived;
-                    process.ErrorDataReceived += Process_ErrorDataReceived;
                     process.Start();
                     process.BeginOutputReadLine();
                     process.BeginErrorReadLine();
-                    _processes[slot] = process;
-                    _stayAwakeRequests[slot] = settings.StayAwake;
-                    _screenOffRequests[slot] = settings.TurnScreenOff;
-                    started = true;
-                    _logService.Info(LocalizationService.Format(
-                        "Log.SingleWindow.Start",
-                        slot,
-                        arguments));
-                }
-
-                try
-                {
                     WaitForMainWindow(process, slot);
+                    started = true;
                 }
                 catch
                 {
-                    AbortStart(process, slot);
+                    if (process != null) AbortStart(process, slot);
                     throw;
                 }
             });
@@ -233,8 +406,14 @@ namespace DexManager.Services
         {
             _launchCoordinator.RunExclusive(delegate
             {
+                string serial;
+                lock (_syncRoot)
+                {
+                    if (!_targetSerials.TryGetValue(slot, out serial))
+                        serial = _adbService.TargetSerial;
+                }
                 Stop(slot);
-                Start(slot, settings);
+                Start(slot, settings, serial);
             });
         }
 
@@ -243,20 +422,7 @@ namespace DexManager.Services
             var stopped = false;
             _launchCoordinator.RunExclusive(delegate
             {
-                Process process;
-                lock (_syncRoot)
-                {
-                    if (!_processes.TryGetValue(slot, out process)) return;
-                    _processes.Remove(slot);
-                    _stayAwakeRequests.Remove(slot);
-                    _screenOffRequests.Remove(slot);
-                }
-
-                StopProcess(process);
-                stopped = true;
-                _logService.Info(LocalizationService.Format(
-                    "Log.SingleWindow.Stopped",
-                    slot));
+                stopped = StopSlotCore(slot);
             });
 
             if (stopped) RaiseRunningChanged();
@@ -265,42 +431,105 @@ namespace DexManager.Services
         public void StopAll()
         {
             var stoppedCount = 0;
+            var errors = new List<Exception>();
             _launchCoordinator.RunExclusive(delegate
             {
-                List<KeyValuePair<int, Process>> processes;
+                List<int> slots;
                 lock (_syncRoot)
                 {
-                    processes =
-                        new List<KeyValuePair<int, Process>>(_processes);
-                    _processes.Clear();
-                    _stayAwakeRequests.Clear();
-                    _screenOffRequests.Clear();
+                    slots = new List<int>(_processes.Keys);
                 }
 
-                foreach (var item in processes)
+                foreach (var slot in slots)
                 {
-                    StopProcess(item.Value);
-                    stoppedCount++;
-                    _logService.Info(LocalizationService.Format(
-                        "Log.SingleWindow.Stopped",
-                        item.Key));
+                    try
+                    {
+                        if (StopSlotCore(slot)) stoppedCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add(ex);
+                        _logService.Error(
+                            LocalizationService.Format(
+                                "Log.SingleWindow.StopFailed",
+                                slot),
+                            ex);
+                    }
                 }
             });
 
             if (stoppedCount > 0) RaiseRunningChanged();
+            if (errors.Count > 0) throw new AggregateException(errors);
         }
 
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+            RequestShutdown();
             StopAll();
+        }
+
+        private bool StopSlotCore(int slot)
+        {
+            Process process;
+            lock (_syncRoot)
+            {
+                if (!_processes.TryGetValue(slot, out process) ||
+                    _stoppingSlots.Contains(slot))
+                {
+                    return false;
+                }
+                _stoppingSlots.Add(slot);
+            }
+
+            try
+            {
+                EnsureProcessStopped(process);
+                CompleteExplicitStop(slot, process);
+                _logService.Info(LocalizationService.Format(
+                    "Log.SingleWindow.Stopped",
+                    slot));
+                return true;
+            }
+            catch
+            {
+                if (!IsProcessRunning(process))
+                {
+                    CompleteExplicitStop(slot, process);
+                    return true;
+                }
+
+                lock (_syncRoot)
+                {
+                    Process current;
+                    if (_processes.TryGetValue(slot, out current) &&
+                        ReferenceEquals(current, process))
+                    {
+                        _stoppingSlots.Remove(slot);
+                    }
+                }
+                throw;
+            }
         }
 
         private string BuildArguments(
             int slot,
             SingleWindowSlotSettings settings)
         {
+            return BuildArguments(
+                slot,
+                settings,
+                _adbService.TargetSerial);
+        }
+
+        private string BuildArguments(
+            int slot,
+            SingleWindowSlotSettings settings,
+            string serial)
+        {
+            ScrcpyService.ValidateAdditionalArguments(
+                settings.AdditionalArguments);
             var arguments = new List<string>();
-            var serial = _adbService.TargetSerial;
             if (!string.IsNullOrWhiteSpace(serial))
             {
                 arguments.Add("--serial");
@@ -380,6 +609,7 @@ namespace DexManager.Services
         {
             var process = sender as Process;
             var slot = 0;
+            var ownedProcess = false;
             lock (_syncRoot)
             {
                 foreach (var item in _processes)
@@ -388,16 +618,20 @@ namespace DexManager.Services
                     slot = item.Key;
                     break;
                 }
-                if (slot > 0)
+                if (slot > 0 && !_stoppingSlots.Contains(slot))
                 {
                     _processes.Remove(slot);
                     _stayAwakeRequests.Remove(slot);
                     _screenOffRequests.Remove(slot);
+                    _targetSerials.Remove(slot);
+                    _displayIds.Remove(slot);
+                    ownedProcess = true;
                 }
             }
 
-            if (slot > 0)
+            if (ownedProcess)
             {
+                DrainAndDispose(process);
                 _logService.Info(LocalizationService.Format(
                     "Log.SingleWindow.ProcessExited",
                     slot));
@@ -409,16 +643,51 @@ namespace DexManager.Services
             object sender,
             DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrWhiteSpace(e.Data))
-                _logService.Info("[single scrcpy] " + e.Data);
+            if (string.IsNullOrWhiteSpace(e.Data)) return;
+            CaptureDisplayId(sender as Process, e.Data);
+            _logService.Info("[single scrcpy] " + e.Data);
         }
 
         private void Process_ErrorDataReceived(
             object sender,
             DataReceivedEventArgs e)
         {
-            if (!string.IsNullOrWhiteSpace(e.Data))
-                _logService.Warning("[single scrcpy] " + e.Data);
+            if (string.IsNullOrWhiteSpace(e.Data)) return;
+            CaptureDisplayId(sender as Process, e.Data);
+            _logService.Warning("[single scrcpy] " + e.Data);
+        }
+
+        private void CaptureDisplayId(Process process, string line)
+        {
+            if (process == null || string.IsNullOrWhiteSpace(line)) return;
+
+            var match = NewDisplayIdRegex.Match(line);
+            int displayId;
+            if (!match.Success ||
+                !int.TryParse(
+                    match.Groups[1].Value,
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out displayId) ||
+                displayId <= 0)
+            {
+                return;
+            }
+
+            lock (_syncRoot)
+            {
+                foreach (var item in _processes)
+                {
+                    if (!ReferenceEquals(item.Value, process) ||
+                        _stoppingSlots.Contains(item.Key))
+                    {
+                        continue;
+                    }
+
+                    _displayIds[item.Key] = displayId;
+                    return;
+                }
+            }
         }
 
         private void RaiseRunningChanged()
@@ -449,21 +718,16 @@ namespace DexManager.Services
             return "DX Manager - " + appName;
         }
 
-        private static void StopProcess(Process process)
+        private void EnsureProcessStopped(Process process)
         {
-            if (process == null) return;
-            try
-            {
-                if (!process.HasExited)
-                {
-                    process.CloseMainWindow();
-                    if (!process.WaitForExit(2000)) process.Kill();
-                }
-            }
-            finally
-            {
-                process.Dispose();
-            }
+            if (!IsProcessRunning(process)) return;
+            process.CloseMainWindow();
+            if (process.WaitForExit(2000)) return;
+            process.Kill();
+            if (!process.WaitForExit(2000))
+                throw new TimeoutException(
+                    LocalizationService.Get(
+                        "Error.Scrcpy.StopTimeout"));
         }
 
         private static bool IsProcessRunning(Process process)
@@ -484,6 +748,13 @@ namespace DexManager.Services
             var stopwatch = Stopwatch.StartNew();
             while (stopwatch.ElapsedMilliseconds < _processTimeoutMs)
             {
+                if (Interlocked.CompareExchange(
+                        ref _shutdownRequested,
+                        0,
+                        0) != 0)
+                {
+                    throw new OperationCanceledException();
+                }
                 if (!IsProcessRunning(process))
                     throw new InvalidOperationException(
                         LocalizationService.Format(
@@ -510,6 +781,46 @@ namespace DexManager.Services
 
         private void AbortStart(Process process, int slot)
         {
+            var ownsProcess = false;
+            lock (_syncRoot)
+            {
+                Process current;
+                if (_processes.TryGetValue(slot, out current) &&
+                    ReferenceEquals(current, process))
+                {
+                    _stoppingSlots.Add(slot);
+                    ownsProcess = true;
+                }
+            }
+
+            if (!ownsProcess) return;
+            try
+            {
+                EnsureProcessStopped(process);
+                CompleteExplicitStop(slot, process);
+            }
+            catch
+            {
+                if (!IsProcessRunning(process))
+                    CompleteExplicitStop(slot, process);
+                else
+                {
+                    lock (_syncRoot)
+                    {
+                        Process current;
+                        if (_processes.TryGetValue(slot, out current) &&
+                            ReferenceEquals(current, process))
+                        {
+                            _stoppingSlots.Remove(slot);
+                        }
+                    }
+                }
+                throw;
+            }
+        }
+
+        private void CompleteExplicitStop(int slot, Process process)
+        {
             lock (_syncRoot)
             {
                 Process current;
@@ -519,10 +830,52 @@ namespace DexManager.Services
                     _processes.Remove(slot);
                     _stayAwakeRequests.Remove(slot);
                     _screenOffRequests.Remove(slot);
+                    _targetSerials.Remove(slot);
+                    _displayIds.Remove(slot);
+                }
+                _stoppingSlots.Remove(slot);
+            }
+            DrainAndDispose(process);
+        }
+
+        private void CleanupStaleSlot(int slot)
+        {
+            Process stale = null;
+            lock (_syncRoot)
+            {
+                Process current;
+                if (_processes.TryGetValue(slot, out current) &&
+                    !IsProcessRunning(current) &&
+                    !_stoppingSlots.Contains(slot))
+                {
+                    stale = current;
+                    _processes.Remove(slot);
+                    _stayAwakeRequests.Remove(slot);
+                    _screenOffRequests.Remove(slot);
+                    _targetSerials.Remove(slot);
+                    _displayIds.Remove(slot);
                 }
             }
+            if (stale != null) DrainAndDispose(stale);
+        }
 
-            StopProcess(process);
+        private void DrainAndDispose(Process process)
+        {
+            if (process == null) return;
+            try
+            {
+                if (!IsProcessRunning(process)) process.WaitForExit();
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            finally
+            {
+                process.Exited -= Process_Exited;
+                process.OutputDataReceived -= Process_OutputDataReceived;
+                process.ErrorDataReceived -= Process_ErrorDataReceived;
+            }
+            process.Dispose();
         }
 
         private static IntPtr GetMainWindowHandle(Process process)

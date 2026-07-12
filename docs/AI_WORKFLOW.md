@@ -11,7 +11,7 @@
 
 - 기존 기능, 사용자 설정, 미커밋 변경을 보존한다.
 - 요청 범위의 최소 변경을 한다.
-- .NET Framework 4.6.2와 Windows 7 호환성을 유지한다.
+- .NET Framework 4.6.2와 64비트 Windows 7 호환성을 유지한다.
 - ADB는 `AdbService`와 선택한 절대 경로로 실행한다.
 - Scrcpy 시작 직렬화 규칙을 지킨다.
 - display ID가 모호하면 추측하지 않는다.

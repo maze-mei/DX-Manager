@@ -113,8 +113,9 @@
   <data name="Status.ShuttingDown" xml:space="preserve"><value>Cleaning up before exit</value></data>
   <data name="Capture.Hint" xml:space="preserve"><value>Press F8 again: capture the Scrcpy window&#xD;&#xA;Drag the mouse: capture a region&#xD;&#xA;ESC: cancel</value></data>
   <data name="Capture.Saved" xml:space="preserve"><value>✓ Screenshot saved</value></data>
-  <data name="Settings.SavedInline" xml:space="preserve"><value>Settings saved. Restart to apply language or path changes.</value></data>
+  <data name="Settings.SavedInline" xml:space="preserve"><value>Settings saved. Restart to apply language, program path, device monitor, or process timeout changes.</value></data>
   <data name="Settings.SaveFailedInline" xml:space="preserve"><value>Save failed: {0}</value></data>
+  <data name="Settings.SavedApplyFailedInline" xml:space="preserve"><value>Settings were saved, but an immediate runtime update failed: {0}</value></data>
   <data name="Settings.Title" xml:space="preserve"><value>DX Manager · Settings &amp; diagnostics</value></data>
   <data name="Settings.Description" xml:space="preserve"><value>Change display and Scrcpy launch options in the main window. Manage connections, paths and advanced behavior here.</value></data>
   <data name="Settings.General" xml:space="preserve"><value>General</value></data>
@@ -142,11 +143,20 @@
   <data name="Log.Settings.SchemaUpdated" xml:space="preserve"><value>Updated the settings schema from {0} to {1}.</value></data>
   <data name="Log.Settings.Loaded" xml:space="preserve"><value>Loaded the settings file: {0}</value></data>
   <data name="Log.Settings.LoadFailed" xml:space="preserve"><value>Could not read the settings file. Default settings will be used. Backup: {0}</value></data>
+  <data name="Log.Settings.BackupFailed" xml:space="preserve"><value>Could not preserve the invalid settings file.</value></data>
   <data name="Log.Settings.Saved" xml:space="preserve"><value>Saved the settings file: {0}</value></data>
+  <data name="Log.Settings.PrimaryInvalid" xml:space="preserve"><value>The primary settings file was invalid. Preserved copy: {0}</value></data>
+  <data name="Log.Settings.Recovered" xml:space="preserve"><value>Recovered settings from: {0}</value></data>
+  <data name="Log.Settings.RecoverySaveFailed" xml:space="preserve"><value>Recovered settings are active in memory, but the primary settings file could not be repaired.</value></data>
+  <data name="Log.Settings.SchemaSaveFailed" xml:space="preserve"><value>The settings were loaded and migrated in memory, but the migrated file could not be saved.</value></data>
+  <data name="Log.Settings.Normalized" xml:space="preserve"><value>Normalized invalid or missing settings values and saved the corrected file.</value></data>
+  <data name="Error.Settings.NewerSchema" xml:space="preserve"><value>This settings file uses schema {0}, but this DX Manager supports up to schema {1}. The file was not changed. Run the newer DX Manager version or restore a compatible settings file.</value></data>
   <data name="Error.Process.PathEmpty" xml:space="preserve"><value>The executable path is empty.</value></data>
   <data name="Error.Process.FileNotFound" xml:space="preserve"><value>The executable could not be found.</value></data>
   <data name="Log.Process.Start" xml:space="preserve"><value>Starting process: {0} {1}</value></data>
   <data name="Log.Process.KillTimedOutFailed" xml:space="preserve"><value>Could not terminate the timed-out process: {0}</value></data>
+  <data name="Log.Process.TerminationDeferred" xml:space="preserve"><value>The timed-out process did not exit after Kill. Background cleanup will retry.</value></data>
+  <data name="Log.Process.TerminationFailed" xml:space="preserve"><value>The timed-out process still did not exit after repeated cleanup attempts.</value></data>
   <data name="Log.Process.End" xml:space="preserve"><value>Process exited: ExitCode={0}, Timeout={1}, Duration={2}ms</value></data>
   <data name="Error.Adb.PathEmpty" xml:space="preserve"><value>The ADB path is empty.</value></data>
   <data name="Error.Adb.ShellCommandEmpty" xml:space="preserve"><value>The ADB shell command is empty.</value></data>
@@ -172,21 +182,29 @@
   <data name="Log.Adb.WakeUpDeviceMissing" xml:space="preserve"><value>Could not detect an ADB device after scrcpy wake-up.</value></data>
   <data name="Log.Main.Shown" xml:space="preserve"><value>Displayed the main window.</value></data>
   <data name="Log.Main.CaptureHotkeyRegistrationFailed" xml:space="preserve"><value>Could not register the capture hotkey.</value></data>
+  <data name="Log.Main.AutoStartApplyFailed" xml:space="preserve"><value>Could not apply the Windows startup setting.</value></data>
+  <data name="Log.Main.LogFolderApplyFailed" xml:space="preserve"><value>Could not apply the log folder setting.</value></data>
   <data name="Log.Main.KeyMappingStartFailed" xml:space="preserve"><value>Could not start key mapping.</value></data>
   <data name="Log.Main.AdbInitFailed" xml:space="preserve"><value>ADB initialization failed.</value></data>
+  <data name="Log.Main.DeviceSwitchCleanupFailed" xml:space="preserve"><value>Could not stop the previous device sessions before switching ADB devices.</value></data>
   <data name="Log.Main.ScreenOffReapplyFailed" xml:space="preserve"><value>Could not reapply screen-off to the phone.</value></data>
   <data name="Log.Main.StayAwakeCommandFailed" xml:space="preserve"><value>Could not change the stay-awake setting: {0}</value></data>
   <data name="Log.Main.StayAwakeEnabled" xml:space="preserve"><value>Enabled stay-awake for the active scrcpy sessions.</value></data>
   <data name="Log.Main.StayAwakeDisabled" xml:space="preserve"><value>Disabled stay-awake because no scrcpy session is running.</value></data>
   <data name="Log.Main.StayAwakeChangeFailed" xml:space="preserve"><value>Could not change the stay-awake setting.</value></data>
+  <data name="Log.Main.StayAwakeRestoreSkipped" xml:space="preserve"><value>Did not restore stay-awake because another process changed the current value to '{0}'.</value></data>
   <data name="Log.Main.PhoneScreenWoken" xml:space="preserve"><value>Turned on the phone screen after all scrcpy windows closed.</value></data>
   <data name="Log.Main.PhoneScreenWakeCommandFailed" xml:space="preserve"><value>The command to turn on the phone screen failed: {0}</value></data>
   <data name="Log.Main.PhoneScreenWakeFailed" xml:space="preserve"><value>Could not turn on the phone screen.</value></data>
+  <data name="Log.Main.CleanupFailed" xml:space="preserve"><value>The cleanup step '{0}' failed while exiting.</value></data>
+  <data name="Log.Main.CleanupDeferredForShutdown" xml:space="preserve"><value>Shutdown cleanup exceeded five seconds. DX Manager will close after owned processes and device state are cleaned up.</value></data>
   <data name="Log.Main.SettingsDeferredNoDevice" xml:space="preserve"><value>Saved the run settings. No ADB device is connected, so they will be applied the next time DeX starts.</value></data>
   <data name="Log.Main.SettingsImmediateApplyFailed" xml:space="preserve"><value>The run settings were saved but could not be applied immediately.</value></data>
   <data name="Main.ApplyFailedShort" xml:space="preserve"><value>Could not apply run settings immediately: {0}</value></data>
   <data name="Log.Main.AppListDisplayed" xml:space="preserve"><value>Displayed the scrcpy app list on the main screen.</value></data>
   <data name="Log.Main.AppListLoadFailed" xml:space="preserve"><value>Could not load the scrcpy app list.</value></data>
+  <data name="Log.Main.AppIdentitySaveFailed" xml:space="preserve"><value>Could not save the selected app.</value></data>
+  <data name="Log.Main.RememberedAppSaveFailed" xml:space="preserve"><value>The session started, but the app could not be added to the remembered-app list.</value></data>
   <data name="Log.Main.DexSettingsSaved" xml:space="preserve"><value>Saved the DeX/scrcpy run settings from the main screen.</value></data>
   <data name="Log.Main.SingleWindowSettingsSaved" xml:space="preserve"><value>Saved the run settings for Single Window {0}.</value></data>
   <data name="Log.Main.ModeSwitchSaveFailed" xml:space="preserve"><value>Could not save the current run settings while switching modes: {0}</value></data>
@@ -210,6 +228,7 @@
   <data name="Error.Capture.PushFailed" xml:space="preserve"><value>Could not transfer the capture to the phone. {0}</value></data>
   <data name="Log.Capture.MediaScanFailed" xml:space="preserve"><value>The media scan broadcast failed.</value></data>
   <data name="Log.Capture.Pushed" xml:space="preserve"><value>Transferred the capture to the phone: {0}</value></data>
+  <data name="Log.Capture.PushSkippedNoTarget" xml:space="preserve"><value>Saved the capture locally, but did not copy it to a device because the source window's ADB target was unavailable.</value></data>
   <data name="Log.DeviceMonitor.Started" xml:space="preserve"><value>Started ADB device monitoring.</value></data>
   <data name="Log.DeviceMonitor.Stopped" xml:space="preserve"><value>Stopped ADB device monitoring.</value></data>
   <data name="Log.DeviceMonitor.Failed" xml:space="preserve"><value>An error occurred while monitoring the device.</value></data>
@@ -219,6 +238,9 @@
   <data name="Error.Dex.NoAuthorizedDevice" xml:space="preserve"><value>No authorized ADB device is connected.</value></data>
   <data name="Log.Dex.StartCompleted" xml:space="preserve"><value>Completed the DeX startup sequence.</value></data>
   <data name="Log.Dex.StartFailed" xml:space="preserve"><value>Could not start DeX.</value></data>
+  <data name="Log.Dex.StartCancelled" xml:space="preserve"><value>Cancelled DeX startup because shutdown was requested.</value></data>
+  <data name="Log.Dex.LastSuccessSaveFailed" xml:space="preserve"><value>DeX started, but the last-success information could not be saved.</value></data>
+  <data name="Log.Dex.StopProcessFailed" xml:space="preserve"><value>Could not stop the managed DeX Scrcpy process.</value></data>
   <data name="Log.Dex.StopCleanupCompleted" xml:space="preserve"><value>Completed DeX shutdown cleanup.</value></data>
   <data name="Log.Dex.ApplyInProgress" xml:space="preserve"><value>A run-settings apply operation is already in progress.</value></data>
   <data name="Log.Dex.ApplyDeferredNoDevice" xml:space="preserve"><value>The run settings were saved but were not applied immediately because no authorized ADB device is connected.</value></data>
@@ -228,6 +250,8 @@
   <data name="Log.Dex.ApplyFailed" xml:space="preserve"><value>Could not apply the new run settings immediately.</value></data>
   <data name="Log.Dex.ShutdownInProgress" xml:space="preserve"><value>Shutdown cleanup is already in progress.</value></data>
   <data name="Log.Dex.ShutdownCleanupCompleted" xml:space="preserve"><value>Completed ADB cleanup before program exit.</value></data>
+  <data name="Log.Dex.NaturalExitCleanupCompleted" xml:space="preserve"><value>Released the DeX virtual display after scrcpy exited.</value></data>
+  <data name="Log.Dex.NaturalExitCleanupDeferred" xml:space="preserve"><value>Scrcpy exited, but the DeX virtual display could not be restored. The lease is retained for retry.</value></data>
   <data name="Log.Dex.ShutdownCleanupFailed" xml:space="preserve"><value>ADB cleanup before program exit failed.</value></data>
   <data name="Log.Dex.SessionStarted" xml:space="preserve"><value>Managed session started: {0}</value></data>
   <data name="Log.Dex.SessionEnded" xml:space="preserve"><value>Managed session ended: {0}</value></data>
@@ -236,8 +260,10 @@
   <data name="Log.Hotkey.MessageReceived" xml:space="preserve"><value>WM_HOTKEY received: WParam={0}, LParam={1}</value></data>
   <data name="Log.Hotkey.Registered" xml:space="preserve"><value>RegisterHotKey succeeded: {0}, Modifiers={1}, Key={2}</value></data>
   <data name="Log.Hotkey.DiagnosticRegistrationRemoved" xml:space="preserve"><value>Removed the diagnostic RegisterHotKey registration to use the low-level hook.</value></data>
+  <data name="Log.Hotkey.RestoreFailed" xml:space="preserve"><value>Could not restore the previous hotkey configuration.</value></data>
   <data name="Log.Hotkey.RegistrationFailed" xml:space="preserve"><value>RegisterHotKey failed: {0}, LastWin32Error={1}</value></data>
   <data name="Error.Hotkey.GlobalCaptureRegistrationFailed" xml:space="preserve"><value>Could not register the global capture hotkey: {0}</value></data>
+  <data name="Error.Hotkey.GlobalExitRegistrationFailed" xml:space="preserve"><value>Could not register the global exit hotkey: {0}</value></data>
   <data name="Error.Hotkey.LowLevelHookFailed" xml:space="preserve"><value>Could not install the low-level keyboard hook.</value></data>
   <data name="Log.Hotkey.Diagnostics" xml:space="preserve"><value>Key diagnostics: msg=0x{0}, vk=0x{1}, scan=0x{2}, flags=0x{3}, mods={4}</value></data>
   <data name="Error.KeyMapping.HookFailed" xml:space="preserve"><value>Could not install the key-mapping hook.</value></data>
@@ -245,6 +271,7 @@
   <data name="Log.KeyMapping.EnterConversionEnabled" xml:space="preserve"><value>Enter conversion enabled: initial mode=normal Enter; press Scroll Lock to switch to Shift+Enter mode.</value></data>
   <data name="Log.KeyMapping.EnterConversionDisabled" xml:space="preserve"><value>Enter conversion is disabled, so normal Enter will be sent unchanged.</value></data>
   <data name="Log.KeyMapping.Stopped" xml:space="preserve"><value>Stopped scrcpy-specific key mapping.</value></data>
+  <data name="Log.KeyMapping.AdbTargetUnavailable" xml:space="preserve"><value>{0}: skipped the ADB fallback because the active scrcpy display could not be identified safely.</value></data>
   <data name="Log.KeyMapping.EnterMode" xml:space="preserve"><value>Enter input mode: {0}</value></data>
   <data name="KeyMapping.NormalEnter" xml:space="preserve"><value>normal Enter</value></data>
   <data name="Log.KeyMapping.Diagnostics" xml:space="preserve"><value>Key-mapping diagnostics: msg=0x{0}, vk=0x{1}, scan=0x{2}, flags=0x{3}, injected={4}</value></data>
@@ -269,6 +296,9 @@
   <data name="Path.VersionUnavailable" xml:space="preserve"><value>No version output</value></data>
   <data name="Error.Scrcpy.PathEmpty" xml:space="preserve"><value>The scrcpy path is empty.</value></data>
   <data name="Error.Scrcpy.FileNotFound" xml:space="preserve"><value>scrcpy.exe could not be found.</value></data>
+  <data name="Error.Scrcpy.ShutdownRequested" xml:space="preserve"><value>Scrcpy cannot be started because application shutdown has begun.</value></data>
+  <data name="Error.Scrcpy.StopTimeout" xml:space="preserve"><value>Timed out while stopping the managed Scrcpy process.</value></data>
+  <data name="Error.Scrcpy.ReservedAdditionalArgument" xml:space="preserve"><value>The additional argument '{0}' is managed by DX Manager and cannot be overridden here.</value></data>
   <data name="Log.ScreenOff.Cancelled" xml:space="preserve"><value>Cancelled screen-off reapplication because its conditions no longer apply.</value></data>
   <data name="Log.ScreenOff.Starting" xml:space="preserve"><value>Starting the screen-off helper scrcpy sequentially.</value></data>
   <data name="Log.ScreenOff.Confirmed" xml:space="preserve"><value>Confirmed that screen-off was reapplied to the phone.</value></data>
@@ -290,12 +320,20 @@
   <data name="Log.SingleWindow.AlreadyRunning" xml:space="preserve"><value>Single Window {0} is already running.</value></data>
   <data name="Log.SingleWindow.Start" xml:space="preserve"><value>Starting scrcpy for Single Window {0}: {1}</value></data>
   <data name="Log.SingleWindow.Stopped" xml:space="preserve"><value>Stopped Single Window {0}.</value></data>
+  <data name="Log.SingleWindow.StopFailed" xml:space="preserve"><value>Could not stop Single Window {0}.</value></data>
   <data name="Log.SingleWindow.ProcessExited" xml:space="preserve"><value>The scrcpy process for Single Window {0} exited.</value></data>
   <data name="Error.SingleWindow.ExitedBeforeWindow" xml:space="preserve"><value>Single Window {0} scrcpy exited before its window was ready.</value></data>
   <data name="Log.SingleWindow.WindowReady" xml:space="preserve"><value>Single Window {0} scrcpy window ready: PID={1}</value></data>
   <data name="Error.SingleWindow.WindowTimeout" xml:space="preserve"><value>Timed out while waiting for the scrcpy window for Single Window {0}.</value></data>
   <data name="Log.Display.ReusingSetting" xml:space="preserve"><value>Reusing the existing virtual display setting: {0}</value></data>
   <data name="Error.Display.ApplyFailed" xml:space="preserve"><value>Could not apply the virtual display setting: {0}</value></data>
+  <data name="Error.Display.QuerySettingFailed" xml:space="preserve"><value>Could not read the virtual display setting: {0}</value></data>
+  <data name="Error.Display.QueryFailed" xml:space="preserve"><value>Could not query the device display list: {0}</value></data>
+  <data name="Error.Display.OverlaySettingMismatch" xml:space="preserve"><value>The existing overlay setting does not match the requested display. Existing: {0}, requested: {1}</value></data>
+  <data name="Log.Display.RestoreSkipped" xml:space="preserve"><value>The overlay setting changed outside DX Manager, so it will not be overwritten: {0}</value></data>
+  <data name="Log.Display.RestoreFailed" xml:space="preserve"><value>Could not restore the previous overlay setting: {0}</value></data>
+  <data name="Log.Display.Restored" xml:space="preserve"><value>Restored the previous overlay setting.</value></data>
+  <data name="Log.Display.RestoreException" xml:space="preserve"><value>An error occurred while restoring the previous overlay setting.</value></data>
   <data name="Log.Display.SettingApplied" xml:space="preserve"><value>Applied the virtual display setting: {0}</value></data>
   <data name="Log.Display.Reset" xml:space="preserve"><value>Reset the virtual display setting.</value></data>
   <data name="Log.Display.ExistingSelected" xml:space="preserve"><value>Selected existing virtual display ID: {0}</value></data>
@@ -312,6 +350,7 @@
   <data name="Log.Wireless.ConnectSucceeded" xml:space="preserve"><value>Wireless ADB connection succeeded: {0}</value></data>
   <data name="Log.Wireless.EnableFromUsb" xml:space="preserve"><value>Switching the USB device to wireless ADB mode: {0}, port={1}</value></data>
   <data name="Log.Wireless.Disconnected" xml:space="preserve"><value>Disconnected wireless ADB and switched to USB mode.</value></data>
+  <data name="Log.Wireless.DisconnectCommandFailed" xml:space="preserve"><value>Switched to USB mode, but the wireless ADB disconnect command failed: {0}</value></data>
   <data name="Wireless.NoResult" xml:space="preserve"><value>No result</value></data>
   <data name="Settings.Language" xml:space="preserve"><value>Display language</value></data>
   <data name="Settings.LanguageRestart" xml:space="preserve"><value>Language changes are applied after restarting DX Manager.</value></data>
@@ -387,6 +426,12 @@
   <data name="Settings.ProcessTimeout" xml:space="preserve"><value>Process timeout (sec)</value></data>
   <data name="Settings.PushCapture" xml:space="preserve"><value>Send captures to the phone</value></data>
   <data name="Settings.WirelessRequiresIp" xml:space="preserve"><value>Enter the phone IP address when using wireless mode.</value></data>
+  <data name="Settings.ManualAdbPathRequired" xml:space="preserve"><value>Enter an ADB executable path when manual ADB selection is enabled.</value></data>
+  <data name="Settings.ScrcpyPathRequired" xml:space="preserve"><value>The scrcpy executable path cannot be empty.</value></data>
+  <data name="Settings.ExecutableNotFound" xml:space="preserve"><value>The configured executable could not be found: {0}</value></data>
+  <data name="Settings.HotkeysMustDiffer" xml:space="preserve"><value>The capture and exit hotkeys must not conflict.</value></data>
+  <data name="Settings.InvalidHotkey" xml:space="preserve"><value>Enter each hotkey as one key with optional modifiers, for example F8 or LeftAlt+F8.</value></data>
+  <data name="Settings.InvalidPath" xml:space="preserve"><value>The path is invalid: {0}</value></data>
   <data name="Settings.WirelessOperationFailed" xml:space="preserve"><value>Wireless operation failed: {0}</value></data>
   <data name="Settings.WirelessWaiting" xml:space="preserve"><value>Waiting for wireless connection</value></data>
   <data name="Settings.UsbWaiting" xml:space="preserve"><value>Waiting for a USB device</value></data>
@@ -429,7 +474,7 @@
   <data name="Environment.DeviceUnauthorized" xml:space="preserve"><value>Approve the RSA prompt on the phone: {0}</value></data>
   <data name="Environment.DeviceOfflineMessage" xml:space="preserve"><value>The device is offline. Reconnect USB.</value></data>
   <data name="Environment.NoDevice" xml:space="preserve"><value>No device found. Check the USB cable, Developer options, USB debugging, RSA approval, file transfer mode and Samsung USB driver.</value></data>
-  <data name="Settings.Saved" xml:space="preserve"><value>Settings were saved. Restart DX Manager to apply path or language changes.</value></data>
+  <data name="Settings.Saved" xml:space="preserve"><value>Settings were saved. Restart DX Manager to apply language, program path, device monitor, or process timeout changes.</value></data>
   <data name="Settings.SaveFailed" xml:space="preserve"><value>Could not save settings.{0}{0}{1}</value></data>
   <data name="Log.Title" xml:space="preserve"><value>DX Manager · Session log</value></data>
   <data name="Log.Save" xml:space="preserve"><value>Save log</value></data>

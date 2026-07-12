@@ -10,6 +10,8 @@ namespace DexManager.Services
 {
     public sealed class VirtualDisplayService
     {
+        internal const string RetainedLeaseDataKey =
+            "DexManager.VirtualDisplayLease";
         private static readonly Regex DisplayIdRegex = new Regex(
             @"mDisplayId\s*=\s*(\d+)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -37,40 +39,67 @@ namespace DexManager.Services
 
         public string GetOverlaySetting()
         {
-            var result = _adbService.Shell(
-                "settings get global overlay_display_devices");
-            return result.IsSuccess ? result.StandardOutput.Trim() : string.Empty;
+            return GetOverlaySetting(_adbService.TargetSerial);
         }
 
-        public int EnsureVirtualDisplay(
-            VirtualDisplaySettings settings,
-            int creationWaitMs)
+        public string GetOverlaySetting(string serial)
         {
+            var result = ShellForSerial(
+                serial,
+                "settings get global overlay_display_devices");
+            if (!result.IsSuccess)
+                throw new InvalidOperationException(
+                    LocalizationService.Format(
+                        "Error.Display.QuerySettingFailed",
+                        result.StandardError));
+            return result.StandardOutput.Trim();
+        }
+
+        public VirtualDisplayLease EnsureVirtualDisplay(
+            string serial,
+            VirtualDisplaySettings settings,
+            int creationWaitMs,
+            Func<bool> cancellationRequested)
+        {
+            if (string.IsNullOrWhiteSpace(serial))
+                throw new ArgumentException("Device serial is empty.", "serial");
             if (settings == null) throw new ArgumentNullException("settings");
 
-            var current = GetOverlaySetting();
-            var hasSetting = !string.IsNullOrWhiteSpace(current) &&
-                !string.Equals(current, "none", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(current, "null", StringComparison.OrdinalIgnoreCase);
-            var before = GetVirtualDisplays();
+            var current = GetOverlaySetting(serial);
+            var hasSetting = HasOverlaySetting(current);
+            var before = GetVirtualDisplays(serial);
             LogDisplaySnapshot("before", before);
+            var value = BuildOverlaySetting(settings);
 
             if (hasSetting && settings.ReuseExistingDisplay)
             {
+                if (!string.Equals(
+                    current,
+                    value,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException(
+                        LocalizationService.Format(
+                            "Error.Display.OverlaySettingMismatch",
+                            current,
+                            value));
+                }
                 _logService.Info(LocalizationService.Format(
                     "Log.Display.ReusingSetting",
                     current));
-                return SelectExistingDisplay(settings, before);
+                return new VirtualDisplayLease
+                {
+                    Serial = serial,
+                    DisplayId = SelectExistingDisplay(settings, before),
+                    PreviousOverlaySetting = current,
+                    AppliedOverlaySetting = current,
+                    OwnsOverlaySetting = false,
+                    ReusedExistingDisplay = true
+                };
             }
 
-            var value = string.Format(
-                "{0}x{1}/{2},{3}",
-                settings.Width,
-                settings.Height,
-                settings.Dpi,
-                string.IsNullOrWhiteSpace(settings.Suffix) ? "hdmi" : settings.Suffix);
-
-            var result = _adbService.Shell(
+            var result = ShellForSerial(
+                serial,
                 "settings put global overlay_display_devices " + Quote(value));
             if (!result.IsSuccess)
                 throw new InvalidOperationException(
@@ -81,7 +110,30 @@ namespace DexManager.Services
             _logService.Info(LocalizationService.Format(
                 "Log.Display.SettingApplied",
                 value));
-            return WaitForCreatedDisplay(settings, before, creationWaitMs);
+            var lease = new VirtualDisplayLease
+            {
+                Serial = serial,
+                PreviousOverlaySetting = current,
+                AppliedOverlaySetting = value,
+                OwnsOverlaySetting = true,
+                ReusedExistingDisplay = false
+            };
+            try
+            {
+                lease.DisplayId = WaitForCreatedDisplay(
+                    serial,
+                    settings,
+                    before,
+                    creationWaitMs,
+                    cancellationRequested);
+                return lease;
+            }
+            catch (Exception ex)
+            {
+                if (!Release(lease))
+                    ex.Data[RetainedLeaseDataKey] = lease;
+                throw;
+            }
         }
 
         public IList<int> GetVirtualDisplayIds()
@@ -91,13 +143,24 @@ namespace DexManager.Services
 
         public IList<DisplayInfo> GetVirtualDisplays()
         {
-            var result = _adbService.Shell("dumpsys display");
-            if (!result.IsSuccess) return new List<DisplayInfo>();
+            return GetVirtualDisplays(_adbService.TargetSerial);
+        }
+
+        public IList<DisplayInfo> GetVirtualDisplays(string serial)
+        {
+            var result = ShellForSerial(serial, "dumpsys display");
+            if (!result.IsSuccess)
+                throw new InvalidOperationException(
+                    LocalizationService.Format(
+                        "Error.Display.QueryFailed",
+                        result.StandardError));
 
             return ParseDisplays(result.StandardOutput)
                 .Where(display => display.Id > 0)
                 .GroupBy(display => display.Id)
-                .Select(group => group.First())
+                .Select(group => group
+                    .OrderByDescending(GetDisplayCompleteness)
+                    .First())
                 .OrderBy(display => display.Id)
                 .ToList();
         }
@@ -112,10 +175,100 @@ namespace DexManager.Services
             return result.IsSuccess;
         }
 
+        public bool Release(VirtualDisplayLease lease)
+        {
+            if (lease == null || !lease.OwnsOverlaySetting) return true;
+            try
+            {
+                var current = GetOverlaySetting(lease.Serial);
+                if (!string.Equals(
+                    current,
+                    lease.AppliedOverlaySetting,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    _logService.Warning(LocalizationService.Format(
+                        "Log.Display.RestoreSkipped",
+                        current));
+                    lease.OwnsOverlaySetting = false;
+                    return true;
+                }
+
+                var result = IsMissingOverlaySetting(
+                        lease.PreviousOverlaySetting)
+                    ? ShellForSerial(
+                        lease.Serial,
+                        "settings delete global overlay_display_devices")
+                    : ShellForSerial(
+                        lease.Serial,
+                        "settings put global overlay_display_devices " +
+                        Quote(lease.PreviousOverlaySetting));
+                if (!result.IsSuccess)
+                {
+                    _logService.Warning(LocalizationService.Format(
+                        "Log.Display.RestoreFailed",
+                        result.StandardError));
+                    return false;
+                }
+
+                _logService.Info(LocalizationService.Get(
+                    "Log.Display.Restored"));
+                lease.OwnsOverlaySetting = false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logService.Error(
+                    LocalizationService.Get(
+                        "Log.Display.RestoreException"),
+                    ex);
+                return false;
+            }
+        }
+
+        private ProcessResult ShellForSerial(string serial, string command)
+        {
+            return string.IsNullOrWhiteSpace(serial)
+                ? _adbService.Shell(command)
+                : _adbService.ShellForSerial(serial, command, true);
+        }
+
+        private static string BuildOverlaySetting(
+            VirtualDisplaySettings settings)
+        {
+            return string.Format(
+                "{0}x{1}/{2},{3}",
+                settings.Width,
+                settings.Height,
+                settings.Dpi,
+                string.IsNullOrWhiteSpace(settings.Suffix)
+                    ? "hdmi"
+                    : settings.Suffix);
+        }
+
+        private static bool HasOverlaySetting(string value)
+        {
+            return !IsMissingOverlaySetting(value) &&
+                !string.Equals(
+                    value,
+                    "none",
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsMissingOverlaySetting(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ||
+                string.Equals(
+                    value,
+                    "null",
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
         private int WaitForCreatedDisplay(
+            string serial,
             VirtualDisplaySettings settings,
             IList<DisplayInfo> before,
-            int creationWaitMs)
+            int creationWaitMs,
+            Func<bool> cancellationRequested)
         {
             var deadline = DateTime.UtcNow.AddMilliseconds(Math.Max(creationWaitMs, 1000));
             IList<DisplayInfo> after = new List<DisplayInfo>();
@@ -123,10 +276,29 @@ namespace DexManager.Services
 
             do
             {
+                if (cancellationRequested != null &&
+                    cancellationRequested())
+                {
+                    throw new OperationCanceledException();
+                }
                 Thread.Sleep(250);
-                after = GetVirtualDisplays();
+                if (cancellationRequested != null &&
+                    cancellationRequested())
+                {
+                    throw new OperationCanceledException();
+                }
+                after = GetVirtualDisplays(serial);
                 candidates = GetNewDisplayCandidates(before, after);
-                if (candidates.Count > 0) break;
+                var matches = MatchDisplaySettings(settings, candidates).ToList();
+                if (matches.Count == 1)
+                {
+                    LogDisplaySnapshot("after", after);
+                    LogDisplaySnapshot("new candidates", candidates);
+                    _logService.Info(LocalizationService.Format(
+                        "Log.Display.NewSelected",
+                        matches[0].Id));
+                    return matches[0].Id;
+                }
             }
             while (DateTime.UtcNow < deadline);
 
@@ -152,14 +324,6 @@ namespace DexManager.Services
 
             if (matches.Count == 0)
             {
-                if (displays.Count == 1)
-                {
-                    _logService.Warning(LocalizationService.Format(
-                        "Log.Display.SingleFallbackSelected",
-                        displays[0]));
-                    return displays[0].Id;
-                }
-
                 throw new InvalidOperationException(
                     LocalizationService.Format(
                         "Error.Display.ReusableNotFound",
@@ -178,15 +342,7 @@ namespace DexManager.Services
             IList<DisplayInfo> after,
             IList<DisplayInfo> candidates)
         {
-            if (candidates.Count == 1)
-            {
-                _logService.Info(LocalizationService.Format(
-                    "Log.Display.NewSelected",
-                    candidates[0].Id));
-                return candidates[0].Id;
-            }
-
-            if (candidates.Count > 1)
+            if (candidates.Count > 0)
             {
                 var matches = MatchDisplaySettings(settings, candidates).ToList();
                 LogDisplaySnapshot("matched candidates", matches);
@@ -225,7 +381,7 @@ namespace DexManager.Services
             return displays.Where(display =>
                 display.Width == settings.Width &&
                 display.Height == settings.Height &&
-                (display.Dpi == 0 || display.Dpi == settings.Dpi));
+                display.Dpi == settings.Dpi);
         }
 
         private static IList<DisplayInfo> ParseDisplays(string output)
@@ -292,12 +448,28 @@ namespace DexManager.Services
 
         private static string BuildRawBlock(string[] lines, int center)
         {
-            var start = Math.Max(0, center - 8);
-            var end = Math.Min(lines.Length - 1, center + 16);
+            var start = center;
+            var end = Math.Min(lines.Length - 1, center + 24);
+            for (var index = center + 1; index <= end; index++)
+            {
+                if (!DisplayIdRegex.IsMatch(lines[index])) continue;
+                end = index - 1;
+                break;
+            }
             var builder = new StringBuilder();
             for (var index = start; index <= end; index++)
                 builder.AppendLine(lines[index]);
             return builder.ToString();
+        }
+
+        private static int GetDisplayCompleteness(DisplayInfo display)
+        {
+            var score = 0;
+            if (display.Width > 0 && display.Height > 0) score += 4;
+            if (display.Dpi > 0) score += 2;
+            if (!string.IsNullOrWhiteSpace(display.Name)) score++;
+            if (!string.IsNullOrWhiteSpace(display.Flags)) score++;
+            return score;
         }
 
         private void LogDisplaySnapshot(string label, IList<DisplayInfo> displays)

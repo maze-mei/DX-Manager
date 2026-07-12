@@ -25,6 +25,9 @@ namespace DexManager.Services
         private Point _mouseDownPoint;
         private bool _mouseDragCandidate;
         private IntPtr _captureWindowHandle;
+        private string _captureSerial;
+        private bool _started;
+        private bool _disposed;
 
         public CaptureCoordinator(
             HotkeyService hotkeyService,
@@ -65,23 +68,51 @@ namespace DexManager.Services
 
         public void Start()
         {
+            if (_started) return;
+            _hotkeyService.ExitHotkeyPressed +=
+                HotkeyService_ExitHotkeyPressed;
+            try
+            {
+                ReloadHotkeys();
+                _started = true;
+            }
+            catch
+            {
+                _hotkeyService.ExitHotkeyPressed -=
+                    HotkeyService_ExitHotkeyPressed;
+                throw;
+            }
+        }
+
+        public void ReloadHotkeys()
+        {
+            _timeoutTimer.Interval = Math.Max(
+                _settings.Timing.CaptureWaitSeconds,
+                1) * 1000;
             Keys key;
             if (!Enum.TryParse(_settings.KeyMappings.CaptureHotkey, true, out key))
                 key = Keys.F8;
             _hotkeyService.RegisterCaptureHotkey(key);
-            _hotkeyService.ExitHotkeyPressed += HotkeyService_ExitHotkeyPressed;
         }
 
         public void Stop()
         {
             EndCaptureMode();
+            if (!_started)
+            {
+                _hotkeyService.UnregisterCaptureHotkey();
+                return;
+            }
             _hotkeyService.ExitHotkeyPressed -=
                 HotkeyService_ExitHotkeyPressed;
             _hotkeyService.UnregisterCaptureHotkey();
+            _started = false;
         }
 
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
             Stop();
             _hintOverlay.Dispose();
             _pollTimer.Dispose();
@@ -97,11 +128,14 @@ namespace DexManager.Services
                 return;
             }
 
+            var captureWindow = _captureWindowHandle;
+            var captureSerial = _captureSerial;
             EndCaptureMode();
             RunCaptureAsync(delegate
             {
                 return _captureService.CaptureWindow(
-                    _captureWindowHandle);
+                    captureWindow,
+                    captureSerial);
             });
         }
 
@@ -113,7 +147,7 @@ namespace DexManager.Services
 
         private void BeginCaptureMode()
         {
-            BringScrcpyToFront();
+            if (!BringScrcpyToFront()) return;
             ReleaseScrcpyInputCapture();
             _waitingForCaptureChoice = true;
             _leftButtonWasDown = false;
@@ -144,20 +178,39 @@ namespace DexManager.Services
             NativeMethods.ClipCursor(IntPtr.Zero);
         }
 
-        private void BringScrcpyToFront()
+        private bool BringScrcpyToFront()
         {
             var handle = GetPreferredScrcpyWindow();
             if (handle == IntPtr.Zero)
             {
                 _logService.Warning(LocalizationService.Get(
                     "Log.Capture.ScrcpyWindowMissing"));
-                return;
+                return false;
             }
 
             _captureWindowHandle = handle;
+            _captureSerial = ResolveWindowSerial(handle);
             if (NativeMethods.IsIconic(handle))
                 NativeMethods.ShowWindow(handle, NativeMethods.SwRestore);
             NativeMethods.SetForegroundWindow(handle);
+            return true;
+        }
+
+        private string ResolveWindowSerial(IntPtr handle)
+        {
+            var dexSession = _scrcpyService.GetSessionSnapshot();
+            if (dexSession.IsRunning &&
+                handle == _scrcpyService.MainWindowHandle)
+            {
+                return dexSession.Serial;
+            }
+
+            string serial;
+            return _singleWindowService.TryGetSerialForWindow(
+                handle,
+                out serial)
+                ? serial
+                : string.Empty;
         }
 
         private IntPtr GetPreferredScrcpyWindow()
@@ -225,6 +278,7 @@ namespace DexManager.Services
 
         private void SelectRegionAndCapture(Point startPoint)
         {
+            var captureSerial = _captureSerial;
             using (var form = new RegionSelectionForm(
                 startPoint,
                 _settings.Timing.CaptureWaitSeconds))
@@ -233,19 +287,31 @@ namespace DexManager.Services
                 var rectangle = form.SelectedScreenRectangle;
                 RunCaptureAsync(delegate
                 {
-                    return _captureService.CaptureRectangle(rectangle, "Drag");
+                    return _captureService.CaptureRectangle(
+                        rectangle,
+                        "Drag",
+                        captureSerial);
                 });
             }
         }
 
         private void RunCaptureAsync(Func<CaptureResult> captureAction)
         {
+            if (_disposed) return;
             Task.Run(delegate
             {
                 System.Threading.Thread.Sleep(100);
                 return captureAction();
             }).ContinueWith(task =>
             {
+                if (_disposed)
+                {
+                    if (task.IsFaulted)
+                    {
+                        task.Exception.Handle(delegate { return true; });
+                    }
+                    return;
+                }
                 if (task.IsFaulted)
                 {
                     var exception = task.Exception == null

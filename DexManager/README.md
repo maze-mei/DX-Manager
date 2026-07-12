@@ -32,7 +32,9 @@ package must include:
 - the `licenses` directory, including `THIRD_PARTY_NOTICES.md`
 
 The `config`, `logs`, and `screenshot` directories are created or populated at
-runtime.
+runtime. Run the portable package from a user-writable directory; an
+`asInvoker` process cannot create these files in a protected installation
+folder without explicit permission.
 
 ## ADB Selection
 
@@ -48,10 +50,11 @@ All ADB commands are executed with the selected absolute path.
 ## Compatibility
 
 - Target framework: .NET Framework 4.6.2
-- Intended Windows range: Windows 7 SP1 through Windows 11
+- Intended Windows range: 64-bit Windows 7 SP1 through Windows 11
+- 32-bit Windows is not supported
 - Bundled scrcpy baseline: 4.0
 
-Windows 7 compatibility should be checked on real hardware before each public
+64-bit Windows 7 compatibility should be checked on real hardware before each public
 release.
 
 ## Repository Documentation

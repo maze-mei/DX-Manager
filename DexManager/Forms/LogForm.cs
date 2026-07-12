@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 using DexManager.Services;
 using DexManager.Utils;
@@ -81,6 +82,9 @@ namespace DexManager.Forms
                 Filter = LocalizationService.Get("Log.Filter"),
                 DefaultExt = "log",
                 AddExtension = true,
+                InitialDirectory = Directory.Exists(_logService.LogDirectory)
+                    ? _logService.LogDirectory
+                    : string.Empty,
                 FileName = "DX_Manager_" +
                     DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".log"
             })
@@ -116,11 +120,19 @@ namespace DexManager.Forms
         {
             if (IsDisposed || !IsHandleCreated) return;
 
-            BeginInvoke((Action)delegate
+            try
             {
-                AppendIfNew(e.Message);
-                MoveToEnd();
-            });
+                BeginInvoke((Action)delegate
+                {
+                    if (IsDisposed) return;
+                    AppendIfNew(e.Message);
+                    MoveToEnd();
+                });
+            }
+            catch (InvalidOperationException)
+            {
+                // The form handle was destroyed after the checks above.
+            }
         }
 
         private void AppendIfNew(string line)

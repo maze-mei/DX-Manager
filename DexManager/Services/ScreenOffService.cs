@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace DexManager.Services
 {
@@ -15,6 +16,15 @@ namespace DexManager.Services
         private readonly ScrcpyLaunchCoordinator _launchCoordinator;
         private readonly LogService _logService;
         private readonly ScrcpyRuntimeInfo _runtimeInfo;
+        private readonly object _stateLock = new object();
+        private readonly ManualResetEvent _shutdownSignal =
+            new ManualResetEvent(false);
+        private readonly ManualResetEvent _idleSignal =
+            new ManualResetEvent(true);
+        private int _activeOperations;
+        private bool _disposed;
+        private bool _signalsDisposed;
+        private bool _signalCleanupScheduled;
 
         public ScreenOffService(
             string scrcpyPath,
@@ -46,26 +56,100 @@ namespace DexManager.Services
 
         public bool Reapply(Func<bool> shouldRun)
         {
+            return Reapply(_adbService.TargetSerial, shouldRun);
+        }
+
+        public bool Reapply(string serial, Func<bool> shouldRun)
+        {
             if (shouldRun == null)
                 throw new ArgumentNullException("shouldRun");
 
-            return _launchCoordinator.RunExclusive(delegate
+            lock (_stateLock)
             {
-                if (!shouldRun())
+                if (_disposed || _shutdownSignal.WaitOne(0)) return false;
+                _activeOperations++;
+                _idleSignal.Reset();
+            }
+
+            try
+            {
+                return _launchCoordinator.RunExclusive(delegate
                 {
-                    _logService.Info(LocalizationService.Get(
-                        "Log.ScreenOff.Cancelled"));
-                    return false;
+                    if (_shutdownSignal.WaitOne(0) || !shouldRun())
+                    {
+                        _logService.Info(LocalizationService.Get(
+                            "Log.ScreenOff.Cancelled"));
+                        return false;
+                    }
+                    return RunOnce(serial);
+                });
+            }
+            finally
+            {
+                lock (_stateLock)
+                {
+                    _activeOperations--;
+                    if (_activeOperations == 0) _idleSignal.Set();
                 }
-                return RunOnce();
-            });
+            }
+        }
+
+        public void RequestShutdown()
+        {
+            lock (_stateLock)
+            {
+                if (_disposed) return;
+                _shutdownSignal.Set();
+            }
         }
 
         public void Dispose()
         {
+            lock (_stateLock)
+            {
+                if (_signalsDisposed) return;
+                _disposed = true;
+                _shutdownSignal.Set();
+            }
+
+            if (_idleSignal.WaitOne(
+                Math.Min(_processTimeoutMs + 2500, 7500)))
+            {
+                DisposeSignals();
+                return;
+            }
+
+            lock (_stateLock)
+            {
+                if (_signalsDisposed || _signalCleanupScheduled) return;
+                _signalCleanupScheduled = true;
+            }
+            Task.Run(delegate
+            {
+                try
+                {
+                    _idleSignal.WaitOne();
+                }
+                catch (ObjectDisposedException)
+                {
+                    return;
+                }
+                DisposeSignals();
+            });
         }
 
-        private bool RunOnce()
+        private void DisposeSignals()
+        {
+            lock (_stateLock)
+            {
+                if (_signalsDisposed || _activeOperations != 0) return;
+                _signalsDisposed = true;
+                _shutdownSignal.Dispose();
+                _idleSignal.Dispose();
+            }
+        }
+
+        private bool RunOnce(string serial)
         {
             if (!File.Exists(_scrcpyPath))
                 throw new FileNotFoundException(
@@ -73,7 +157,6 @@ namespace DexManager.Services
                         "Error.Scrcpy.FileNotFound"),
                     _scrcpyPath);
 
-            var serial = _adbService.TargetSerial;
             var arguments =
                 (string.IsNullOrWhiteSpace(serial)
                     ? string.Empty
@@ -111,6 +194,7 @@ namespace DexManager.Services
                     var stopwatch = Stopwatch.StartNew();
                     while (stopwatch.ElapsedMilliseconds < _processTimeoutMs)
                     {
+                        if (_shutdownSignal.WaitOne(0)) return false;
                         if (confirmation.Wait(50))
                         {
                             _logService.Info(LocalizationService.Get(
@@ -126,11 +210,7 @@ namespace DexManager.Services
                 }
                 finally
                 {
-                    if (started && !process.HasExited)
-                    {
-                        process.Kill();
-                        process.WaitForExit(2000);
-                    }
+                    if (started) StopAndDrain(process);
                     process.OutputDataReceived -= outputHandler;
                     process.ErrorDataReceived -= errorHandler;
                 }
@@ -153,8 +233,45 @@ namespace DexManager.Services
                 ConfirmationText,
                 StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                confirmation.Set();
+                try
+                {
+                    confirmation.Set();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // A late asynchronous output callback can arrive on exit.
+                }
             }
+        }
+
+        private void StopAndDrain(Process process)
+        {
+            Exception lastError = null;
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                try
+                {
+                    if (!process.HasExited) process.Kill();
+                    if (process.WaitForExit(2000))
+                    {
+                        process.WaitForExit();
+                        return;
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    process.WaitForExit();
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                }
+            }
+
+            throw new TimeoutException(
+                LocalizationService.Get("Error.Scrcpy.StopTimeout"),
+                lastError);
         }
 
         private Process CreateProcess(string arguments)

@@ -65,12 +65,11 @@ namespace DexManager.Services
                     return;
                 }
                 _targetSerial = normalized;
+                Environment.SetEnvironmentVariable(
+                    "ANDROID_SERIAL",
+                    normalized.Length == 0 ? null : normalized,
+                    EnvironmentVariableTarget.Process);
             }
-
-            Environment.SetEnvironmentVariable(
-                "ANDROID_SERIAL",
-                normalized.Length == 0 ? null : normalized,
-                EnvironmentVariableTarget.Process);
             _logService.Info(
                 normalized.Length == 0
                     ? LocalizationService.Get(
@@ -112,6 +111,11 @@ namespace DexManager.Services
         public ProcessResult GetState()
         {
             return RunTargeted("get-state", true);
+        }
+
+        public ProcessResult GetState(string serial)
+        {
+            return RunForSerial(serial, "get-state", true);
         }
 
         public ProcessResult Shell(string command)
@@ -203,6 +207,28 @@ namespace DexManager.Services
 
         public ProcessResult Push(string localPath, string remotePath)
         {
+            ValidatePushPaths(localPath, remotePath);
+            return RunTargeted(
+                "push " + Quote(localPath) + " " + Quote(remotePath),
+                true);
+        }
+
+        public ProcessResult PushForSerial(
+            string serial,
+            string localPath,
+            string remotePath)
+        {
+            ValidatePushPaths(localPath, remotePath);
+            return RunForSerial(
+                serial,
+                "push " + Quote(localPath) + " " + Quote(remotePath),
+                true);
+        }
+
+        private static void ValidatePushPaths(
+            string localPath,
+            string remotePath)
+        {
             if (!File.Exists(localPath))
                 throw new FileNotFoundException(
                     LocalizationService.Get("Error.Adb.PushFileNotFound"),
@@ -211,10 +237,6 @@ namespace DexManager.Services
                 throw new ArgumentException(
                     LocalizationService.Get("Error.Adb.RemotePathEmpty"),
                     "remotePath");
-
-            return RunTargeted(
-                "push " + Quote(localPath) + " " + Quote(remotePath),
-                true);
         }
 
         public ProcessResult EnableTcpIp(string serial, int port)
@@ -281,8 +303,19 @@ namespace DexManager.Services
 
         public IList<AdbDeviceInfo> GetDevices(bool writeLog)
         {
+            IList<AdbDeviceInfo> devices;
+            TryGetDevices(writeLog, out devices);
+            return devices;
+        }
+
+        public bool TryGetDevices(
+            bool writeLog,
+            out IList<AdbDeviceInfo> devices)
+        {
             var result = Run("devices", writeLog);
-            var devices = ParseDevices(result.StandardOutput);
+            devices = ParseDevices(result.StandardOutput);
+            var querySucceeded = result.IsSuccess &&
+                !string.IsNullOrWhiteSpace(result.StandardOutput);
 
             if (writeLog)
             {
@@ -293,12 +326,23 @@ namespace DexManager.Services
                     "Log.Adb.DeviceCount",
                     devices.Count));
             }
-            return devices;
+            return querySucceeded;
         }
 
         public bool IsAuthorizedDeviceConnected()
         {
             var state = GetState();
+            return state.IsSuccess &&
+                string.Equals(
+                    state.StandardOutput.Trim(),
+                    "device",
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        public bool IsAuthorizedDeviceConnected(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return false;
+            var state = GetState(serial);
             return state.IsSuccess &&
                 string.Equals(
                     state.StandardOutput.Trim(),
@@ -434,6 +478,14 @@ namespace DexManager.Services
             return int.TryParse(value.Substring(separator + 1), out port) &&
                 port > 0 &&
                 port <= 65535;
+        }
+
+        public static bool IsEmulatorSerial(string serial)
+        {
+            return !string.IsNullOrWhiteSpace(serial) &&
+                serial.Trim().StartsWith(
+                    "emulator-",
+                    StringComparison.OrdinalIgnoreCase);
         }
 
         private static void ValidatePort(int port, string parameterName)

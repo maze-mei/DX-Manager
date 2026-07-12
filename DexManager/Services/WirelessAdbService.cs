@@ -15,6 +15,7 @@ namespace DexManager.Services
         private readonly LogService _logService;
         private readonly object _reconnectSync = new object();
         private DateTime _lastReconnectAttemptUtc = DateTime.MinValue;
+        private long _transitionGeneration;
 
         public WirelessAdbService(
             AdbService adbService,
@@ -36,7 +37,8 @@ namespace DexManager.Services
         {
             get
             {
-                return _settings.Connection.Mode ==
+                var connection = _settings.Connection;
+                return connection != null && connection.Mode ==
                     AdbConnectionMode.Wireless;
             }
         }
@@ -45,164 +47,239 @@ namespace DexManager.Services
         {
             get
             {
+                var connection = _settings.Connection;
+                if (connection == null) return string.Empty;
                 return BuildEndpoint(
-                    _settings.Connection.WirelessHost,
-                    _settings.Connection.WirelessPort);
+                    connection.WirelessHost,
+                    connection.WirelessPort);
             }
         }
 
         public void InitializeTarget()
         {
-            _adbService.SetTargetSerial(
-                IsWirelessMode ? SavedEndpoint : string.Empty);
+            SynchronizeTargetWithSettings();
+        }
+
+        public void SynchronizeTargetWithSettings()
+        {
+            lock (_reconnectSync)
+            {
+                var connection = GetConnectionSnapshot();
+                _transitionGeneration++;
+                if (connection.Mode == AdbConnectionMode.Wireless)
+                {
+                    _adbService.SetTargetSerial(connection.Endpoint);
+                    return;
+                }
+
+                var current = _adbService.TargetSerial;
+                if (AdbService.IsTcpIpSerial(current) ||
+                    AdbService.IsEmulatorSerial(current))
+                {
+                    _adbService.SetTargetSerial(string.Empty);
+                }
+            }
         }
 
         public AdbDeviceInfo SelectPreferredDevice(
             IList<AdbDeviceInfo> devices)
         {
-            var candidates = devices ?? new List<AdbDeviceInfo>();
-            if (IsWirelessMode)
-            {
-                var endpoint = SavedEndpoint;
-                _adbService.SetTargetSerial(endpoint);
-                return candidates.FirstOrDefault(
-                    device => string.Equals(
-                        device.Serial,
-                        endpoint,
-                        StringComparison.OrdinalIgnoreCase));
-            }
+            return SelectPreferredDeviceWithGeneration(devices).Device;
+        }
 
-            var preferred = candidates.FirstOrDefault(
-                    device => !AdbService.IsTcpIpSerial(device.Serial) &&
-                        device.IsAuthorized) ??
-                candidates.FirstOrDefault(
-                    device => !AdbService.IsTcpIpSerial(device.Serial));
-            _adbService.SetTargetSerial(
-                preferred == null ? string.Empty : preferred.Serial);
-            return preferred;
+        public WirelessDeviceSelection SelectPreferredDeviceWithGeneration(
+            IList<AdbDeviceInfo> devices)
+        {
+            lock (_reconnectSync)
+            {
+                var connection = GetConnectionSnapshot();
+                var preferred = FindPreferredDeviceCore(
+                    devices,
+                    _adbService.TargetSerial,
+                    connection);
+                var target = preferred == null
+                    ? (connection.Mode == AdbConnectionMode.Wireless
+                        ? connection.Endpoint
+                        : string.Empty)
+                    : preferred.Serial;
+                _adbService.SetTargetSerial(target);
+                return new WirelessDeviceSelection(
+                    preferred,
+                    _transitionGeneration);
+            }
+        }
+
+        public bool IsTransitionGenerationCurrent(long generation)
+        {
+            lock (_reconnectSync)
+            {
+                return generation == _transitionGeneration;
+            }
+        }
+
+        public AdbDeviceInfo FindPreferredDevice(
+            IList<AdbDeviceInfo> devices,
+            string currentSerial)
+        {
+            lock (_reconnectSync)
+            {
+                return FindPreferredDeviceCore(
+                    devices,
+                    currentSerial,
+                    GetConnectionSnapshot());
+            }
         }
 
         public bool TryReconnect(bool writeLog)
         {
-            if (!IsWirelessMode ||
-                !_settings.Connection.AutoReconnect ||
-                string.IsNullOrWhiteSpace(
-                    _settings.Connection.WirelessHost))
-            {
-                return false;
-            }
-
             lock (_reconnectSync)
             {
+                var connection = GetConnectionSnapshot();
+                if (connection.Mode != AdbConnectionMode.Wireless ||
+                    !connection.AutoReconnect ||
+                    string.IsNullOrWhiteSpace(connection.Host))
+                {
+                    return false;
+                }
+
                 var now = DateTime.UtcNow;
                 if ((now - _lastReconnectAttemptUtc).TotalSeconds < 5)
                     return false;
                 _lastReconnectAttemptUtc = now;
-            }
 
-            var endpoint = SavedEndpoint;
-            _adbService.SetTargetSerial(endpoint);
-            if (IsConnected(endpoint)) return true;
+                var endpoint = connection.Endpoint;
+                _transitionGeneration++;
+                _adbService.SetTargetSerial(endpoint);
+                if (IsConnected(endpoint)) return true;
 
-            if (writeLog)
-                _logService.Info(LocalizationService.Format(
-                    "Log.Wireless.ReconnectAttempt",
-                    endpoint));
-            var result = _adbService.Connect(endpoint, writeLog);
-            var connected = result.IsSuccess && IsConnected(endpoint);
-            if (writeLog)
-            {
-                if (connected)
+                if (writeLog)
                     _logService.Info(LocalizationService.Format(
-                        "Log.Wireless.ReconnectSucceeded",
+                        "Log.Wireless.ReconnectAttempt",
                         endpoint));
-                else
-                    _logService.Warning(LocalizationService.Format(
-                        "Log.Wireless.ReconnectFailed",
-                        GetResultMessage(result)));
+                var result = _adbService.Connect(endpoint, writeLog);
+                var connected = result.IsSuccess && IsConnected(endpoint);
+                if (writeLog)
+                {
+                    if (connected)
+                        _logService.Info(LocalizationService.Format(
+                            "Log.Wireless.ReconnectSucceeded",
+                            endpoint));
+                    else
+                        _logService.Warning(LocalizationService.Format(
+                            "Log.Wireless.ReconnectFailed",
+                            GetResultMessage(result)));
+                }
+                return connected;
             }
-            return connected;
         }
 
         public WirelessConnectionResult Connect(
             string host,
             int port)
         {
-            var normalizedHost = NormalizeHost(host);
-            var endpoint = BuildEndpoint(normalizedHost, port);
-            _logService.Info(LocalizationService.Format(
-                "Log.Wireless.ConnectAttempt",
-                endpoint));
-
-            _adbService.StartServer();
-            var result = _adbService.Connect(endpoint, true);
-            if (!result.IsSuccess || !WaitForConnection(endpoint, 3000))
+            lock (_reconnectSync)
             {
-                return WirelessConnectionResult.Failed(
-                    LocalizationService.Format(
-                        "Wireless.ConnectFailed",
-                        GetResultMessage(result)));
-            }
+                _transitionGeneration++;
+                var normalizedHost = NormalizeHost(host);
+                var endpoint = BuildEndpoint(normalizedHost, port);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Wireless.ConnectAttempt",
+                    endpoint));
 
-            _settings.Connection.Mode = AdbConnectionMode.Wireless;
-            _settings.Connection.WirelessHost = normalizedHost;
-            _settings.Connection.WirelessPort = port;
-            _settingsService.Save(_settings);
-            _adbService.SetTargetSerial(endpoint);
-            _logService.Info(LocalizationService.Format(
-                "Log.Wireless.ConnectSucceeded",
-                endpoint));
-            return WirelessConnectionResult.Succeeded(
-                endpoint,
-                LocalizationService.Get("Wireless.Connected"));
+                _adbService.StartServer();
+                var wasConnected = IsConnected(endpoint);
+                var previousTarget = _adbService.TargetSerial;
+                var result = _adbService.Connect(endpoint, true);
+                if (!result.IsSuccess || !WaitForConnection(endpoint, 3000))
+                {
+                    RollbackConnection(
+                        endpoint,
+                        wasConnected,
+                        previousTarget);
+                    return WirelessConnectionResult.Failed(
+                        LocalizationService.Format(
+                            "Wireless.ConnectFailed",
+                            GetResultMessage(result)));
+                }
+
+                try
+                {
+                    _settingsService.UpdateAndSave(_settings, delegate(
+                        AppSettings settings)
+                    {
+                        settings.Connection.Mode = AdbConnectionMode.Wireless;
+                        settings.Connection.WirelessHost = normalizedHost;
+                        settings.Connection.WirelessPort = port;
+                    });
+                }
+                catch
+                {
+                    RollbackConnection(
+                        endpoint,
+                        wasConnected,
+                        previousTarget);
+                    throw;
+                }
+                _adbService.SetTargetSerial(endpoint);
+                _logService.Info(LocalizationService.Format(
+                    "Log.Wireless.ConnectSucceeded",
+                    endpoint));
+                return WirelessConnectionResult.Succeeded(
+                    endpoint,
+                    LocalizationService.Get("Wireless.Connected"));
+            }
         }
 
         public WirelessConnectionResult EnableFromUsb(
             string host,
             int port)
         {
-            var devices = _adbService.GetDevices();
-            var usbDevices = devices
-                .Where(device =>
-                    device.IsAuthorized &&
-                    !AdbService.IsTcpIpSerial(device.Serial))
-                .ToList();
-            if (usbDevices.Count != 1)
+            lock (_reconnectSync)
             {
-                return WirelessConnectionResult.Failed(
-                    usbDevices.Count == 0
-                        ? LocalizationService.Get("Wireless.NoUsb")
-                        : LocalizationService.Get(
-                            "Wireless.MultipleUsb"));
-            }
+                var devices = _adbService.GetDevices();
+                var usbDevices = devices
+                    .Where(device =>
+                        device.IsAuthorized &&
+                        !AdbService.IsTcpIpSerial(device.Serial) &&
+                        !AdbService.IsEmulatorSerial(device.Serial))
+                    .ToList();
+                if (usbDevices.Count != 1)
+                {
+                    return WirelessConnectionResult.Failed(
+                        usbDevices.Count == 0
+                            ? LocalizationService.Get("Wireless.NoUsb")
+                            : LocalizationService.Get(
+                                "Wireless.MultipleUsb"));
+                }
 
-            var usbSerial = usbDevices[0].Serial;
-            var normalizedHost = string.IsNullOrWhiteSpace(host)
-                ? DetectWifiAddress(usbSerial)
-                : NormalizeHost(host);
-            if (string.IsNullOrWhiteSpace(normalizedHost))
-            {
-                return WirelessConnectionResult.Failed(
-                    LocalizationService.Get("Wireless.NoWifiIp"));
-            }
+                var usbSerial = usbDevices[0].Serial;
+                var normalizedHost = string.IsNullOrWhiteSpace(host)
+                    ? DetectWifiAddress(usbSerial)
+                    : NormalizeHost(host);
+                if (string.IsNullOrWhiteSpace(normalizedHost))
+                {
+                    return WirelessConnectionResult.Failed(
+                        LocalizationService.Get("Wireless.NoWifiIp"));
+                }
 
-            _logService.Info(LocalizationService.Format(
-                "Log.Wireless.EnableFromUsb",
-                usbSerial,
-                port));
-            var tcpipResult = _adbService.EnableTcpIp(
-                usbSerial,
-                port);
-            if (!tcpipResult.IsSuccess)
-            {
-                return WirelessConnectionResult.Failed(
-                    LocalizationService.Format(
-                        "Wireless.TcpipFailed",
-                        GetResultMessage(tcpipResult)));
-            }
+                _logService.Info(LocalizationService.Format(
+                    "Log.Wireless.EnableFromUsb",
+                    usbSerial,
+                    port));
+                var tcpipResult = _adbService.EnableTcpIp(
+                    usbSerial,
+                    port);
+                if (!tcpipResult.IsSuccess)
+                {
+                    return WirelessConnectionResult.Failed(
+                        LocalizationService.Format(
+                            "Wireless.TcpipFailed",
+                            GetResultMessage(tcpipResult)));
+                }
 
-            Thread.Sleep(800);
-            return Connect(normalizedHost, port);
+                Thread.Sleep(800);
+                return Connect(normalizedHost, port);
+            }
         }
 
         public WirelessConnectionResult Pair(
@@ -242,25 +319,129 @@ namespace DexManager.Services
 
         public WirelessConnectionResult Disconnect()
         {
-            var endpoint = SavedEndpoint;
-            if (!string.IsNullOrWhiteSpace(endpoint))
-                _adbService.Disconnect(endpoint);
-
-            _settings.Connection.Mode = AdbConnectionMode.Usb;
-            _settingsService.Save(_settings);
-            _adbService.SetTargetSerial(string.Empty);
-            _logService.Info(LocalizationService.Get(
-                "Log.Wireless.Disconnected"));
-            return WirelessConnectionResult.Succeeded(
-                string.Empty,
-                LocalizationService.Get("Wireless.Disconnected"));
+            lock (_reconnectSync)
+            {
+                _transitionGeneration++;
+                var connection = GetConnectionSnapshot();
+                var endpoint = connection.Endpoint;
+                _settingsService.UpdateAndSave(_settings, delegate(
+                    AppSettings settings)
+                {
+                    settings.Connection.Mode = AdbConnectionMode.Usb;
+                });
+                ProcessResult disconnectResult = null;
+                if (!string.IsNullOrWhiteSpace(endpoint))
+                    disconnectResult = _adbService.Disconnect(endpoint);
+                _adbService.SetTargetSerial(string.Empty);
+                if (disconnectResult != null && !disconnectResult.IsSuccess)
+                {
+                    _logService.Warning(LocalizationService.Format(
+                        "Log.Wireless.DisconnectCommandFailed",
+                        GetResultMessage(disconnectResult)));
+                }
+                _logService.Info(LocalizationService.Get(
+                    "Log.Wireless.Disconnected"));
+                return WirelessConnectionResult.Succeeded(
+                    string.Empty,
+                    LocalizationService.Get("Wireless.Disconnected"));
+            }
         }
 
         public void UseUsb()
         {
-            _settings.Connection.Mode = AdbConnectionMode.Usb;
-            _settingsService.Save(_settings);
-            _adbService.SetTargetSerial(string.Empty);
+            lock (_reconnectSync)
+            {
+                _transitionGeneration++;
+                _settingsService.UpdateAndSave(_settings, delegate(
+                    AppSettings settings)
+                {
+                    settings.Connection.Mode = AdbConnectionMode.Usb;
+                });
+                _adbService.SetTargetSerial(string.Empty);
+            }
+        }
+
+        private AdbDeviceInfo FindPreferredDeviceCore(
+            IList<AdbDeviceInfo> devices,
+            string currentSerial,
+            ConnectionSnapshot connection)
+        {
+            var candidates = devices ?? new List<AdbDeviceInfo>();
+            if (connection.Mode == AdbConnectionMode.Wireless)
+            {
+                return candidates.FirstOrDefault(
+                    device => string.Equals(
+                        device.Serial,
+                        connection.Endpoint,
+                        StringComparison.OrdinalIgnoreCase) &&
+                        device.IsAuthorized);
+            }
+
+            var current = candidates.FirstOrDefault(device =>
+                string.Equals(
+                    device.Serial,
+                    currentSerial,
+                    StringComparison.OrdinalIgnoreCase) &&
+                !AdbService.IsTcpIpSerial(device.Serial) &&
+                !AdbService.IsEmulatorSerial(device.Serial) &&
+                device.IsAuthorized);
+            if (current != null) return current;
+
+            return candidates.FirstOrDefault(
+                    device => !AdbService.IsTcpIpSerial(device.Serial) &&
+                        !AdbService.IsEmulatorSerial(device.Serial) &&
+                        device.IsAuthorized) ??
+                candidates.FirstOrDefault(
+                    device => !AdbService.IsTcpIpSerial(device.Serial) &&
+                        !AdbService.IsEmulatorSerial(device.Serial));
+        }
+
+        private void RollbackConnection(
+            string endpoint,
+            bool wasConnected,
+            string previousTarget)
+        {
+            try
+            {
+                if (!wasConnected)
+                {
+                    var result = _adbService.Disconnect(endpoint);
+                    if (!result.IsSuccess)
+                    {
+                        _logService.Warning(LocalizationService.Format(
+                            "Log.Wireless.DisconnectCommandFailed",
+                            GetResultMessage(result)));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logService.Warning(LocalizationService.Format(
+                    "Log.Wireless.DisconnectCommandFailed",
+                    ex.Message));
+            }
+            finally
+            {
+                _adbService.SetTargetSerial(previousTarget);
+            }
+        }
+
+        private ConnectionSnapshot GetConnectionSnapshot()
+        {
+            var connection = _settings.Connection;
+            if (connection == null)
+            {
+                return new ConnectionSnapshot(
+                    AdbConnectionMode.Usb,
+                    false,
+                    string.Empty,
+                    5555);
+            }
+            return new ConnectionSnapshot(
+                connection.Mode,
+                connection.AutoReconnect,
+                connection.WirelessHost,
+                connection.WirelessPort);
         }
 
         public static string BuildEndpoint(string host, int port)
@@ -383,6 +564,47 @@ namespace DexManager.Services
                 text,
                 StringComparison.OrdinalIgnoreCase) >= 0;
         }
+
+        private sealed class ConnectionSnapshot
+        {
+            public ConnectionSnapshot(
+                AdbConnectionMode mode,
+                bool autoReconnect,
+                string host,
+                int port)
+            {
+                Mode = mode;
+                AutoReconnect = autoReconnect;
+                Host = host ?? string.Empty;
+                Port = port;
+                Endpoint = string.Empty;
+                if (Mode == AdbConnectionMode.Wireless &&
+                    !string.IsNullOrWhiteSpace(Host))
+                {
+                    Endpoint = BuildEndpoint(Host, Port);
+                }
+            }
+
+            public AdbConnectionMode Mode { get; private set; }
+            public bool AutoReconnect { get; private set; }
+            public string Host { get; private set; }
+            public int Port { get; private set; }
+            public string Endpoint { get; private set; }
+        }
+    }
+
+    public sealed class WirelessDeviceSelection
+    {
+        internal WirelessDeviceSelection(
+            AdbDeviceInfo device,
+            long transitionGeneration)
+        {
+            Device = device;
+            TransitionGeneration = transitionGeneration;
+        }
+
+        public AdbDeviceInfo Device { get; private set; }
+        public long TransitionGeneration { get; private set; }
     }
 
     public sealed class WirelessConnectionResult

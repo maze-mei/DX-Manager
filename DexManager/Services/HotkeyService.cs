@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -11,21 +12,30 @@ namespace DexManager.Services
     public sealed class HotkeyService : NativeWindow, IDisposable
     {
         private const int CaptureHotkeyId = 1001;
+        private const int ExitHotkeyId = 1002;
         private readonly LogService _logService;
-        private readonly KeyMappingSettings _settings;
+        private readonly AppSettings _appSettings;
         private readonly NativeMethods.LowLevelKeyboardProc _callback;
+        private readonly HashSet<Keys> _heldKeys = new HashSet<Keys>();
         private IntPtr _hookHandle;
-        private bool _registered;
+        private bool _captureRegistered;
+        private bool _exitRegistered;
         private KeyShortcut _captureShortcut;
         private KeyShortcut _exitShortcut;
-        private bool _f8Held;
+        private bool _configured;
+        private bool _configuredUseLowLevel;
 
-        public HotkeyService(LogService logService, KeyMappingSettings settings)
+        public HotkeyService(LogService logService, AppSettings settings)
         {
             _logService = logService;
-            _settings = settings;
+            _appSettings = settings;
             _callback = HookCallback;
             CreateHandle(new CreateParams());
+        }
+
+        private KeyMappingSettings Settings
+        {
+            get { return _appSettings.KeyMappings; }
         }
 
         public event EventHandler CaptureHotkeyPressed;
@@ -34,26 +44,61 @@ namespace DexManager.Services
 
         public void RegisterCaptureHotkey(Keys fallbackKey)
         {
-            UnregisterCaptureHotkey();
-            ParseShortcuts(fallbackKey);
-            TryRegisterHotKeyForDiagnostics();
-
-            if (_settings.UseLowLevelHotkeys)
+            var previousCapture = _captureShortcut;
+            var previousExit = _exitShortcut;
+            var previousConfigured = _configured;
+            var previousUseLowLevel = _configuredUseLowLevel;
+            UnregisterNativeHotkeys();
+            try
             {
-                InstallHook();
-                _logService.Info(LocalizationService.Format(
-                    "Log.Hotkey.LowLevelEnabled",
-                    _captureShortcut,
-                    _exitShortcut));
+                ParseShortcuts(fallbackKey);
+                _configuredUseLowLevel = Settings.UseLowLevelHotkeys;
+                ApplyConfiguration(_configuredUseLowLevel);
+                _configured = true;
+            }
+            catch
+            {
+                UnregisterNativeHotkeys();
+                _captureShortcut = previousCapture;
+                _exitShortcut = previousExit;
+                _configuredUseLowLevel = previousUseLowLevel;
+                _configured = previousConfigured;
+                if (previousConfigured)
+                {
+                    try
+                    {
+                        ApplyConfiguration(previousUseLowLevel);
+                    }
+                    catch (Exception restoreException)
+                    {
+                        _configured = false;
+                        _logService.Error(
+                            LocalizationService.Get(
+                                "Log.Hotkey.RestoreFailed"),
+                            restoreException);
+                    }
+                }
+                throw;
             }
         }
 
         public void UnregisterCaptureHotkey()
         {
-            if (_registered)
+            UnregisterNativeHotkeys();
+            _configured = false;
+        }
+
+        private void UnregisterNativeHotkeys()
+        {
+            if (_captureRegistered)
             {
                 NativeMethods.UnregisterHotKey(Handle, CaptureHotkeyId);
-                _registered = false;
+                _captureRegistered = false;
+            }
+            if (_exitRegistered)
+            {
+                NativeMethods.UnregisterHotKey(Handle, ExitHotkeyId);
+                _exitRegistered = false;
             }
 
             if (_hookHandle != IntPtr.Zero)
@@ -61,6 +106,25 @@ namespace DexManager.Services
                 NativeMethods.UnhookWindowsHookEx(_hookHandle);
                 _hookHandle = IntPtr.Zero;
             }
+            _heldKeys.Clear();
+        }
+
+        private void ApplyConfiguration(bool useLowLevel)
+        {
+            EnsureShortcutsDoNotConflict(useLowLevel);
+
+            if (useLowLevel)
+            {
+                TryRegisterHotKeyForDiagnostics();
+                InstallHook();
+                _logService.Info(LocalizationService.Format(
+                    "Log.Hotkey.LowLevelEnabled",
+                    _captureShortcut,
+                    _exitShortcut));
+                return;
+            }
+
+            RegisterSystemHotkeys();
         }
 
         public void Dispose()
@@ -78,10 +142,15 @@ namespace DexManager.Services
                     message.WParam,
                     message.LParam));
 
-                if (!_settings.UseLowLevelHotkeys &&
+                if (!_configuredUseLowLevel &&
                     message.WParam.ToInt32() == CaptureHotkeyId)
                 {
                     RaiseCapture();
+                }
+                else if (!_configuredUseLowLevel &&
+                    message.WParam.ToInt32() == ExitHotkeyId)
+                {
+                    RaiseExit();
                 }
             }
 
@@ -91,51 +160,126 @@ namespace DexManager.Services
         private void ParseShortcuts(Keys fallbackKey)
         {
             _captureShortcut = KeyShortcut.Parse(
-                _settings.CaptureHotkey,
+                Settings.CaptureHotkey,
                 new KeyShortcut(fallbackKey));
             _exitShortcut = KeyShortcut.Parse(
-                _settings.ExitHotkey,
+                Settings.ExitHotkey,
                 new KeyShortcut(Keys.F8) { LeftAlt = true });
+            EnsureShortcutsDoNotConflict(Settings.UseLowLevelHotkeys);
+        }
+
+        public static bool IsValidShortcut(string text)
+        {
+            KeyShortcut shortcut;
+            return KeyShortcut.TryParse(text, out shortcut);
+        }
+
+        public static bool ShortcutsConflict(
+            string first,
+            string second,
+            bool useLowLevel)
+        {
+            KeyShortcut firstShortcut;
+            KeyShortcut secondShortcut;
+            if (!KeyShortcut.TryParse(first, out firstShortcut) ||
+                !KeyShortcut.TryParse(second, out secondShortcut))
+            {
+                return false;
+            }
+
+            return ShortcutsConflict(
+                firstShortcut,
+                secondShortcut,
+                useLowLevel);
+        }
+
+        private void EnsureShortcutsDoNotConflict(bool useLowLevel)
+        {
+            if (!ShortcutsConflict(
+                _captureShortcut,
+                _exitShortcut,
+                useLowLevel))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(
+                LocalizationService.Get(
+                    "Settings.HotkeysMustDiffer"));
+        }
+
+        private static bool ShortcutsConflict(
+            KeyShortcut first,
+            KeyShortcut second,
+            bool useLowLevel)
+        {
+            if (first == null || second == null ||
+                first.Key != second.Key)
+            {
+                return false;
+            }
+
+            if (!useLowLevel)
+            {
+                uint firstModifiers;
+                uint firstKey;
+                uint secondModifiers;
+                uint secondKey;
+                first.ToRegisterHotKey(
+                    out firstModifiers,
+                    out firstKey);
+                second.ToRegisterHotKey(
+                    out secondModifiers,
+                    out secondKey);
+                return firstModifiers == secondModifiers &&
+                    firstKey == secondKey;
+            }
+
+            for (var mask = 0; mask < 256; mask++)
+            {
+                var state = new ModifierState
+                {
+                    LeftAlt = (mask & 1) != 0,
+                    RightAlt = (mask & 2) != 0,
+                    LeftCtrl = (mask & 4) != 0,
+                    RightCtrl = (mask & 8) != 0,
+                    LeftShift = (mask & 16) != 0,
+                    RightShift = (mask & 32) != 0,
+                    LeftWindows = (mask & 64) != 0,
+                    RightWindows = (mask & 128) != 0
+                };
+
+                if (first.Matches(first.Key, state) &&
+                    second.Matches(second.Key, state))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void TryRegisterHotKeyForDiagnostics()
         {
-            uint modifiers;
-            uint key;
-            _captureShortcut.ToRegisterHotKey(out modifiers, out key);
-
-            _registered = NativeMethods.RegisterHotKey(
-                Handle,
+            int error;
+            if (TryRegisterShortcut(
                 CaptureHotkeyId,
-                modifiers,
-                key);
-
-            if (_registered)
-            {
-                _logService.Info(LocalizationService.Format(
-                    "Log.Hotkey.Registered",
-                    _captureShortcut,
-                    modifiers,
-                    key));
-                if (_settings.UseLowLevelHotkeys)
-                {
-                    NativeMethods.UnregisterHotKey(
-                        Handle,
-                        CaptureHotkeyId);
-                    _registered = false;
-                    _logService.Info(LocalizationService.Get(
-                        "Log.Hotkey.DiagnosticRegistrationRemoved"));
-                }
-                return;
-            }
-
-            var error = Marshal.GetLastWin32Error();
-            _logService.Warning(LocalizationService.Format(
-                "Log.Hotkey.RegistrationFailed",
                 _captureShortcut,
-                error));
+                out error))
+            {
+                NativeMethods.UnregisterHotKey(Handle, CaptureHotkeyId);
+                _logService.Info(LocalizationService.Get(
+                    "Log.Hotkey.DiagnosticRegistrationRemoved"));
+            }
+        }
 
-            if (!_settings.UseLowLevelHotkeys)
+        private void RegisterSystemHotkeys()
+        {
+            int error;
+            if (!TryRegisterShortcut(
+                CaptureHotkeyId,
+                _captureShortcut,
+                out error))
             {
                 throw new Win32Exception(
                     error,
@@ -143,6 +287,53 @@ namespace DexManager.Services
                         "Error.Hotkey.GlobalCaptureRegistrationFailed",
                         _captureShortcut));
             }
+            _captureRegistered = true;
+
+            if (!TryRegisterShortcut(
+                ExitHotkeyId,
+                _exitShortcut,
+                out error))
+            {
+                NativeMethods.UnregisterHotKey(Handle, CaptureHotkeyId);
+                _captureRegistered = false;
+                throw new Win32Exception(
+                    error,
+                    LocalizationService.Format(
+                        "Error.Hotkey.GlobalExitRegistrationFailed",
+                        _exitShortcut));
+            }
+            _exitRegistered = true;
+        }
+
+        private bool TryRegisterShortcut(
+            int id,
+            KeyShortcut shortcut,
+            out int error)
+        {
+            uint modifiers;
+            uint key;
+            shortcut.ToRegisterHotKey(out modifiers, out key);
+            if (NativeMethods.RegisterHotKey(
+                Handle,
+                id,
+                modifiers,
+                key))
+            {
+                error = 0;
+                _logService.Info(LocalizationService.Format(
+                    "Log.Hotkey.Registered",
+                    shortcut,
+                    modifiers,
+                    key));
+                return true;
+            }
+
+            error = Marshal.GetLastWin32Error();
+            _logService.Warning(LocalizationService.Format(
+                "Log.Hotkey.RegistrationFailed",
+                shortcut,
+                error));
+            return false;
         }
 
         private void InstallHook()
@@ -187,7 +378,7 @@ namespace DexManager.Services
             var keyUp = message == NativeMethods.WmKeyUp ||
                 message == NativeMethods.WmSysKeyUp;
 
-            if (_settings.LogKeyboardDiagnostics && IsInteresting(data))
+            if (Settings.LogKeyboardDiagnostics && IsInteresting(data))
                 LogKeyboardEvent(data, message);
 
             if ((data.Flags & NativeMethods.LlkhfInjected) != 0)
@@ -197,23 +388,25 @@ namespace DexManager.Services
                     wParam,
                     lParam);
 
-            if (data.VirtualKey == (uint)Keys.F8)
+            var key = (Keys)data.VirtualKey;
+            var isConfiguredKey = key == _captureShortcut.Key ||
+                key == _exitShortcut.Key;
+            if (isConfiguredKey)
             {
                 if (keyUp)
                 {
-                    _f8Held = false;
+                    _heldKeys.Remove(key);
                 }
-                else if (keyDown && !_f8Held)
+                else if (keyDown && _heldKeys.Add(key))
                 {
-                    _f8Held = true;
                     var state = ModifierState.Read();
-                    if (_exitShortcut.Matches((Keys)data.VirtualKey, state))
+                    if (_exitShortcut.Matches(key, state))
                     {
                         RaiseExit();
                         return new IntPtr(1);
                     }
 
-                    if (_captureShortcut.Matches((Keys)data.VirtualKey, state))
+                    if (_captureShortcut.Matches(key, state))
                     {
                         var contextActive = CaptureContextActive == null ||
                             CaptureContextActive();
@@ -233,9 +426,10 @@ namespace DexManager.Services
                 lParam);
         }
 
-        private static bool IsInteresting(LowLevelKeyboardInput data)
+        private bool IsInteresting(LowLevelKeyboardInput data)
         {
-            return data.VirtualKey == (uint)Keys.F8 ||
+            return data.VirtualKey == (uint)_captureShortcut.Key ||
+                data.VirtualKey == (uint)_exitShortcut.Key ||
                 data.VirtualKey == (uint)NativeMethods.VkLMenu ||
                 data.VirtualKey == (uint)NativeMethods.VkRMenu ||
                 data.VirtualKey == (uint)NativeMethods.VkLControl ||
@@ -337,58 +531,116 @@ namespace DexManager.Services
 
             public static KeyShortcut Parse(string text, KeyShortcut fallback)
             {
-                if (string.IsNullOrWhiteSpace(text)) return fallback;
+                KeyShortcut result;
+                return TryParse(text, out result) ? result : fallback;
+            }
 
-                var result = new KeyShortcut(fallback.Key);
-                var parts = text.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries);
+            public static bool TryParse(
+                string text,
+                out KeyShortcut result)
+            {
+                result = null;
+                if (string.IsNullOrWhiteSpace(text)) return false;
+
+                var parsed = new KeyShortcut(Keys.None);
+                var keyFound = false;
+                var parts = text.Split(
+                    new[] { '+' },
+                    StringSplitOptions.None);
                 foreach (var rawPart in parts)
                 {
                     var part = rawPart.Trim();
+                    if (part.Length == 0) return false;
                     if (part.Equals("LeftAlt", StringComparison.OrdinalIgnoreCase) ||
                         part.Equals("LAlt", StringComparison.OrdinalIgnoreCase))
-                        result.LeftAlt = true;
+                        parsed.LeftAlt = true;
                     else if (part.Equals("RightAlt", StringComparison.OrdinalIgnoreCase) ||
                         part.Equals("RAlt", StringComparison.OrdinalIgnoreCase))
-                        result.RightAlt = true;
+                        parsed.RightAlt = true;
                     else if (part.Equals("Alt", StringComparison.OrdinalIgnoreCase))
-                        result.AnyAlt = true;
+                        parsed.AnyAlt = true;
                     else if (part.Equals("LeftCtrl", StringComparison.OrdinalIgnoreCase) ||
                         part.Equals("LCtrl", StringComparison.OrdinalIgnoreCase))
-                        result.LeftCtrl = true;
+                        parsed.LeftCtrl = true;
                     else if (part.Equals("RightCtrl", StringComparison.OrdinalIgnoreCase) ||
                         part.Equals("RCtrl", StringComparison.OrdinalIgnoreCase))
-                        result.RightCtrl = true;
+                        parsed.RightCtrl = true;
                     else if (part.Equals("Ctrl", StringComparison.OrdinalIgnoreCase) ||
                         part.Equals("Control", StringComparison.OrdinalIgnoreCase))
-                        result.AnyCtrl = true;
+                        parsed.AnyCtrl = true;
                     else if (part.Equals("LeftShift", StringComparison.OrdinalIgnoreCase) ||
                         part.Equals("LShift", StringComparison.OrdinalIgnoreCase))
-                        result.LeftShift = true;
+                        parsed.LeftShift = true;
                     else if (part.Equals("RightShift", StringComparison.OrdinalIgnoreCase) ||
                         part.Equals("RShift", StringComparison.OrdinalIgnoreCase))
-                        result.RightShift = true;
+                        parsed.RightShift = true;
                     else if (part.Equals("Shift", StringComparison.OrdinalIgnoreCase))
-                        result.AnyShift = true;
+                        parsed.AnyShift = true;
                     else if (part.Equals("LeftWindows", StringComparison.OrdinalIgnoreCase) ||
                         part.Equals("LeftWin", StringComparison.OrdinalIgnoreCase) ||
                         part.Equals("LWin", StringComparison.OrdinalIgnoreCase))
-                        result.LeftWindows = true;
+                        parsed.LeftWindows = true;
                     else if (part.Equals("RightWindows", StringComparison.OrdinalIgnoreCase) ||
                         part.Equals("RightWin", StringComparison.OrdinalIgnoreCase) ||
                         part.Equals("RWin", StringComparison.OrdinalIgnoreCase))
-                        result.RightWindows = true;
+                        parsed.RightWindows = true;
                     else if (part.Equals("Windows", StringComparison.OrdinalIgnoreCase) ||
                         part.Equals("Win", StringComparison.OrdinalIgnoreCase))
-                        result.AnyWindows = true;
+                        parsed.AnyWindows = true;
                     else
                     {
                         Keys key;
-                        if (Enum.TryParse(part, true, out key))
-                            result.Key = key;
+                        int numericKey;
+                        if (part.IndexOf(',') >= 0 ||
+                            int.TryParse(part, out numericKey) ||
+                            !Enum.TryParse(part, true, out key) ||
+                            keyFound ||
+                            !IsValidMainKey(key))
+                        {
+                            return false;
+                        }
+                        parsed.Key = key;
+                        keyFound = true;
                     }
                 }
 
-                return result;
+                if (!keyFound) return false;
+                result = parsed;
+                return true;
+            }
+
+            private static bool IsValidMainKey(Keys key)
+            {
+                if (key == Keys.None ||
+                    !Enum.IsDefined(typeof(Keys), key) ||
+                    (key & Keys.Modifiers) != Keys.None)
+                {
+                    return false;
+                }
+
+                switch (key)
+                {
+                    case Keys.ShiftKey:
+                    case Keys.LShiftKey:
+                    case Keys.RShiftKey:
+                    case Keys.ControlKey:
+                    case Keys.LControlKey:
+                    case Keys.RControlKey:
+                    case Keys.Menu:
+                    case Keys.LMenu:
+                    case Keys.RMenu:
+                    case Keys.LWin:
+                    case Keys.RWin:
+                    case Keys.LButton:
+                    case Keys.RButton:
+                    case Keys.MButton:
+                    case Keys.XButton1:
+                    case Keys.XButton2:
+                    case Keys.KeyCode:
+                        return false;
+                    default:
+                        return true;
+                }
             }
 
             public bool Matches(Keys key, ModifierState state)
