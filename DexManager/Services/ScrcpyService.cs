@@ -244,7 +244,17 @@ namespace DexManager.Services
             {
                 lock (_syncRoot)
                 {
-                    return IsProcessRunning(_process) ? _process.Id : 0;
+                    var process = _process;
+                    if (!IsProcessRunning(process)) return 0;
+
+                    try
+                    {
+                        return process.Id;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        return 0;
+                    }
                 }
             }
         }
@@ -306,7 +316,11 @@ namespace DexManager.Services
             {
                 lock (_syncRoot)
                 {
-                    if (!IsProcessRunning(_process))
+                    // Refresh() may synchronously raise Exited. That handler is
+                    // re-entrant on this lock and clears _process, so never read
+                    // the mutable field again after capturing the owned process.
+                    var process = _process;
+                    if (!IsProcessRunning(process))
                     {
                         return IntPtr.Zero;
                     }
@@ -315,13 +329,13 @@ namespace DexManager.Services
                     {
                         try
                         {
-                            _process.Refresh();
-                            if (!IsProcessRunning(_process))
+                            process.Refresh();
+                            if (!IsProcessRunning(process))
                             {
                                 return IntPtr.Zero;
                             }
 
-                            var handle = _process.MainWindowHandle;
+                            var handle = process.MainWindowHandle;
                             if (handle != IntPtr.Zero) return handle;
                         }
                         catch (InvalidOperationException)

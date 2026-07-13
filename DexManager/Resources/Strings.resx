@@ -34,6 +34,7 @@
   <data name="Main.HidMouse" xml:space="preserve"><value>HID mouse (-M)</value></data>
   <data name="Main.ForceStop" xml:space="preserve"><value>Force-stop selected app</value></data>
   <data name="Main.ReuseDisplay" xml:space="preserve"><value>Reuse existing display</value></data>
+  <data name="Main.DpiMinimum" xml:space="preserve"><value>DPI cannot be set below {0}. The value has been restored to {0}.</value></data>
   <data name="Main.FlexDisplay" xml:space="preserve"><value>Dynamic window size (-x)</value></data>
   <data name="Main.StayAwake" xml:space="preserve"><value>Stay awake (-w)</value></data>
   <data name="Main.StartApp" xml:space="preserve"><value>Start app</value></data>
@@ -216,6 +217,7 @@
   <data name="Log.AutoHide.Started" xml:space="preserve"><value>Started auto-hide: {0} second(s)</value></data>
   <data name="Log.AutoHide.ScrcpyMinimized" xml:space="preserve"><value>Minimized the running scrcpy windows because there was no user input.</value></data>
   <data name="Log.AutoHide.ManagerHidden" xml:space="preserve"><value>Hiding the DX Manager UI to the system tray because there was no user input.</value></data>
+  <data name="Log.AutoHide.TickFailed" xml:space="preserve"><value>Auto-hide monitoring encountered a transient error. Monitoring will continue.</value></data>
   <data name="Error.AutoStart.RegistryUnavailable" xml:space="preserve"><value>Could not open the startup registry key.</value></data>
   <data name="Log.AutoStart.Registered" xml:space="preserve"><value>Registered DX Manager for Windows startup.</value></data>
   <data name="Log.AutoStart.Unregistered" xml:space="preserve"><value>Removed DX Manager from Windows startup.</value></data>
@@ -260,6 +262,7 @@
   <data name="Log.Dex.DeferredCleanupStored" xml:space="preserve"><value>Deferred virtual display cleanup for disconnected device: {0}</value></data>
   <data name="Log.Dex.DeferredCleanupStillPending" xml:space="preserve"><value>Virtual display cleanup is still pending for device: {0}</value></data>
   <data name="Log.Dex.DeferredCleanupCompleted" xml:space="preserve"><value>Completed deferred virtual display cleanup for device: {0}</value></data>
+  <data name="Log.Dex.DeferredCleanupSuperseded" xml:space="preserve"><value>The device reconnected; its current virtual display will be evaluated instead of running the deferred removal: {0}</value></data>
   <data name="Log.Dex.ShutdownCleanupFailed" xml:space="preserve"><value>ADB cleanup before program exit failed.</value></data>
   <data name="Log.Dex.SessionStarted" xml:space="preserve"><value>Managed session started: {0}</value></data>
   <data name="Log.Dex.SessionEnded" xml:space="preserve"><value>Managed session ended: {0}</value></data>
@@ -337,13 +340,24 @@
   <data name="Error.Display.QuerySettingFailed" xml:space="preserve"><value>Could not read the virtual display setting: {0}</value></data>
   <data name="Error.Display.QueryFailed" xml:space="preserve"><value>Could not query the device display list: {0}</value></data>
   <data name="Error.Display.OverlaySettingMismatch" xml:space="preserve"><value>The existing overlay setting does not match the requested display. Existing: {0}, requested: {1}</value></data>
+  <data name="Error.Display.ResetFailed" xml:space="preserve"><value>Could not remove the existing virtual display: {0}</value></data>
+  <data name="Error.Display.ResetTimedOut" xml:space="preserve"><value>The existing virtual display was not removed within the time limit.</value></data>
   <data name="Log.Display.RestoreSkipped" xml:space="preserve"><value>The overlay setting changed outside DX Manager, so it will not be overwritten: {0}</value></data>
-  <data name="Log.Display.RestoreFailed" xml:space="preserve"><value>Could not restore the previous overlay setting: {0}</value></data>
-  <data name="Log.Display.Restored" xml:space="preserve"><value>Restored the previous overlay setting.</value></data>
-  <data name="Log.Display.RestoreException" xml:space="preserve"><value>An error occurred while restoring the previous overlay setting.</value></data>
-  <data name="Log.Display.RestoreDeferred" xml:space="preserve"><value>Could not restore the previous overlay setting now; cleanup will be deferred: {0}</value></data>
+  <data name="Log.Display.RestoreFailed" xml:space="preserve"><value>Could not clean up the virtual display setting: {0}</value></data>
+  <data name="Log.Display.Restored" xml:space="preserve"><value>Cleaned up the virtual display setting.</value></data>
+  <data name="Log.Display.RestoreException" xml:space="preserve"><value>An error occurred while cleaning up the virtual display setting.</value></data>
+  <data name="Log.Display.RestoreDeferred" xml:space="preserve"><value>Could not clean up the virtual display setting now; cleanup will be deferred: {0}</value></data>
   <data name="Log.Display.SettingApplied" xml:space="preserve"><value>Applied the virtual display setting: {0}</value></data>
   <data name="Log.Display.Reset" xml:space="preserve"><value>Reset the virtual display setting.</value></data>
+  <data name="Log.Display.ReplacingSetting" xml:space="preserve"><value>Removing the existing virtual display and applying the new setting. Existing: {0}, requested: {1}</value></data>
+  <data name="Log.Display.ExistingFound" xml:space="preserve"><value>Existing virtual display found: id={0}, {1}x{2} / {3} dpi</value></data>
+  <data name="Log.Display.RequestedValues" xml:space="preserve"><value>Configured values: {0}x{1} / {2} dpi</value></data>
+  <data name="Log.Display.ReuseMatched" xml:space="preserve"><value>Decision: resolution and DPI match; reusing the existing display.</value></data>
+  <data name="Log.Display.RecreateMismatch" xml:space="preserve"><value>Decision: {0} mismatch; removing and recreating the existing display.</value></data>
+  <data name="Log.Display.ExistingNotResolved" xml:space="preserve"><value>An overlay setting exists, but its actual virtual display ID could not be resolved. It will be removed and recreated: {0}</value></data>
+  <data name="Display.Mismatch.Resolution" xml:space="preserve"><value>resolution</value></data>
+  <data name="Display.Mismatch.Dpi" xml:space="preserve"><value>DPI</value></data>
+  <data name="Display.Mismatch.ResolutionAndDpi" xml:space="preserve"><value>resolution and DPI</value></data>
   <data name="Log.Display.ExistingSelected" xml:space="preserve"><value>Selected existing virtual display ID: {0}</value></data>
   <data name="Log.Display.SingleFallbackSelected" xml:space="preserve"><value>No existing virtual display matched the resolution/DPI, but only one candidate exists, so it was selected: {0}</value></data>
   <data name="Error.Display.ReusableNotFound" xml:space="preserve"><value>No reusable existing virtual display was found. Displays: {0}</value></data>
@@ -418,6 +432,9 @@
   <data name="Settings.LowLevelHotkey" xml:space="preserve"><value>Use low-level keyboard hook for hotkeys</value></data>
   <data name="Settings.KeyDiagnostics" xml:space="preserve"><value>Write keyboard diagnostic logs</value></data>
   <data name="Settings.HangulCorrection" xml:space="preserve"><value>Convert Korean/English key to Shift+Space</value></data>
+  <data name="Log.KeyMapping.HangulState" xml:space="preserve"><value>Korean/English correction completed: held={0}</value></data>
+  <data name="Log.KeyMapping.HangulSuppressed" xml:space="preserve"><value>Korean/English duplicate input suppressed: held={0}</value></data>
+  <data name="Log.KeyMapping.SendInputResult" xml:space="preserve"><value>{0} SendInput {1} result: sent={2}/{3}, LastWin32Error={4}</value></data>
   <data name="Settings.HangulMode" xml:space="preserve"><value>Korean/English input method</value></data>
   <data name="Settings.KeyInputMode" xml:space="preserve"><value>Key input method</value></data>
   <data name="Settings.RightWindows" xml:space="preserve"><value>Correct the right Windows key</value></data>

@@ -19,7 +19,7 @@ namespace DexManager.Services
         private readonly NativeMethods.LowLevelKeyboardProc _callback;
         private IntPtr _hookHandle;
         private bool _enterHeld;
-        private bool _hangulHeld;
+        private volatile bool _hangulHeld;
         private bool _scrollLockHeld;
         private bool _enterShiftMode;
         private bool _rightShiftMapped;
@@ -125,6 +125,9 @@ namespace DexManager.Services
             var keyUp = message == NativeMethods.WmKeyUp ||
                 message == NativeMethods.WmSysKeyUp;
 
+            if (Settings.LogKeyboardDiagnostics && IsHangulScanCode(data))
+                LogKeyboardDiagnostic(data, message);
+
             if (keyUp && ReleaseOwnedKey(data)) return new IntPtr(1);
 
             IntPtr foreground;
@@ -136,6 +139,7 @@ namespace DexManager.Services
                     lParam);
 
             if (Settings.LogKeyboardDiagnostics &&
+                !IsHangulScanCode(data) &&
                 IsKeyboardDiagnosticTarget(data))
             {
                 LogKeyboardDiagnostic(data, message);
@@ -197,16 +201,38 @@ namespace DexManager.Services
                     var targetWindow = foreground;
                     ThreadPool.QueueUserWorkItem(delegate
                     {
-                        if (!IsExpectedForeground(targetWindow)) return;
-                        SendKeyCombination(
-                            "Hangul Shift+Space",
-                            Settings.KoreanEnglishInputMode,
-                            NativeMethods.VkSpace,
-                            NativeMethods.SpaceScanCode,
-                            "keycombination -t 20 59 62",
-                            true,
-                            targetWindow);
+                        try
+                        {
+                            if (!IsExpectedForeground(targetWindow)) return;
+                            SendKeyCombination(
+                                "Hangul Shift+Space",
+                                Settings.KoreanEnglishInputMode,
+                                NativeMethods.VkSpace,
+                                NativeMethods.SpaceScanCode,
+                                "keycombination -t 20 59 62",
+                                true,
+                                targetWindow);
+                        }
+                        finally
+                        {
+                            // Some Korean/English keys emit SC1F2 KeyDown
+                            // without a matching KeyUp. Do not leave the
+                            // repeat guard latched after the injected input.
+                            _hangulHeld = false;
+                            if (Settings.LogKeyboardDiagnostics)
+                            {
+                                _logService.Info(LocalizationService.Format(
+                                    "Log.KeyMapping.HangulState",
+                                    _hangulHeld));
+                            }
+                        }
                     });
+                }
+                else if (keyDown && Settings.LogKeyboardDiagnostics)
+                {
+                    _logService.Info(LocalizationService.Format(
+                        "Log.KeyMapping.HangulSuppressed",
+                        _hangulHeld));
                 }
                 return new IntPtr(1);
             }
@@ -504,9 +530,24 @@ namespace DexManager.Services
                 (uint)inputs.Length,
                 inputs,
                 inputSize);
+            var error = sent == inputs.Length
+                ? 0
+                : Marshal.GetLastWin32Error();
+            LogSendInputResult(
+                description,
+                "VK",
+                sent,
+                inputs.Length,
+                error);
             if (sent != inputs.Length)
             {
-                LogSendInputFailure(description, "VK", sent, inputs.Length, inputSize);
+                LogSendInputFailure(
+                    description,
+                    "VK",
+                    sent,
+                    inputs.Length,
+                    inputSize,
+                    error);
                 RecoverPartialVirtualKeyInput(
                     description,
                     sent,
@@ -534,9 +575,24 @@ namespace DexManager.Services
                 (uint)inputs.Length,
                 inputs,
                 inputSize);
+            var error = sent == inputs.Length
+                ? 0
+                : Marshal.GetLastWin32Error();
+            LogSendInputResult(
+                description,
+                "ScanCode",
+                sent,
+                inputs.Length,
+                error);
             if (sent != inputs.Length)
             {
-                LogSendInputFailure(description, "ScanCode", sent, inputs.Length, inputSize);
+                LogSendInputFailure(
+                    description,
+                    "ScanCode",
+                    sent,
+                    inputs.Length,
+                    inputSize,
+                    error);
                 RecoverPartialScanCodeInput(
                     description,
                     sent,
@@ -615,6 +671,7 @@ namespace DexManager.Services
                 1,
                 inputs,
                 inputSize);
+            var error = sent == 1 ? 0 : Marshal.GetLastWin32Error();
             if (sent != 1)
             {
                 LogSendInputFailure(
@@ -622,7 +679,8 @@ namespace DexManager.Services
                     "ScanCode",
                     sent,
                     1,
-                    inputSize);
+                    inputSize,
+                    error);
             }
             return sent == 1;
         }
@@ -640,14 +698,32 @@ namespace DexManager.Services
             string mode,
             uint sent,
             int expected,
-            int inputSize)
+            int inputSize,
+            int error)
         {
             _logService.Warning(
                 description + " SendInput " + mode +
                 " failed: sent=" + sent +
                 "/" + expected +
                 ", inputSize=" + inputSize +
-                ", LastWin32Error=" + Marshal.GetLastWin32Error());
+                ", LastWin32Error=" + error);
+        }
+
+        private void LogSendInputResult(
+            string description,
+            string mode,
+            uint sent,
+            int expected,
+            int error)
+        {
+            if (!Settings.LogKeyboardDiagnostics) return;
+            _logService.Info(LocalizationService.Format(
+                "Log.KeyMapping.SendInputResult",
+                description,
+                mode,
+                sent,
+                expected,
+                error));
         }
 
         private static Input CreateVirtualKeyInput(int virtualKey, bool keyUp)

@@ -237,7 +237,8 @@ namespace DexManager.Forms
             _heightBox = CreateCustomNumber(
                 240, 4320, 395, 263, 55, false);
             _dpiBox = CreateCustomNumber(
-                80, 640, 490, 263, 90, true);
+                120, 640, 490, 263, 90, true);
+            _dpiBox.MinimumValueRejected += DpiBox_MinimumValueRejected;
             _bitRateBox = CreateCustomNumber(
                 1, 9999, 105, 298, 130, false);
             _maxFpsBox = CreateCustomSelect(495, 298, 90);
@@ -1822,8 +1823,7 @@ namespace DexManager.Forms
                 startAppPackage = _settings.Scrcpy.StartAppPackage;
                 startAppName = _settings.Scrcpy.StartAppName;
                 additionalArguments = _settings.Scrcpy.AdditionalArguments;
-                _reuseDisplayBox.Checked =
-                    _settings.VirtualDisplay.ReuseExistingDisplay;
+                _reuseDisplayBox.Checked = true;
             }
             else
             {
@@ -2124,8 +2124,7 @@ namespace DexManager.Forms
                             (int)_heightBox.Value;
                     }
                     candidate.VirtualDisplay.Dpi = (int)_dpiBox.Value;
-                    candidate.VirtualDisplay.ReuseExistingDisplay =
-                        _reuseDisplayBox.Checked;
+                    candidate.VirtualDisplay.ReuseExistingDisplay = true;
                     candidate.Scrcpy.BitRate = bitRate;
                     candidate.Scrcpy.MaxFps = GetSelectedMaxFps();
                     candidate.Scrcpy.TurnScreenOff =
@@ -2196,6 +2195,21 @@ namespace DexManager.Forms
             var app = _startAppBox.SelectedItem as ScrcpyAppInfo;
             if (app != null) return app.PackageName ?? string.Empty;
             return string.Empty;
+        }
+
+        private void DpiBox_MinimumValueRejected(
+            object sender,
+            EventArgs e)
+        {
+            if (_exitInProgress || IsDisposed || Disposing) return;
+            MessageBox.Show(
+                this,
+                LocalizationService.Format(
+                    "Main.DpiMinimum",
+                    (int)_dpiBox.Minimum),
+                LocalizationService.Get("App.Name"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
         }
 
         private string GetSelectedAppName(string packageName)
@@ -2583,7 +2597,11 @@ namespace DexManager.Forms
             MoveToCard(_forceStopAppBox, _optionsCard, 362, 49);
             MoveToCard(_reuseDisplayBox, _optionsCard, 362, 84);
             MoveToCard(_flexDisplayBox, _optionsCard, 362, 84);
-            MoveToCard(_stayAwakeBox, _optionsCard, 362, 119);
+            MoveToCard(
+                _stayAwakeBox,
+                _optionsCard,
+                362,
+                _selectedMode == 0 ? 84 : 119);
             foreach (var option in new[]
             {
                 _turnScreenOffBox,
@@ -2873,10 +2891,11 @@ namespace DexManager.Forms
                 LocalizationService.Get("Main.DisplaySettings.Dex");
             _startButton.Text = LocalizationService.Get("Main.StartDex");
             _stopButton.Text = LocalizationService.Get("Main.StopDex");
-            _reuseDisplayBox.Visible = true;
-            _reuseDisplayBox.Enabled = true;
+            _reuseDisplayBox.Visible = false;
+            _reuseDisplayBox.Enabled = false;
             _flexDisplayBox.Visible = false;
             _flexDisplayBox.Enabled = false;
+            _stayAwakeBox.Top = 84;
             LoadRunSettings();
             UpdateRunningState();
         }
@@ -2898,6 +2917,7 @@ namespace DexManager.Forms
             _reuseDisplayBox.Enabled = false;
             _flexDisplayBox.Visible = true;
             _flexDisplayBox.Enabled = true;
+            _stayAwakeBox.Top = 119;
             LoadRunSettings();
             UpdateRunningState();
         }

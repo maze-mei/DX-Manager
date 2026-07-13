@@ -27,6 +27,9 @@ namespace DexManager.Services
         private static readonly Regex DpiRegex = new Regex(
             @"(?<dpi>\d{2,4})\s*dpi|density\s+(?<density>\d{2,4})",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex OverlaySizeRegex = new Regex(
+            @"(?<width>\d{3,5})x(?<height>\d{3,5})/(?<dpi>\d{2,4})",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private readonly AdbService _adbService;
         private readonly LogService _logService;
@@ -71,31 +74,62 @@ namespace DexManager.Services
             LogDisplaySnapshot("before", before);
             var value = BuildOverlaySetting(settings);
 
-            if (hasSetting && settings.ReuseExistingDisplay)
+            DisplayInfo existingOverlay = null;
+            if (hasSetting)
             {
-                if (!string.Equals(
-                    current,
-                    value,
-                    StringComparison.OrdinalIgnoreCase))
+                existingOverlay = FindExistingOverlayDisplay(current, before);
+                if (existingOverlay != null)
                 {
-                    throw new InvalidOperationException(
-                        LocalizationService.Format(
-                            "Error.Display.OverlaySettingMismatch",
-                            current,
-                            value));
+                    _logService.Info(LocalizationService.Format(
+                        "Log.Display.ExistingFound",
+                        existingOverlay.Id,
+                        existingOverlay.Width,
+                        existingOverlay.Height,
+                        existingOverlay.Dpi));
+                    _logService.Info(LocalizationService.Format(
+                        "Log.Display.RequestedValues",
+                        settings.Width,
+                        settings.Height,
+                        settings.Dpi));
+
+                    if (MatchesDisplaySettings(settings, existingOverlay))
+                    {
+                        _logService.Info(LocalizationService.Get(
+                            "Log.Display.ReuseMatched"));
+                        _logService.Info(LocalizationService.Format(
+                            "Log.Display.ExistingSelected",
+                            existingOverlay.Id));
+                        return new VirtualDisplayLease
+                        {
+                            Serial = serial,
+                            DisplayId = existingOverlay.Id,
+                            PreviousOverlaySetting = "none",
+                            AppliedOverlaySetting = current,
+                            OwnsOverlaySetting = true,
+                            ReusedExistingDisplay = true
+                        };
+                    }
+
+                    _logService.Info(LocalizationService.Format(
+                        "Log.Display.RecreateMismatch",
+                        GetMismatchDescription(settings, existingOverlay)));
+                }
+                else
+                {
+                    _logService.Warning(LocalizationService.Format(
+                        "Log.Display.ExistingNotResolved",
+                        current));
                 }
                 _logService.Info(LocalizationService.Format(
-                    "Log.Display.ReusingSetting",
-                    current));
-                return new VirtualDisplayLease
-                {
-                    Serial = serial,
-                    DisplayId = SelectExistingDisplay(settings, before),
-                    PreviousOverlaySetting = current,
-                    AppliedOverlaySetting = current,
-                    OwnsOverlaySetting = false,
-                    ReusedExistingDisplay = true
-                };
+                    "Log.Display.ReplacingSetting",
+                    current,
+                    value));
+                before = RemoveExistingOverlay(
+                    serial,
+                    before,
+                    creationWaitMs,
+                    cancellationRequested,
+                    existingOverlay == null ? 0 : existingOverlay.Id);
             }
 
             var result = ShellForSerial(
@@ -113,7 +147,7 @@ namespace DexManager.Services
             var lease = new VirtualDisplayLease
             {
                 Serial = serial,
-                PreviousOverlaySetting = current,
+                PreviousOverlaySetting = "none",
                 AppliedOverlaySetting = value,
                 OwnsOverlaySetting = true,
                 ReusedExistingDisplay = false
@@ -167,41 +201,39 @@ namespace DexManager.Services
 
         public bool Reset()
         {
-            var result = _adbService.Shell(
+            return Reset(_adbService.TargetSerial);
+        }
+
+        public bool Reset(string serial)
+        {
+            var result = ShellForSerial(
+                serial,
                 "settings put global overlay_display_devices none");
             if (result.IsSuccess)
+            {
                 _logService.Info(LocalizationService.Get(
                     "Log.Display.Reset"));
+            }
+            else
+            {
+                _logService.Warning(LocalizationService.Format(
+                    "Log.Display.RestoreFailed",
+                    result.StandardError));
+            }
             return result.IsSuccess;
         }
 
         public bool Release(VirtualDisplayLease lease)
         {
-            if (lease == null || !lease.OwnsOverlaySetting) return true;
+            if (lease == null) return true;
             try
             {
-                var current = GetOverlaySetting(lease.Serial);
-                if (!string.Equals(
-                    current,
-                    lease.AppliedOverlaySetting,
-                    StringComparison.OrdinalIgnoreCase))
-                {
-                    _logService.Warning(LocalizationService.Format(
-                        "Log.Display.RestoreSkipped",
-                        current));
-                    lease.OwnsOverlaySetting = false;
-                    return true;
-                }
-
-                var result = IsMissingOverlaySetting(
-                        lease.PreviousOverlaySetting)
-                    ? ShellForSerial(
-                        lease.Serial,
-                        "settings delete global overlay_display_devices")
-                    : ShellForSerial(
-                        lease.Serial,
-                        "settings put global overlay_display_devices " +
-                        Quote(lease.PreviousOverlaySetting));
+                // Normal DeX cleanup is intentionally unconditional. The
+                // overlay belongs to the phone setting, not to a process, so
+                // restoring a previous value can leave a stale DeX screen.
+                var result = ShellForSerial(
+                    lease.Serial,
+                    "settings put global overlay_display_devices none");
                 if (!result.IsSuccess)
                 {
                     _logService.Warning(LocalizationService.Format(
@@ -270,6 +302,144 @@ namespace DexManager.Services
                     StringComparison.OrdinalIgnoreCase);
         }
 
+        private IList<DisplayInfo> RemoveExistingOverlay(
+            string serial,
+            IList<DisplayInfo> before,
+            int waitMs,
+            Func<bool> cancellationRequested,
+            int existingDisplayId)
+        {
+            var result = ShellForSerial(
+                serial,
+                "settings put global overlay_display_devices none");
+            if (!result.IsSuccess)
+            {
+                throw new InvalidOperationException(
+                    LocalizationService.Format(
+                        "Error.Display.ResetFailed",
+                        result.StandardError));
+            }
+
+            _logService.Info(LocalizationService.Get("Log.Display.Reset"));
+            var deadline = DateTime.UtcNow.AddMilliseconds(
+                Math.Max(1000, Math.Min(waitMs, 3000)));
+            IList<DisplayInfo> after = before;
+
+            do
+            {
+                if (cancellationRequested != null && cancellationRequested())
+                    throw new OperationCanceledException();
+
+                Thread.Sleep(150);
+                after = GetVirtualDisplays(serial);
+                var setting = GetOverlaySetting(serial);
+                if (!HasOverlaySetting(setting) &&
+                    (existingDisplayId <= 0 ||
+                        !after.Any(display =>
+                            display.Id == existingDisplayId)))
+                {
+                    LogDisplaySnapshot("after reset", after);
+                    return after;
+                }
+            }
+            while (DateTime.UtcNow < deadline);
+
+            throw new InvalidOperationException(
+                LocalizationService.Get("Error.Display.ResetTimedOut"));
+        }
+
+        private DisplayInfo FindExistingOverlayDisplay(
+            string setting,
+            IList<DisplayInfo> displays)
+        {
+            int width;
+            int height;
+            int dpi;
+            if (!TryParseOverlaySize(setting, out width, out height, out dpi))
+            {
+                return null;
+            }
+
+            var numericMatches = (displays ?? new List<DisplayInfo>())
+                .Where(display => display.Width == width &&
+                    display.Height == height &&
+                    display.Dpi == dpi)
+                .ToList();
+            var overlayMatches = numericMatches
+                .Where(IsOverlayDisplay)
+                .ToList();
+
+            if (overlayMatches.Count == 1) return overlayMatches[0];
+            if (overlayMatches.Count > 1)
+            {
+                throw new InvalidOperationException(
+                    LocalizationService.Format(
+                        "Error.Display.ReusableAmbiguous",
+                        FormatDisplays(overlayMatches)));
+            }
+
+            // Older Android dumps do not always expose the adapter/name in
+            // the mDisplayId block. A single numeric match is still safe.
+            if (numericMatches.Count == 1) return numericMatches[0];
+            if (numericMatches.Count == 0) return null;
+
+            throw new InvalidOperationException(
+                LocalizationService.Format(
+                    "Error.Display.ReusableAmbiguous",
+                    FormatDisplays(numericMatches)));
+        }
+
+        private static bool TryParseOverlaySize(
+            string setting,
+            out int width,
+            out int height,
+            out int dpi)
+        {
+            width = 0;
+            height = 0;
+            dpi = 0;
+            var match = OverlaySizeRegex.Match(setting ?? string.Empty);
+            return match.Success &&
+                int.TryParse(match.Groups["width"].Value, out width) &&
+                int.TryParse(match.Groups["height"].Value, out height) &&
+                int.TryParse(match.Groups["dpi"].Value, out dpi);
+        }
+
+        private static bool IsOverlayDisplay(DisplayInfo display)
+        {
+            if (display == null) return false;
+            var marker = (display.Name ?? string.Empty) + " " +
+                (display.RawText ?? string.Empty);
+            return marker.IndexOf(
+                    "overlay",
+                    StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool MatchesDisplaySettings(
+            VirtualDisplaySettings settings,
+            DisplayInfo display)
+        {
+            return display != null &&
+                display.Width == settings.Width &&
+                display.Height == settings.Height &&
+                display.Dpi == settings.Dpi;
+        }
+
+        private static string GetMismatchDescription(
+            VirtualDisplaySettings settings,
+            DisplayInfo display)
+        {
+            var resolutionMismatch = display.Width != settings.Width ||
+                display.Height != settings.Height;
+            var dpiMismatch = display.Dpi != settings.Dpi;
+            if (resolutionMismatch && dpiMismatch)
+                return LocalizationService.Get(
+                    "Display.Mismatch.ResolutionAndDpi");
+            return resolutionMismatch
+                ? LocalizationService.Get("Display.Mismatch.Resolution")
+                : LocalizationService.Get("Display.Mismatch.Dpi");
+        }
+
         private int WaitForCreatedDisplay(
             string serial,
             VirtualDisplaySettings settings,
@@ -312,35 +482,6 @@ namespace DexManager.Services
             LogDisplaySnapshot("after", after);
             LogDisplaySnapshot("new candidates", candidates);
             return SelectCandidate(settings, before, after, candidates);
-        }
-
-        private int SelectExistingDisplay(
-            VirtualDisplaySettings settings,
-            IList<DisplayInfo> displays)
-        {
-            var matches = MatchDisplaySettings(settings, displays).ToList();
-            LogDisplaySnapshot("existing candidates", matches);
-
-            if (matches.Count == 1)
-            {
-                _logService.Info(LocalizationService.Format(
-                    "Log.Display.ExistingSelected",
-                    matches[0].Id));
-                return matches[0].Id;
-            }
-
-            if (matches.Count == 0)
-            {
-                throw new InvalidOperationException(
-                    LocalizationService.Format(
-                        "Error.Display.ReusableNotFound",
-                        FormatDisplays(displays)));
-            }
-
-            throw new InvalidOperationException(
-                LocalizationService.Format(
-                    "Error.Display.ReusableAmbiguous",
-                    FormatDisplays(matches)));
         }
 
         private int SelectCandidate(

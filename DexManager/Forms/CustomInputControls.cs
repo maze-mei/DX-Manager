@@ -1141,6 +1141,7 @@ namespace DexManager.Forms
         }
 
         public event EventHandler ValueChanged;
+        public event EventHandler MinimumValueRejected;
 
         protected override bool AcceptCharacter(char value)
         {
@@ -1162,8 +1163,7 @@ namespace DexManager.Forms
 
         protected override void OnLeave(EventArgs e)
         {
-            decimal parsed;
-            Value = decimal.TryParse(Text, out parsed) ? parsed : Minimum;
+            CommitTextValue();
             base.OnLeave(e);
         }
 
@@ -1194,7 +1194,13 @@ namespace DexManager.Forms
 
         protected override void OnKeyDown(KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Up)
+            if (e.KeyCode == Keys.Enter)
+            {
+                CommitTextValue();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+            else if (e.KeyCode == Keys.Up)
             {
                 Value += Increment;
                 e.SuppressKeyPress = true;
@@ -1205,6 +1211,18 @@ namespace DexManager.Forms
                 e.SuppressKeyPress = true;
             }
             base.OnKeyDown(e);
+        }
+
+        private void CommitTextValue()
+        {
+            decimal parsed;
+            var hasParsedValue = decimal.TryParse(Text, out parsed);
+            var belowMinimum = hasParsedValue && parsed < Minimum;
+            Value = hasParsedValue ? parsed : Minimum;
+
+            if (!belowMinimum) return;
+            var handler = MinimumValueRejected;
+            if (handler != null) handler(this, EventArgs.Empty);
         }
 
         protected override void DrawAdornment(Graphics graphics)

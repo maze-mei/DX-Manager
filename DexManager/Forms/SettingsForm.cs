@@ -263,7 +263,14 @@ namespace DexManager.Forms
             AddCard(page, LocalizationService.Get("Settings.GroupStartup"), startup);
 
             var shutdown = CreateTable();
-            _resetDisplayOnStopBox = AddCheck(shutdown, LocalizationService.Get("Settings.ResetDisplay"));
+            // Virtual display cleanup is now a fixed safety policy rather
+            // than a user option. Keep the hidden value for config backward
+            // compatibility while removing the misleading switch.
+            _resetDisplayOnStopBox = new ThemedCheckBox
+            {
+                Checked = true,
+                Visible = false
+            };
             _disableStayAwakeBox = AddCheck(shutdown, LocalizationService.Get("Settings.DisableStayAwake"));
             AddCard(page, LocalizationService.Get("Settings.GroupShutdown"), shutdown);
             return page;
@@ -752,7 +759,7 @@ namespace DexManager.Forms
             _autoStartDexBox.Checked = _settings.Features.AutoStartDexOnDeviceConnected;
             _showConnectedDeviceInfoBox.Checked =
                 _settings.Features.ShowConnectedDeviceInfo;
-            _resetDisplayOnStopBox.Checked = _settings.Features.ResetVirtualDisplayOnStop;
+            _resetDisplayOnStopBox.Checked = true;
             _disableStayAwakeBox.Checked = _settings.Features.DisableStayAwakeOnStop;
             _pushCaptureBox.Checked = _settings.Features.PushCaptureToDevice;
 
@@ -961,7 +968,7 @@ namespace DexManager.Forms
             settings.Features.AutoStartDexOnDeviceConnected = _autoStartDexBox.Checked;
             settings.Features.ShowConnectedDeviceInfo =
                 _showConnectedDeviceInfoBox.Checked;
-            settings.Features.ResetVirtualDisplayOnStop = _resetDisplayOnStopBox.Checked;
+            settings.Features.ResetVirtualDisplayOnStop = true;
             settings.Features.DisableStayAwakeOnStop = _disableStayAwakeBox.Checked;
             settings.Features.PushCaptureToDevice = _pushCaptureBox.Checked;
 

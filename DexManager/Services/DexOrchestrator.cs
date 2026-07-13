@@ -256,8 +256,7 @@ namespace DexManager.Services
                         "Error.Scrcpy.StopTimeout"));
             }
 
-            if (session != null &&
-                _settings.Features.ResetVirtualDisplayOnStop)
+            if (session != null)
             {
                 if (!ReleaseDisplayLease(session.DisplayLease))
                     DeferDisplayCleanup(session);
@@ -340,10 +339,13 @@ namespace DexManager.Services
             }
 
             if (session != null &&
-                _settings.Features.ResetVirtualDisplayOnStop &&
                 !ReleaseDisplayLease(session.DisplayLease))
             {
                 DeferDisplayCleanup(session);
+            }
+            else if (session == null)
+            {
+                CleanupConnectedTargetOverlay();
             }
             ClearSession(session);
             _logService.Info(LocalizationService.Get(
@@ -382,8 +384,7 @@ namespace DexManager.Services
         {
             var session = _currentSession;
             if (session == null) return;
-            if (_settings.Features.ResetVirtualDisplayOnStop &&
-                !ReleaseDisplayLease(session.DisplayLease))
+            if (!ReleaseDisplayLease(session.DisplayLease))
             {
                 DeferDisplayCleanup(session);
                 _logService.Warning(LocalizationService.Get(
@@ -400,8 +401,14 @@ namespace DexManager.Services
         {
             var stale = _currentSession;
             if (stale == null) return;
-            if (!_settings.Features.ResetVirtualDisplayOnStop)
+            if (string.Equals(
+                stale.Serial,
+                nextSerial,
+                StringComparison.OrdinalIgnoreCase))
             {
+                // A reconnect must be evaluated by EnsureVirtualDisplay.
+                // Releasing the stale lease here would always delete a
+                // perfectly reusable overlay before the comparison.
                 ClearSession(stale);
                 return;
             }
@@ -472,38 +479,39 @@ namespace DexManager.Services
         private bool RetryDeferredCleanupCore(string serial)
         {
             if (string.IsNullOrWhiteSpace(serial)) return true;
-            VirtualDisplayLease lease;
-            if (!_pendingDisplayCleanup.TryGetValue(serial, out lease))
+            if (!_pendingDisplayCleanup.ContainsKey(serial))
                 return true;
-            if (!_settings.Features.ResetVirtualDisplayOnStop)
-            {
-                _pendingDisplayCleanup.Remove(serial);
-                return true;
-            }
-            if (!ReleaseDisplayLease(lease))
-            {
-                _logService.Warning(LocalizationService.Format(
-                    "Log.Dex.DeferredCleanupStillPending",
-                    serial));
-                return false;
-            }
-
+            // The device is available again. Do not delete the old overlay
+            // merely because the previous connection ended unexpectedly;
+            // the next start will compare its actual resolution and DPI.
             _pendingDisplayCleanup.Remove(serial);
             _logService.Info(LocalizationService.Format(
-                "Log.Dex.DeferredCleanupCompleted",
+                "Log.Dex.DeferredCleanupSuperseded",
                 serial));
             return true;
         }
 
         private bool ReleaseDisplayLease(VirtualDisplayLease lease)
         {
-            if (lease == null || !lease.OwnsOverlaySetting) return true;
+            if (lease == null) return true;
             if (string.IsNullOrWhiteSpace(lease.Serial) ||
                 !_adbService.IsAuthorizedDeviceConnected(lease.Serial))
             {
                 return false;
             }
             return _virtualDisplayService.Release(lease);
+        }
+
+        private void CleanupConnectedTargetOverlay()
+        {
+            var serial = _adbService.TargetSerial;
+            if (string.IsNullOrWhiteSpace(serial) ||
+                !_adbService.IsAuthorizedDeviceConnected(serial))
+            {
+                return;
+            }
+
+            _virtualDisplayService.Reset(serial);
         }
 
         private void DeferDisplayCleanup(ManagedDisplaySession session)

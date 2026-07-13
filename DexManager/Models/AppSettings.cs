@@ -296,6 +296,11 @@ namespace DexManager.Models
                 VirtualDisplay.CustomWidth = VirtualDisplay.Width;
             if (VirtualDisplay.CustomHeight <= 0)
                 VirtualDisplay.CustomHeight = VirtualDisplay.Height;
+            VirtualDisplay.Dpi = System.Math.Max(
+                120,
+                System.Math.Min(640, VirtualDisplay.Dpi));
+            VirtualDisplay.ReuseExistingDisplay = true;
+            Features.ResetVirtualDisplayOnStop = true;
             for (var slotIndex = 0;
                 slotIndex < SingleWindowSlots.Count;
                 slotIndex++)
@@ -308,6 +313,9 @@ namespace DexManager.Models
                 }
                 if (slot.CustomWidth <= 0) slot.CustomWidth = slot.Width;
                 if (slot.CustomHeight <= 0) slot.CustomHeight = slot.Height;
+                slot.Dpi = System.Math.Max(
+                    120,
+                    System.Math.Min(640, slot.Dpi));
             }
             if (string.IsNullOrWhiteSpace(Paths.Win7AdbPath))
                 Paths.Win7AdbPath = defaults.Paths.Win7AdbPath;

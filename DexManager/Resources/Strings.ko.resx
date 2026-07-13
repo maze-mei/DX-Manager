@@ -34,6 +34,7 @@
   <data name="Main.HidMouse" xml:space="preserve"><value>HID 마우스 (-M)</value></data>
   <data name="Main.ForceStop" xml:space="preserve"><value>선택 앱 강제 종료</value></data>
   <data name="Main.ReuseDisplay" xml:space="preserve"><value>기존 가상화면 재사용</value></data>
+  <data name="Main.DpiMinimum" xml:space="preserve"><value>DPI는 {0}보다 낮게 설정할 수 없습니다. {0}으로 되돌립니다.</value></data>
   <data name="Main.FlexDisplay" xml:space="preserve"><value>동적 창 크기 (-x)</value></data>
   <data name="Main.StayAwake" xml:space="preserve"><value>잠자기 방지 (-w)</value></data>
   <data name="Main.StartApp" xml:space="preserve"><value>시작 앱</value></data>
@@ -216,6 +217,7 @@
   <data name="Log.AutoHide.Started" xml:space="preserve"><value>자동 숨김을 시작했습니다: {0}초</value></data>
   <data name="Log.AutoHide.ScrcpyMinimized" xml:space="preserve"><value>사용자 입력이 없어 실행 중인 Scrcpy 창을 최소화했습니다.</value></data>
   <data name="Log.AutoHide.ManagerHidden" xml:space="preserve"><value>사용자 입력이 없어 DX Manager UI를 트레이로 숨깁니다.</value></data>
+  <data name="Log.AutoHide.TickFailed" xml:space="preserve"><value>자동 숨김 감시 중 일시적인 오류가 발생했습니다. 감시는 계속됩니다.</value></data>
   <data name="Error.AutoStart.RegistryUnavailable" xml:space="preserve"><value>자동 실행 레지스트리를 열 수 없습니다.</value></data>
   <data name="Log.AutoStart.Registered" xml:space="preserve"><value>Windows 자동 실행을 등록했습니다.</value></data>
   <data name="Log.AutoStart.Unregistered" xml:space="preserve"><value>Windows 자동 실행 등록을 해제했습니다.</value></data>
@@ -260,6 +262,7 @@
   <data name="Log.Dex.DeferredCleanupStored" xml:space="preserve"><value>연결이 끊어진 기기의 가상 디스플레이 정리를 보류했습니다: {0}</value></data>
   <data name="Log.Dex.DeferredCleanupStillPending" xml:space="preserve"><value>기기의 가상 디스플레이 정리가 아직 보류 중입니다: {0}</value></data>
   <data name="Log.Dex.DeferredCleanupCompleted" xml:space="preserve"><value>기기의 보류된 가상 디스플레이 정리를 완료했습니다: {0}</value></data>
+  <data name="Log.Dex.DeferredCleanupSuperseded" xml:space="preserve"><value>기기가 다시 연결되어 보류된 삭제 대신 현재 가상 디스플레이 설정을 다시 확인합니다: {0}</value></data>
   <data name="Log.Dex.ShutdownCleanupFailed" xml:space="preserve"><value>프로그램 종료 전 ADB 정리에 실패했습니다.</value></data>
   <data name="Log.Dex.SessionStarted" xml:space="preserve"><value>관리 세션 시작: {0}</value></data>
   <data name="Log.Dex.SessionEnded" xml:space="preserve"><value>관리 세션 종료: {0}</value></data>
@@ -337,13 +340,24 @@
   <data name="Error.Display.QuerySettingFailed" xml:space="preserve"><value>가상 디스플레이 설정을 읽지 못했습니다: {0}</value></data>
   <data name="Error.Display.QueryFailed" xml:space="preserve"><value>장치의 디스플레이 목록을 조회하지 못했습니다: {0}</value></data>
   <data name="Error.Display.OverlaySettingMismatch" xml:space="preserve"><value>기존 overlay 설정이 요청한 디스플레이와 일치하지 않습니다. 기존: {0}, 요청: {1}</value></data>
+  <data name="Error.Display.ResetFailed" xml:space="preserve"><value>기존 가상 디스플레이를 제거하지 못했습니다: {0}</value></data>
+  <data name="Error.Display.ResetTimedOut" xml:space="preserve"><value>기존 가상 디스플레이가 제한 시간 안에 제거되지 않았습니다.</value></data>
   <data name="Log.Display.RestoreSkipped" xml:space="preserve"><value>DX Manager 외부에서 overlay 설정이 변경되어 덮어쓰지 않습니다: {0}</value></data>
-  <data name="Log.Display.RestoreFailed" xml:space="preserve"><value>이전 overlay 설정을 복원하지 못했습니다: {0}</value></data>
-  <data name="Log.Display.Restored" xml:space="preserve"><value>이전 overlay 설정을 복원했습니다.</value></data>
-  <data name="Log.Display.RestoreException" xml:space="preserve"><value>이전 overlay 설정 복원 중 오류가 발생했습니다.</value></data>
-  <data name="Log.Display.RestoreDeferred" xml:space="preserve"><value>현재 이전 overlay 설정을 복원할 수 없어 정리를 보류합니다: {0}</value></data>
+  <data name="Log.Display.RestoreFailed" xml:space="preserve"><value>가상 디스플레이 설정을 정리하지 못했습니다: {0}</value></data>
+  <data name="Log.Display.Restored" xml:space="preserve"><value>가상 디스플레이 설정을 정리했습니다.</value></data>
+  <data name="Log.Display.RestoreException" xml:space="preserve"><value>가상 디스플레이 설정 정리 중 오류가 발생했습니다.</value></data>
+  <data name="Log.Display.RestoreDeferred" xml:space="preserve"><value>현재 가상 디스플레이 설정을 정리할 수 없어 처리를 보류합니다: {0}</value></data>
   <data name="Log.Display.SettingApplied" xml:space="preserve"><value>가상 디스플레이 설정을 적용했습니다: {0}</value></data>
   <data name="Log.Display.Reset" xml:space="preserve"><value>가상 디스플레이 설정을 초기화했습니다.</value></data>
+  <data name="Log.Display.ReplacingSetting" xml:space="preserve"><value>기존 가상 디스플레이를 제거하고 새 설정을 적용합니다. 기존: {0}, 요청: {1}</value></data>
+  <data name="Log.Display.ExistingFound" xml:space="preserve"><value>기존 가상 디스플레이 발견: id={0}, {1}x{2} / {3} dpi</value></data>
+  <data name="Log.Display.RequestedValues" xml:space="preserve"><value>설정 값: {0}x{1} / {2} dpi</value></data>
+  <data name="Log.Display.ReuseMatched" xml:space="preserve"><value>판정: 해상도와 DPI 일치, 기존 디스플레이를 재사용합니다.</value></data>
+  <data name="Log.Display.RecreateMismatch" xml:space="preserve"><value>판정: {0} 불일치, 기존 디스플레이를 제거하고 재생성합니다.</value></data>
+  <data name="Log.Display.ExistingNotResolved" xml:space="preserve"><value>overlay 설정은 존재하지만 실제 가상 디스플레이 ID를 확인하지 못했습니다. 제거 후 재생성합니다: {0}</value></data>
+  <data name="Display.Mismatch.Resolution" xml:space="preserve"><value>해상도</value></data>
+  <data name="Display.Mismatch.Dpi" xml:space="preserve"><value>DPI</value></data>
+  <data name="Display.Mismatch.ResolutionAndDpi" xml:space="preserve"><value>해상도와 DPI</value></data>
   <data name="Log.Display.ExistingSelected" xml:space="preserve"><value>기존 가상 디스플레이 ID 선택: {0}</value></data>
   <data name="Log.Display.SingleFallbackSelected" xml:space="preserve"><value>해상도/DPI가 일치하는 기존 가상 디스플레이를 찾지 못했지만 후보가 1개뿐이라 선택합니다: {0}</value></data>
   <data name="Error.Display.ReusableNotFound" xml:space="preserve"><value>재사용할 기존 가상 디스플레이를 찾을 수 없습니다. display 목록: {0}</value></data>
@@ -418,6 +432,9 @@
   <data name="Settings.LowLevelHotkey" xml:space="preserve"><value>저수준 키보드 후크로 단축키 처리</value></data>
   <data name="Settings.KeyDiagnostics" xml:space="preserve"><value>키 진단 로그 남기기</value></data>
   <data name="Settings.HangulCorrection" xml:space="preserve"><value>한영키를 Shift+Space로 보정</value></data>
+  <data name="Log.KeyMapping.HangulState" xml:space="preserve"><value>한영키 보정 완료 상태: held={0}</value></data>
+  <data name="Log.KeyMapping.HangulSuppressed" xml:space="preserve"><value>한영키 중복 입력 억제 상태: held={0}</value></data>
+  <data name="Log.KeyMapping.SendInputResult" xml:space="preserve"><value>{0} SendInput {1} 결과: sent={2}/{3}, LastWin32Error={4}</value></data>
   <data name="Settings.HangulMode" xml:space="preserve"><value>한영키 전송 방식</value></data>
   <data name="Settings.KeyInputMode" xml:space="preserve"><value>키 입력 전송 방식</value></data>
   <data name="Settings.RightWindows" xml:space="preserve"><value>오른쪽 Windows 키 보정</value></data>

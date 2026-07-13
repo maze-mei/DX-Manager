@@ -15,6 +15,8 @@ namespace DexManager.Services
         private readonly Timer _timer;
         private bool _minimizedByService;
         private bool _hideRequested;
+        private bool _tickFailureLogged;
+        private bool _disposed;
 
         public AutoHideService(
             ScrcpyService scrcpyService,
@@ -34,6 +36,7 @@ namespace DexManager.Services
 
         public void Start()
         {
+            if (_disposed) return;
             if (_timer.Enabled) return;
             _timer.Start();
             _logService.Info(LocalizationService.Format(
@@ -43,6 +46,7 @@ namespace DexManager.Services
 
         public void Stop()
         {
+            if (_disposed) return;
             _timer.Stop();
             _minimizedByService = false;
             _hideRequested = false;
@@ -62,11 +66,36 @@ namespace DexManager.Services
 
         public void Dispose()
         {
-            Stop();
+            if (_disposed) return;
+            _disposed = true;
+            _timer.Stop();
+            _timer.Tick -= Timer_Tick;
+            _minimizedByService = false;
+            _hideRequested = false;
             _timer.Dispose();
         }
 
         private void Timer_Tick(object sender, EventArgs e)
+        {
+            if (_disposed) return;
+
+            try
+            {
+                TimerTickCore();
+            }
+            catch (Exception exception)
+            {
+                // A monitoring timer must never take down the WinForms UI.
+                // The next tick may succeed after a scrcpy process transition.
+                if (_tickFailureLogged) return;
+                _tickFailureLogged = true;
+                _logService.Error(
+                    LocalizationService.Get("Log.AutoHide.TickFailed"),
+                    exception);
+            }
+        }
+
+        private void TimerTickCore()
         {
             var handles = GetScrcpyWindowHandles();
             if (handles.Count == 0)
