@@ -90,6 +90,15 @@ namespace DexManager.Services
         public WirelessDeviceSelection SelectPreferredDeviceWithGeneration(
             IList<AdbDeviceInfo> devices)
         {
+            return SelectPreferredDeviceWithGeneration(
+                devices,
+                string.Empty);
+        }
+
+        public WirelessDeviceSelection SelectPreferredDeviceWithGeneration(
+            IList<AdbDeviceInfo> devices,
+            string targetWhenUnavailable)
+        {
             lock (_reconnectSync)
             {
                 var connection = GetConnectionSnapshot();
@@ -97,8 +106,14 @@ namespace DexManager.Services
                     devices,
                     _adbService.TargetSerial,
                     connection);
+                var unavailableTarget = string.IsNullOrWhiteSpace(
+                    targetWhenUnavailable)
+                    ? string.Empty
+                    : targetWhenUnavailable.Trim();
                 var target = preferred == null
-                    ? (connection.Mode == AdbConnectionMode.Wireless
+                    ? (unavailableTarget.Length > 0
+                        ? unavailableTarget
+                        : connection.Mode == AdbConnectionMode.Wireless
                         ? connection.Endpoint
                         : string.Empty)
                     : preferred.Serial;

@@ -17,12 +17,21 @@ namespace DexManager.Services
         private readonly Dictionary<string, string> _deviceNameCache =
             new Dictionary<string, string>(
                 StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> _deviceIdentityCache =
+            new Dictionary<string, string>(
+                StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _ignoredDeviceLog =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _visibleDeviceSerials =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private Timer _timer;
         private int _polling;
         private int _stopping = 1;
         private int _disposed;
         private DateTime _missingSinceUtc = DateTime.MinValue;
         private DeviceState _currentState = DeviceState.Disconnected();
+        private string _pinnedDeviceIdentity = string.Empty;
+        private string _pinnedTransportSerial = string.Empty;
 
         public DeviceMonitorService(
             AdbService adbService,
@@ -116,8 +125,10 @@ namespace DexManager.Services
                     return;
                 }
 
+                RefreshVisibleDevices(devices);
+                var eligibleDevices = GetEligibleDevices(devices);
                 var preferred = _wirelessAdbService.FindPreferredDevice(
-                    devices,
+                    eligibleDevices,
                     _adbService.TargetSerial);
                 if (preferred == null &&
                     _wirelessAdbService.TryReconnect(false))
@@ -127,15 +138,21 @@ namespace DexManager.Services
                     {
                         return;
                     }
+                    RefreshVisibleDevices(devices);
+                    eligibleDevices = GetEligibleDevices(devices);
                     preferred = _wirelessAdbService.FindPreferredDevice(
-                        devices,
+                        eligibleDevices,
                         _adbService.TargetSerial);
                 }
 
                 if (IsStopping) return;
                 var selection = _wirelessAdbService
-                    .SelectPreferredDeviceWithGeneration(devices);
+                    .SelectPreferredDeviceWithGeneration(
+                        eligibleDevices,
+                        _pinnedTransportSerial);
                 preferred = selection.Device;
+                if (preferred != null)
+                    PinSelectedDevice(preferred);
 
                 if (preferred == null)
                 {
@@ -274,6 +291,142 @@ namespace DexManager.Services
             var displayName = _adbService.GetDeviceDisplayName(serial);
             _deviceNameCache[serial] = displayName ?? string.Empty;
             return displayName ?? string.Empty;
+        }
+
+        private IList<AdbDeviceInfo> GetEligibleDevices(
+            IList<AdbDeviceInfo> devices)
+        {
+            if (string.IsNullOrWhiteSpace(_pinnedTransportSerial))
+                return devices ?? new List<AdbDeviceInfo>();
+
+            var eligible = new List<AdbDeviceInfo>();
+            foreach (var device in devices ?? new List<AdbDeviceInfo>())
+            {
+                if (IsPinnedDevice(device))
+                {
+                    eligible.Add(device);
+                    continue;
+                }
+
+                if (_ignoredDeviceLog.Add(device.Serial ?? string.Empty))
+                {
+                    _logService.Info(LocalizationService.Format(
+                        "Log.DeviceMonitor.IgnoredOtherDevice",
+                        device.Serial ?? string.Empty));
+                }
+            }
+            return eligible;
+        }
+
+        private bool IsPinnedDevice(AdbDeviceInfo device)
+        {
+            if (device == null || string.IsNullOrWhiteSpace(device.Serial))
+                return false;
+            var sameTransport = string.Equals(
+                device.Serial,
+                _pinnedTransportSerial,
+                StringComparison.OrdinalIgnoreCase);
+            if (!device.IsAuthorized ||
+                string.IsNullOrWhiteSpace(_pinnedDeviceIdentity))
+            {
+                return sameTransport;
+            }
+
+            var identity = GetDeviceIdentity(device.Serial);
+            if (string.IsNullOrWhiteSpace(identity))
+            {
+                // Preserve an established transport through a transient
+                // property-read failure, but never accept a new transport
+                // without proving that it belongs to the pinned phone.
+                return sameTransport;
+            }
+            return string.Equals(
+                identity,
+                _pinnedDeviceIdentity,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void PinSelectedDevice(AdbDeviceInfo device)
+        {
+            if (device == null || string.IsNullOrWhiteSpace(device.Serial))
+                return;
+
+            var identity = device.IsAuthorized
+                ? GetDeviceIdentity(device.Serial)
+                : string.Empty;
+            if (string.IsNullOrWhiteSpace(_pinnedTransportSerial))
+            {
+                _pinnedTransportSerial = device.Serial;
+                _pinnedDeviceIdentity = identity;
+                var displayName = device.IsAuthorized
+                    ? GetDeviceDisplayName(device.Serial)
+                    : string.Empty;
+                _logService.Info(LocalizationService.Format(
+                    "Log.DeviceMonitor.DevicePinned",
+                    string.IsNullOrWhiteSpace(displayName)
+                        ? device.Serial
+                        : displayName,
+                    device.Serial));
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_pinnedDeviceIdentity) &&
+                !string.IsNullOrWhiteSpace(identity))
+            {
+                _pinnedDeviceIdentity = identity;
+            }
+
+            if (string.Equals(
+                _pinnedTransportSerial,
+                device.Serial,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var previousSerial = _pinnedTransportSerial;
+            _pinnedTransportSerial = device.Serial;
+            _logService.Info(LocalizationService.Format(
+                "Log.DeviceMonitor.PinnedTransportChanged",
+                previousSerial,
+                device.Serial));
+        }
+
+        private string GetDeviceIdentity(string serial)
+        {
+            if (string.IsNullOrWhiteSpace(serial)) return string.Empty;
+
+            string cached;
+            if (_deviceIdentityCache.TryGetValue(serial, out cached))
+                return cached;
+
+            var identity = _adbService.GetDeviceIdentity(serial);
+            if (!string.IsNullOrWhiteSpace(identity))
+                _deviceIdentityCache[serial] = identity;
+            return identity ?? string.Empty;
+        }
+
+        private void RefreshVisibleDevices(IList<AdbDeviceInfo> devices)
+        {
+            var current = new HashSet<string>(
+                StringComparer.OrdinalIgnoreCase);
+            foreach (var device in devices ?? new List<AdbDeviceInfo>())
+            {
+                if (device != null &&
+                    !string.IsNullOrWhiteSpace(device.Serial))
+                {
+                    current.Add(device.Serial);
+                }
+            }
+
+            foreach (var serial in _visibleDeviceSerials)
+            {
+                if (!current.Contains(serial))
+                    _deviceIdentityCache.Remove(serial);
+            }
+            _visibleDeviceSerials.Clear();
+            foreach (var serial in current)
+                _visibleDeviceSerials.Add(serial);
         }
 
         private static DeviceState CopyState(DeviceState state)

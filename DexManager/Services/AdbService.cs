@@ -183,6 +183,31 @@ namespace DexManager.Services
             return string.Empty;
         }
 
+        public string GetDeviceIdentity(string serial)
+        {
+            var serialProperties = new[]
+            {
+                "ro.serialno",
+                "ro.boot.serialno"
+            };
+
+            foreach (var property in serialProperties)
+            {
+                var value = ReadDeviceText(
+                    serial,
+                    "getprop " + property);
+                if (!string.IsNullOrWhiteSpace(value))
+                    return "serial:" + value;
+            }
+
+            var androidId = ReadDeviceText(
+                serial,
+                "settings get secure android_id");
+            return string.IsNullOrWhiteSpace(androidId)
+                ? string.Empty
+                : "android:" + androidId;
+        }
+
         private string ReadDeviceText(string serial, string command)
         {
             var result = ShellForSerial(serial, command, false);

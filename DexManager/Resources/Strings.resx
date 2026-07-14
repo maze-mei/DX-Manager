@@ -240,6 +240,9 @@
   <data name="Log.DeviceMonitor.Stopped" xml:space="preserve"><value>Stopped ADB device monitoring.</value></data>
   <data name="Log.DeviceMonitor.Failed" xml:space="preserve"><value>An error occurred while monitoring the device.</value></data>
   <data name="Log.DeviceMonitor.StateChanged" xml:space="preserve"><value>Device state changed: {0} -&gt; {1}{2}</value></data>
+  <data name="Log.DeviceMonitor.DevicePinned" xml:space="preserve"><value>Locked device control to {0} ({1}) for this DX Manager session.</value></data>
+  <data name="Log.DeviceMonitor.IgnoredOtherDevice" xml:space="preserve"><value>Ignored another ADB device because this session is locked to its first phone: {0}</value></data>
+  <data name="Log.DeviceMonitor.PinnedTransportChanged" xml:space="preserve"><value>The locked phone changed ADB transport: {0} -&gt; {1}</value></data>
   <data name="Log.Dex.OperationInProgress" xml:space="preserve"><value>A DeX operation is already in progress.</value></data>
   <data name="Log.Dex.AlreadyRunning" xml:space="preserve"><value>DeX is already running.</value></data>
   <data name="Error.Dex.NoAuthorizedDevice" xml:space="preserve"><value>No authorized ADB device is connected.</value></data>

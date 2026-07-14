@@ -17,6 +17,8 @@
   <a href="#korean">한국어</a> ·
   <a href="docs/USER_GUIDE_EN.md">English guide</a> ·
   <a href="docs/USER_GUIDE_KO.md">한국어 사용 설명서</a> ·
+  <a href="docs/FAQ_EN.md">FAQ</a> ·
+  <a href="docs/FAQ_KO.md">Q&amp;A</a> ·
   <a href="DexManager/licenses/THIRD_PARTY_NOTICES.md">Third-party notices</a>
 </p>
 
@@ -110,6 +112,8 @@ For complete instructions, see:
 
 - [한국어 사용 설명서](docs/USER_GUIDE_KO.md)
 - [English user guide](docs/USER_GUIDE_EN.md)
+- [한국어 자주 묻는 질문](docs/FAQ_KO.md)
+- [English FAQ](docs/FAQ_EN.md)
 
 ## Default Shortcuts
 
@@ -281,6 +285,8 @@ DLL, 라이선스 파일과 scrcpy 서버 파일이 모두 필요합니다.
 
 - [한국어 사용 설명서](docs/USER_GUIDE_KO.md)
 - [English user guide](docs/USER_GUIDE_EN.md)
+- [한국어 자주 묻는 질문](docs/FAQ_KO.md)
+- [English FAQ](docs/FAQ_EN.md)
 
 ## 기본 단축키
 

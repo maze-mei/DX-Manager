@@ -240,6 +240,9 @@
   <data name="Log.DeviceMonitor.Stopped" xml:space="preserve"><value>ADB 장치 감시를 중지했습니다.</value></data>
   <data name="Log.DeviceMonitor.Failed" xml:space="preserve"><value>장치 감시 중 오류가 발생했습니다.</value></data>
   <data name="Log.DeviceMonitor.StateChanged" xml:space="preserve"><value>장치 상태 변경: {0} -&gt; {1}{2}</value></data>
+  <data name="Log.DeviceMonitor.DevicePinned" xml:space="preserve"><value>이번 DX Manager 실행에서 제어할 기기를 고정했습니다: {0} ({1})</value></data>
+  <data name="Log.DeviceMonitor.IgnoredOtherDevice" xml:space="preserve"><value>이번 실행에서 처음 선택한 휴대폰과 다른 ADB 기기를 무시합니다: {0}</value></data>
+  <data name="Log.DeviceMonitor.PinnedTransportChanged" xml:space="preserve"><value>고정된 휴대폰의 ADB 연결 방식이 변경되었습니다: {0} -&gt; {1}</value></data>
   <data name="Log.Dex.OperationInProgress" xml:space="preserve"><value>DeX 작업이 이미 진행 중입니다.</value></data>
   <data name="Log.Dex.AlreadyRunning" xml:space="preserve"><value>DeX가 이미 실행 중입니다.</value></data>
   <data name="Error.Dex.NoAuthorizedDevice" xml:space="preserve"><value>승인된 ADB 장치가 연결되어 있지 않습니다.</value></data>

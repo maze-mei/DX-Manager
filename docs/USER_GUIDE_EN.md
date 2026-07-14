@@ -256,7 +256,13 @@ connections, and keyboard options.
 
 Settings are stored in `config/settings.json` next to the application.
 
-## 12. Removal
+## 12. Frequently Asked Questions
+
+For common questions and troubleshooting steps, see the
+[Frequently Asked Questions](FAQ_EN.md). A [Korean version](FAQ_KO.md) is
+also available.
+
+## 13. Removal
 
 DX Manager does not use an installer.
 

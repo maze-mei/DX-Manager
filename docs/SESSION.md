@@ -1,54 +1,61 @@
 # Session Handoff
 
-마지막 갱신: 2026-07-06
+마지막 갱신: 2026-07-14
 
 ## Git
 
 - 저장소: `E:\vs\dex system`
-- 브랜치: `main`
-- 마지막 기능 커밋: `c48b10b Fix scrcpy compatibility and native text editing`
-- `feature/scrcpy-4-upgrade`: `d946d82`
-- `feature/single-window-mode`: `45b59ef`
+- 브랜치: `fix/audit-hardening-20260711`
+- 마지막 커밋: `1343631 Harden display lifecycle and input handling`
+- 현재 작업: v1 배포 문서와 GitHub 첫 공개 Release 준비
 
 새 세션에서는 실제 `git status --short --branch`와 `git log`를 다시 확인한다.
+현재 작업이 커밋되지 않았다면 사용자 변경과 함께 그대로 보존한다.
 
-## 마지막 확인
+## 현재 구현 상태
 
-- Windows 11 유선/무선 DeX와 단일창 3개 동시 실행 정상
-- 무선 상태에서 화면이 자동으로 꺼지지 않고 안정적으로 유지
-- 단일창/DeX 종료 및 재실행 정상
-- Windows 7 SP1/.NET 4.6.2 유선 핵심 기능과 Scrcpy 4.0 정상
-- ASUS 5GHz 초기 연결 문제는 네트워크 상태 갱신 뒤 해소
-- USB 무선 준비 시 휴대폰 Wi-Fi IP 자동 감지
-- 제품명과 실행 파일을 `DX Manager` / `DXManager.exe`로 변경
-- Windows 언어 자동 감지와 한국어/영어 선택 확인
-- `.resx` 영어 기본/한국어 위성 리소스 빌드 확인
-- 시작/중지 버튼 단순화와 변경사항 적용 링크
-- 사이드바 설정 버튼과 설정창 진단 탭
-- 키보드 탭 포커스 표시와 입력값 전체 선택
-- 캡처 성공 커서 토스트와 설정 저장 인라인 상태
-- HTML 시안 기반 라이트/다크 카드형 메인 UI
-- 앱 테마 자동/라이트/다크 설정과 스키마 15 마이그레이션
-- 토글 스위치, 원형 상태 링, 보라색 강조색
-- 화면 설정의 해상도/DPI/비트레이트/FPS를 완전 커스텀 입력기로 교체
-- 메인 화면 스크롤 제거 및 카드 하단선 정렬
-- 잠자기 방지 `-w`, 동적 창 크기 `-x` 축약 표기
-- Scrcpy 3.3.4/4.0 버전 감지와 실행 옵션 자동 호환
-- Scrcpy 4.0/SDL3 오른쪽 Shift 입력을 왼쪽 Shift로 치환
-- 경로와 일반 문자열 필드에 네이티브 편집 엔진 적용
-- 구형 ADB/Scrcpy의 한국어 경로 출력 인코딩 보정
-- Release 빌드 경고 0, 오류 0
+- Windows 11 USB/무선 DeX와 단일창 3개 동시 실행 확인
+- 64비트 Windows 7 SP1/.NET Framework 4.6.2 유선 핵심 흐름 확인
+- Scrcpy 4.0과 Scrcpy 폴더의 ADB를 기본 사용, 필요 시 legacy ADB fallback
+- 연결 상태와 기기 이름 확인 후 실제 시작 명령 직전에 0~60초 대기
+- 연결 해제/재연결 시 세션, 화면 OFF, stay-awake 정리
+- DeX overlay 너비/높이/DPI 일치 시 재사용, 불일치 시 제거 후 재생성
+- 정상 종료 시 관리 기기의 overlay를 생성 주체와 관계없이 제거
+- SC1F2 KeyUp이 없는 환경에서도 한영 보정 반복 동작
+- Scrcpy 4.0/SDL3 오른쪽 Shift를 왼쪽 Shift로 치환
+- DPI 120 미만 입력 거부와 입력 확정 시 안내
+- 무선/USB 전환 중 Scrcpy 종료와 자동 숨김 타이머 경합 방어
+- 기본/고급 설정 재정리와 환경 점검 표 레이아웃 수정
+- 제작자/GitHub 링크, MIT 라이선스, 제3자 고지와 파일 속성 완료
+- README/설명서용 한국어·영어 스크린샷 6장 저장
+- 한국어/영어 FAQ 15문항을 독립 문서로 작성하고 README와 설명서에서 연결
 
-## 결론과 다음 작업
+2026-07-13 현재 .NET Framework 4.6.2 참조 어셈블리로 x64 Debug/Release
+빌드가 모두 경고 0, 오류 0으로 통과했다.
 
-기능 목표와 기본 UI는 완료됐다. 개인 사용 기준 완성, 배포 기준 베타다.
-다음 작업은 최신 빌드의 Windows 7 회귀 확인, Scrcpy upstream 오른쪽 Shift
-이슈 보고와 GitHub Release 준비다.
+2026-07-14 연결 해제 로그에서 고정 기기가 없을 때 target serial을 비운 뒤
+즉시 복구하는 1초 주기 상태 반복을 확인했다. 선택 서비스가 기기 없음
+상태에서도 고정 serial을 유지하도록 수정하고 별도 복구 처리를 제거했다.
+연결 해제 상태의 조용한 감시와 같은 휴대폰 재연결을 실기 재확인했다.
 
-새 채팅 시작 예:
+2026-07-14 휴대폰 두 대를 USB로 연결한 경우와 두 휴대폰의 USB/무선 ADB가
+동시에 네 개의 transport로 표시되는 경우를 실기 확인했다. 처음 선택한 물리
+휴대폰만 유지하고 다른 휴대폰은 무시했으며, 고정된 같은 휴대폰의 USB↔무선
+전환은 정상적으로 세션을 정리하고 다시 실행했다.
 
-```text
-E:\vs\dex system의 docs를 읽고 SESSION.md 기준으로 이어서 작업해줘.
-먼저 git status와 브랜치를 확인하고 사용자 설정과 미커밋 변경을 보존해줘.
-이번 목표는 [목표]야.
-```
+## 이번 작업의 v1 기기 정책
+
+- 앱이 처음 선택한 휴대폰을 종료까지 고정한다.
+- 다른 휴대폰이 추가되거나 고정 기기가 분리되어도 다른 폰으로 전환하지 않는다.
+- `ro.serialno`/`ro.boot.serialno`/Android ID가 같으면 USB와 무선 ADB 주소가
+  달라도 같은 휴대폰으로 인정한다.
+- 다중 휴대폰 선택과 동시 제어는 v2 후보 기능이다.
+
+## 다음 확인
+
+1. Windows 7 최신 빌드 회귀 확인
+2. README/설명서 스크린샷 배치
+3. Release 폴더 정리 및 GitHub 첫 공개 Release 준비
+
+빌드·커밋·배포 전 `bin\Debug`, `bin\Release`의 `logs`, `screenshot` 테스트
+파일을 비운다. 실기 확인하지 않은 흐름은 문서나 보고에서 확인 완료로 쓰지 않는다.
