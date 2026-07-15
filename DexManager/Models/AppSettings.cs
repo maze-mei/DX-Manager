@@ -81,14 +81,14 @@ namespace DexManager.Models
                 Features = new FeatureSettings
                 {
                     StartWithWindows = false,
-                    StartMinimizedToTray = true,
+                    StartMinimizedToTray = false,
                     RegisterAdbPathAutomatically = false,
                     ScrcpyWakeUpMode = ScrcpyWakeUpMode.OnAdbFailure,
-                    AutoHideEnabled = true,
+                    AutoHideEnabled = false,
                     PushCaptureToDevice = true,
                     ResetVirtualDisplayOnStop = true,
                     DisableStayAwakeOnStop = true,
-                    AutoStartDexOnDeviceConnected = true,
+                    AutoStartDexOnDeviceConnected = false,
                     ShowConnectedDeviceInfo = true
                 },
                 KeyMappings = new KeyMappingSettings
@@ -100,9 +100,9 @@ namespace DexManager.Models
                     ConvertKoreanEnglishKey = true,
                     KoreanEnglishInputMode = KeyInputMode.SendInputScanCode,
                     HandleRightWindowsKey = true,
-                    ConvertEnterToShiftEnter = true,
+                    ConvertEnterToShiftEnter = false,
                     EnterInputMode = KeyInputMode.SendInputScanCode,
-                    IgnoreShiftSpace = true
+                    IgnoreShiftSpace = false
                 },
                 LastSuccess = new LastSuccessSettings(),
                 SingleWindowSlots = CreateDefaultSingleWindowSlots(),
@@ -292,10 +292,26 @@ namespace DexManager.Models
                     defaults.Timing.ConnectedStartDelayMs;
                 SchemaVersion = defaults.SchemaVersion;
             }
-            if (VirtualDisplay.CustomWidth <= 0)
-                VirtualDisplay.CustomWidth = VirtualDisplay.Width;
-            if (VirtualDisplay.CustomHeight <= 0)
-                VirtualDisplay.CustomHeight = VirtualDisplay.Height;
+            VirtualDisplay.Width = NormalizeRange(
+                VirtualDisplay.Width,
+                320,
+                4096,
+                defaults.VirtualDisplay.Width);
+            VirtualDisplay.Height = NormalizeRange(
+                VirtualDisplay.Height,
+                240,
+                4096,
+                defaults.VirtualDisplay.Height);
+            VirtualDisplay.CustomWidth = NormalizeRange(
+                VirtualDisplay.CustomWidth,
+                320,
+                4096,
+                VirtualDisplay.Width);
+            VirtualDisplay.CustomHeight = NormalizeRange(
+                VirtualDisplay.CustomHeight,
+                240,
+                4096,
+                VirtualDisplay.Height);
             VirtualDisplay.Dpi = System.Math.Max(
                 120,
                 System.Math.Min(640, VirtualDisplay.Dpi));
@@ -311,8 +327,29 @@ namespace DexManager.Models
                     slot = CreateDefaultSingleWindowSlot(slotIndex + 1);
                     SingleWindowSlots[slotIndex] = slot;
                 }
-                if (slot.CustomWidth <= 0) slot.CustomWidth = slot.Width;
-                if (slot.CustomHeight <= 0) slot.CustomHeight = slot.Height;
+                var defaultSlot = slotIndex < defaults.SingleWindowSlots.Count
+                    ? defaults.SingleWindowSlots[slotIndex]
+                    : CreateDefaultSingleWindowSlot(slotIndex + 1);
+                slot.Width = NormalizeRange(
+                    slot.Width,
+                    320,
+                    4096,
+                    defaultSlot.Width);
+                slot.Height = NormalizeRange(
+                    slot.Height,
+                    240,
+                    4096,
+                    defaultSlot.Height);
+                slot.CustomWidth = NormalizeRange(
+                    slot.CustomWidth,
+                    320,
+                    4096,
+                    slot.Width);
+                slot.CustomHeight = NormalizeRange(
+                    slot.CustomHeight,
+                    240,
+                    4096,
+                    slot.Height);
                 slot.Dpi = System.Math.Max(
                     120,
                     System.Math.Min(640, slot.Dpi));

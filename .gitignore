@@ -21,3 +21,6 @@ DexManager/screenshot/*
 # NuGet restore output
 packages/
 *.nupkg
+
+# Generated release packages
+dist/

@@ -32,6 +32,17 @@
 같은 기기의 USB/무선 전환, 다른 기기 무시와 원래 기기 재연결을 확인한다.
 실기 확인을 못 했으면 명시한다.
 
+공개용 포터블 폴더와 ZIP은 저장소 루트에서 다음 명령으로 만든다.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Package-Release.ps1
+```
+
+개발 산출물은 `DexManager\bin\Release`, 사용자 배포 산출물은
+`dist\DX Manager`와 버전이 포함된 x64 ZIP으로 구분한다.
+스크립트는 DX Manager 실행 여부를 확인하고 번들 Release ADB 서버를 정리한
+뒤 Debug/Release의 로그와 스크린샷 테스트 파일을 비운다.
+
 ## Git과 문서
 
 - diff를 확인하고 한 커밋에 한 목적만 담는다.

@@ -33,8 +33,8 @@
   <data name="Main.HidKeyboard" xml:space="preserve"><value>HID keyboard (-K)</value></data>
   <data name="Main.HidMouse" xml:space="preserve"><value>HID mouse (-M)</value></data>
   <data name="Main.ForceStop" xml:space="preserve"><value>Force-stop selected app</value></data>
-  <data name="Main.ReuseDisplay" xml:space="preserve"><value>Reuse existing display</value></data>
-  <data name="Main.DpiMinimum" xml:space="preserve"><value>DPI cannot be set below {0}. The value has been restored to {0}.</value></data>
+  <data name="Main.DpiMinimum" xml:space="preserve"><value>DPI cannot be set below {0}. The previous value has been restored.</value></data>
+  <data name="Main.ResolutionMaximum" xml:space="preserve"><value>{0} cannot exceed {1}. The previous value has been restored.</value></data>
   <data name="Main.FlexDisplay" xml:space="preserve"><value>Dynamic window size (-x)</value></data>
   <data name="Main.StayAwake" xml:space="preserve"><value>Stay awake (-w)</value></data>
   <data name="Main.StartApp" xml:space="preserve"><value>Start app</value></data>

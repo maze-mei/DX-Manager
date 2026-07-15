@@ -87,9 +87,10 @@ On the tested Samsung DeX environment, 120 is the lowest DPI at which a
 virtual display can be created. At 119 or below, the overlay is not created
 and no new display ID can be found.
 
-DX Manager changes values below 120 back to 120 and displays a notice. Very
-high DPI values may create a display successfully, but text and interface
-elements can become too large for practical use.
+DX Manager restores the value that was present before editing and displays a
+notice when a value below 120 is entered. Very high DPI values may create a
+display successfully, but text and interface elements can become too large
+for practical use.
 
 ## Q8. The scrcpy-server transfer speed in the log is lower than usual.
 
@@ -184,7 +185,24 @@ screen-off or stay-awake behavior, DX Manager manages it using the combined
 state of all sessions. When all related sessions stop, or DX Manager exits
 normally, it attempts to restore the phone screen and stay-awake state.
 
-## Q15. What is required on Windows 7, and why can DXManager.exe not be copied by itself?
+## Q15. The phone screen stays on while it is charging.
+
+DX Manager restores the original **Stay awake while charging** setting when
+the DeX or single-window session, or the program itself, is closed normally.
+
+If DX Manager exits abnormally, or exits while the phone is disconnected, it
+may be unable to send the ADB command that restores this setting. Use either
+of the following methods to recover:
+
+- On the phone, open **Developer options** and turn off **Stay awake**.
+- Reconnect the same phone to DX Manager, and then close the session or
+  program normally.
+
+This setting does not force the screen to remain on while the phone is running
+only on battery power, but it may prevent the screen from turning off while
+the phone is connected to USB or a charger.
+
+## Q16. What is required on Windows 7, and why can DXManager.exe not be copied by itself?
 
 DX Manager supports 64-bit Windows 7 SP1 with .NET Framework 4.6.2 or later.
 32-bit Windows is not supported. On Windows 7/8.1, the Universal CRT update

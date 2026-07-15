@@ -7,11 +7,15 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using DexManager.Models;
+using DexManager.Utils;
 
 namespace DexManager.Services
 {
     public sealed class SingleWindowService : IDisposable
     {
+        private const int WindowMonitorIntervalMs = 100;
+        private const int GracefulStopWaitMs = 500;
+        private const int ForcedStopWaitMs = 1000;
         private static readonly Regex NewDisplayIdRegex = new Regex(
             @"New display:.*\(id=(\d+)\)",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -33,6 +37,8 @@ namespace DexManager.Services
             new Dictionary<int, string>();
         private readonly Dictionary<int, int> _displayIds =
             new Dictionary<int, int>();
+        private readonly Dictionary<int, IntPtr> _windowHandles =
+            new Dictionary<int, IntPtr>();
         private readonly HashSet<int> _stoppingSlots = new HashSet<int>();
         private int _shutdownRequested;
         private int _disposed;
@@ -202,10 +208,10 @@ namespace DexManager.Services
         {
             lock (_syncRoot)
             {
-                Process process;
-                if (!_processes.TryGetValue(slot, out process))
-                    return IntPtr.Zero;
-                return GetMainWindowHandle(process);
+                IntPtr handle;
+                return _windowHandles.TryGetValue(slot, out handle)
+                    ? handle
+                    : IntPtr.Zero;
             }
         }
 
@@ -214,9 +220,8 @@ namespace DexManager.Services
             var handles = new List<IntPtr>();
             lock (_syncRoot)
             {
-                foreach (var process in _processes.Values)
+                foreach (var handle in _windowHandles.Values)
                 {
-                    var handle = GetMainWindowHandle(process);
                     if (handle != IntPtr.Zero) handles.Add(handle);
                 }
             }
@@ -246,8 +251,9 @@ namespace DexManager.Services
             {
                 foreach (var item in _processes)
                 {
-                    if (!IsProcessRunning(item.Value) ||
-                        GetMainWindowHandle(item.Value) != windowHandle)
+                    IntPtr handle;
+                    if (!_windowHandles.TryGetValue(item.Key, out handle) ||
+                        handle != windowHandle)
                     {
                         continue;
                     }
@@ -285,8 +291,9 @@ namespace DexManager.Services
                 foreach (var item in _processes)
                 {
                     string targetSerial;
-                    if (IsProcessRunning(item.Value) &&
-                        GetMainWindowHandle(item.Value) == windowHandle &&
+                    IntPtr handle;
+                    if (_windowHandles.TryGetValue(item.Key, out handle) &&
+                        handle == windowHandle &&
                         _targetSerials.TryGetValue(
                             item.Key,
                             out targetSerial) &&
@@ -378,6 +385,7 @@ namespace DexManager.Services
                         _screenOffRequests[slot] = settings.TurnScreenOff;
                         _targetSerials[slot] = serial;
                         _displayIds.Remove(slot);
+                        _windowHandles.Remove(slot);
                         _stoppingSlots.Remove(slot);
 
                         _logService.Info(LocalizationService.Format(
@@ -480,6 +488,7 @@ namespace DexManager.Services
                     return false;
                 }
                 _stoppingSlots.Add(slot);
+                _windowHandles.Remove(slot);
             }
 
             try
@@ -625,17 +634,18 @@ namespace DexManager.Services
                     _screenOffRequests.Remove(slot);
                     _targetSerials.Remove(slot);
                     _displayIds.Remove(slot);
+                    _windowHandles.Remove(slot);
                     ownedProcess = true;
                 }
             }
 
             if (ownedProcess)
             {
-                DrainAndDispose(process);
                 _logService.Info(LocalizationService.Format(
                     "Log.SingleWindow.ProcessExited",
                     slot));
                 RaiseRunningChanged();
+                QueueDrainAndDispose(process);
             }
         }
 
@@ -721,13 +731,27 @@ namespace DexManager.Services
         private void EnsureProcessStopped(Process process)
         {
             if (!IsProcessRunning(process)) return;
-            process.CloseMainWindow();
-            if (process.WaitForExit(2000)) return;
-            process.Kill();
-            if (!process.WaitForExit(2000))
-                throw new TimeoutException(
-                    LocalizationService.Get(
-                        "Error.Scrcpy.StopTimeout"));
+            var closeRequested = process.CloseMainWindow();
+            if (closeRequested &&
+                process.WaitForExit(GracefulStopWaitMs))
+            {
+                return;
+            }
+            if (!IsProcessRunning(process)) return;
+
+            try
+            {
+                process.Kill();
+            }
+            catch (InvalidOperationException)
+            {
+                return;
+            }
+            if (!process.WaitForExit(ForcedStopWaitMs))
+            {
+                _logService.Warning(LocalizationService.Get(
+                    "Log.Process.TerminationDeferred"));
+            }
         }
 
         private static bool IsProcessRunning(Process process)
@@ -762,12 +786,24 @@ namespace DexManager.Services
                             slot));
 
                 process.Refresh();
-                if (process.MainWindowHandle != IntPtr.Zero)
+                var handle = process.MainWindowHandle;
+                if (handle != IntPtr.Zero)
                 {
+                    lock (_syncRoot)
+                    {
+                        Process current;
+                        if (_processes.TryGetValue(slot, out current) &&
+                            ReferenceEquals(current, process) &&
+                            !_stoppingSlots.Contains(slot))
+                        {
+                            _windowHandles[slot] = handle;
+                        }
+                    }
                     _logService.Info(LocalizationService.Format(
                         "Log.SingleWindow.WindowReady",
                         slot,
                         process.Id));
+                    QueueWindowMonitor(process, slot, handle);
                     return;
                 }
                 Thread.Sleep(50);
@@ -832,10 +868,11 @@ namespace DexManager.Services
                     _screenOffRequests.Remove(slot);
                     _targetSerials.Remove(slot);
                     _displayIds.Remove(slot);
+                    _windowHandles.Remove(slot);
                 }
                 _stoppingSlots.Remove(slot);
             }
-            DrainAndDispose(process);
+            QueueDrainAndDispose(process);
         }
 
         private void CleanupStaleSlot(int slot)
@@ -854,9 +891,107 @@ namespace DexManager.Services
                     _screenOffRequests.Remove(slot);
                     _targetSerials.Remove(slot);
                     _displayIds.Remove(slot);
+                    _windowHandles.Remove(slot);
                 }
             }
-            if (stale != null) DrainAndDispose(stale);
+            if (stale != null) QueueDrainAndDispose(stale);
+        }
+
+        private void QueueDrainAndDispose(Process process)
+        {
+            if (process == null) return;
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    RetryTerminateProcess(process);
+                }
+                catch (Exception ex)
+                {
+                    _logService.Warning(
+                        "[single scrcpy] Process termination retry failed: " +
+                        ex.Message);
+                }
+                try
+                {
+                    DrainAndDispose(process);
+                }
+                catch (Exception ex)
+                {
+                    _logService.Warning(
+                        "[single scrcpy] Process cleanup failed: " +
+                        ex.Message);
+                }
+            });
+        }
+
+        private void QueueWindowMonitor(
+            Process process,
+            int slot,
+            IntPtr handle)
+        {
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                var missingChecks = 0;
+                while (true)
+                {
+                    lock (_syncRoot)
+                    {
+                        Process current;
+                        IntPtr currentHandle;
+                        if (!_processes.TryGetValue(slot, out current) ||
+                            !ReferenceEquals(current, process) ||
+                            _stoppingSlots.Contains(slot) ||
+                            !_windowHandles.TryGetValue(
+                                slot,
+                                out currentHandle) ||
+                            currentHandle != handle)
+                        {
+                            return;
+                        }
+                    }
+
+                    if (NativeMethods.IsWindow(handle))
+                    {
+                        missingChecks = 0;
+                    }
+                    else if (++missingChecks >= 2)
+                    {
+                        try
+                        {
+                            Stop(slot);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logService.Warning(
+                                "[single scrcpy] Window-close cleanup failed: " +
+                                ex.Message);
+                        }
+                        return;
+                    }
+                    Thread.Sleep(WindowMonitorIntervalMs);
+                }
+            });
+        }
+
+        private void RetryTerminateProcess(Process process)
+        {
+            for (var attempt = 0;
+                attempt < 5 && IsProcessRunning(process);
+                attempt++)
+            {
+                try
+                {
+                    process.Kill();
+                }
+                catch (InvalidOperationException)
+                {
+                    return;
+                }
+
+                if (process.WaitForExit(ForcedStopWaitMs)) return;
+                Thread.Sleep(WindowMonitorIntervalMs);
+            }
         }
 
         private void DrainAndDispose(Process process)
@@ -876,20 +1011,6 @@ namespace DexManager.Services
                 process.ErrorDataReceived -= Process_ErrorDataReceived;
             }
             process.Dispose();
-        }
-
-        private static IntPtr GetMainWindowHandle(Process process)
-        {
-            if (!IsProcessRunning(process)) return IntPtr.Zero;
-            try
-            {
-                process.Refresh();
-                return process.MainWindowHandle;
-            }
-            catch (InvalidOperationException)
-            {
-                return IntPtr.Zero;
-            }
         }
 
         private static string Quote(string value)

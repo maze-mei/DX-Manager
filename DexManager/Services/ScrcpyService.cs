@@ -145,6 +145,9 @@ namespace DexManager.Services
 
     public sealed class ScrcpyService : IDisposable
     {
+        private const int WindowMonitorIntervalMs = 100;
+        private const int GracefulStopWaitMs = 500;
+        private const int ForcedStopWaitMs = 1000;
         private static readonly HashSet<string> ReservedAdditionalOptions =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -178,6 +181,7 @@ namespace DexManager.Services
         private bool _turnScreenOffRequested;
         private string _targetSerial;
         private int _displayId;
+        private IntPtr _mainWindowHandle;
         private bool _stopping;
         private int _shutdownRequested;
         private int _disposed;
@@ -316,37 +320,11 @@ namespace DexManager.Services
             {
                 lock (_syncRoot)
                 {
-                    // Refresh() may synchronously raise Exited. That handler is
-                    // re-entrant on this lock and clears _process, so never read
-                    // the mutable field again after capturing the owned process.
-                    var process = _process;
-                    if (!IsProcessRunning(process))
-                    {
-                        return IntPtr.Zero;
-                    }
-
-                    for (var attempt = 0; attempt < 5; attempt++)
-                    {
-                        try
-                        {
-                            process.Refresh();
-                            if (!IsProcessRunning(process))
-                            {
-                                return IntPtr.Zero;
-                            }
-
-                            var handle = process.MainWindowHandle;
-                            if (handle != IntPtr.Zero) return handle;
-                        }
-                        catch (InvalidOperationException)
-                        {
-                            return IntPtr.Zero;
-                        }
-
-                        Thread.Sleep(50);
-                    }
-
-                    return IntPtr.Zero;
+                    // This property is read from the system-wide low-level
+                    // keyboard hook. Never refresh or wait for a Process here:
+                    // a closing scrcpy window may synchronously raise Exited,
+                    // and blocking this callback stalls keyboard input globally.
+                    return _mainWindowHandle;
                 }
             }
         }
@@ -579,6 +557,7 @@ namespace DexManager.Services
                         _turnScreenOffRequested = settings.TurnScreenOff;
                         _targetSerial = serial;
                         _displayId = displayId;
+                        _mainWindowHandle = IntPtr.Zero;
 
                         _logService.Info(LocalizationService.Format(
                             "Log.Scrcpy.Start",
@@ -612,6 +591,7 @@ namespace DexManager.Services
                     process = _process;
                     if (process == null || _stopping) return;
                     _stopping = true;
+                    _mainWindowHandle = IntPtr.Zero;
                 }
 
                 try
@@ -778,15 +758,16 @@ namespace DexManager.Services
                     _turnScreenOffRequested = false;
                     _targetSerial = string.Empty;
                     _displayId = 0;
+                    _mainWindowHandle = IntPtr.Zero;
                     ownedProcess = true;
                 }
             }
 
             if (!ownedProcess) return;
-            DrainAndDispose(process);
             _logService.Info(LocalizationService.Get(
                 "Log.Scrcpy.ProcessExited"));
             RaiseRunningChanged();
+            QueueDrainAndDispose(process);
         }
 
         private void WaitForMainWindow(Process process)
@@ -807,11 +788,18 @@ namespace DexManager.Services
                             "Error.Scrcpy.ExitedBeforeWindow"));
 
                 process.Refresh();
-                if (process.MainWindowHandle != IntPtr.Zero)
+                var handle = process.MainWindowHandle;
+                if (handle != IntPtr.Zero)
                 {
+                    lock (_syncRoot)
+                    {
+                        if (ReferenceEquals(_process, process) && !_stopping)
+                            _mainWindowHandle = handle;
+                    }
                     _logService.Info(LocalizationService.Format(
                         "Log.Scrcpy.WindowReady",
                         process.Id));
+                    QueueWindowMonitor(process, handle);
                     return;
                 }
                 Thread.Sleep(50);
@@ -871,24 +859,39 @@ namespace DexManager.Services
                     _turnScreenOffRequested = false;
                     _targetSerial = string.Empty;
                     _displayId = 0;
+                    _mainWindowHandle = IntPtr.Zero;
                 }
             }
 
             if (stale == null) return;
-            DrainAndDispose(stale);
             RaiseRunningChanged();
+            QueueDrainAndDispose(stale);
         }
 
         private void EnsureProcessStopped(Process process)
         {
             if (!IsProcessRunning(process)) return;
-            process.CloseMainWindow();
-            if (process.WaitForExit(2000)) return;
-            process.Kill();
-            if (!process.WaitForExit(2000))
-                throw new TimeoutException(
-                    LocalizationService.Get(
-                        "Error.Scrcpy.StopTimeout"));
+            var closeRequested = process.CloseMainWindow();
+            if (closeRequested &&
+                process.WaitForExit(GracefulStopWaitMs))
+            {
+                return;
+            }
+            if (!IsProcessRunning(process)) return;
+
+            try
+            {
+                process.Kill();
+            }
+            catch (InvalidOperationException)
+            {
+                return;
+            }
+            if (!process.WaitForExit(ForcedStopWaitMs))
+            {
+                _logService.Warning(LocalizationService.Get(
+                    "Log.Process.TerminationDeferred"));
+            }
         }
 
         private void CompleteExplicitStop(Process process)
@@ -904,10 +907,98 @@ namespace DexManager.Services
                     _turnScreenOffRequested = false;
                     _targetSerial = string.Empty;
                     _displayId = 0;
+                    _mainWindowHandle = IntPtr.Zero;
                     ownedProcess = true;
                 }
             }
-            if (ownedProcess) DrainAndDispose(process);
+            if (ownedProcess) QueueDrainAndDispose(process);
+        }
+
+        private void QueueDrainAndDispose(Process process)
+        {
+            if (process == null) return;
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    RetryTerminateProcess(process);
+                }
+                catch (Exception ex)
+                {
+                    _logService.Warning(
+                        "[scrcpy] Process termination retry failed: " +
+                        ex.Message);
+                }
+                try
+                {
+                    DrainAndDispose(process);
+                }
+                catch (Exception ex)
+                {
+                    _logService.Warning(
+                        "[scrcpy] Process cleanup failed: " + ex.Message);
+                }
+            });
+        }
+
+        private void QueueWindowMonitor(Process process, IntPtr handle)
+        {
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                var missingChecks = 0;
+                while (true)
+                {
+                    lock (_syncRoot)
+                    {
+                        if (!ReferenceEquals(_process, process) ||
+                            _stopping ||
+                            _mainWindowHandle != handle)
+                        {
+                            return;
+                        }
+                    }
+
+                    if (NativeMethods.IsWindow(handle))
+                    {
+                        missingChecks = 0;
+                    }
+                    else if (++missingChecks >= 2)
+                    {
+                        try
+                        {
+                            Stop();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logService.Warning(
+                                "[scrcpy] Window-close cleanup failed: " +
+                                ex.Message);
+                        }
+                        return;
+                    }
+                    Thread.Sleep(WindowMonitorIntervalMs);
+                }
+            });
+        }
+
+        private void RetryTerminateProcess(Process process)
+        {
+            for (var attempt = 0;
+                attempt < 5 && IsProcessRunning(process);
+                attempt++)
+            {
+                try
+                {
+                    process.Kill();
+                }
+                catch (InvalidOperationException)
+                {
+                    return;
+                }
+
+                if (process.WaitForExit(ForcedStopWaitMs)) return;
+                Thread.Sleep(WindowMonitorIntervalMs);
+            }
         }
 
         private void DrainAndDispose(Process process)

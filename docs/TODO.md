@@ -14,8 +14,9 @@
 
 ## 배포 준비
 
-- [ ] Release 폴더 배포 체크리스트
-- [ ] 빌드·배포 전 Debug/Release의 logs/screenshot 테스트 파일 제거
+- [x] `dist\DX Manager` 폴더와 버전별 x64 ZIP 패키징 스크립트
+- [ ] 생성된 공개 패키지 최종 배포 체크리스트
+- [x] 패키징 전 Debug/Release의 logs/screenshot 테스트 파일 자동 제거
 - [ ] 준비된 한국어/영어 스크린샷을 README와 사용 설명서에 배치
 - [x] 한국어 Q&A 초안 사용자 검토 및 수정
 - [x] 한국어 Q&A 승인 후 독립 영문 FAQ로 번역

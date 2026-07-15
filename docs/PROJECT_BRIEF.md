@@ -17,8 +17,10 @@ Windows WinForms 프로그램이다. DeX 화면 한 개와 앱별 단일창 세 
 - 번들 Scrcpy 4.0
 - 지원 목표: 64비트 Windows 7 SP1부터 Windows 11(32비트 Windows 제외)
 
-산출물은 `DexManager\bin\Release`에 생성된다. 실행 파일만 복사하지 말고
-`tools`, Scrcpy DLL과 `scrcpy-server`를 포함한 폴더 전체를 배포한다.
+개발 산출물은 `DexManager\bin\Release`에 생성된다. 공개 배포는
+`scripts\Package-Release.ps1`로 `dist\DX Manager` 폴더와 버전이 포함된 x64
+ZIP을 만든다. 실행 파일만 복사하지 말고 `tools`, Scrcpy DLL과
+`scrcpy-server`, 라이선스와 사용자 문서를 포함한 폴더 전체를 배포한다.
 
 ## 완료 기능
 
@@ -46,6 +48,8 @@ Windows WinForms 프로그램이다. DeX 화면 한 개와 앱별 단일창 세 
 - DeX overlay 해상도/DPI 일치 재사용과 불일치 자동 재생성
 - 정상 종료 시 관리 기기 overlay 정리
 - 제작자/GitHub 링크, MIT 라이선스와 제3자 고지
+- 사용자 지정 해상도 가로·세로 4096 상한과 DPI 120 하한 입력 검증
+- 첫 실행과 전체 초기화에 동일하게 적용되는 v1 기본 설정
 
 ## 현재 상태
 
@@ -56,7 +60,7 @@ Scrcpy 4.0 실행도 확인했다.
 앱 아이콘, 다국어 UI, 개발 문서와 제3자 라이선스 고지는 완료됐다.
 한국어/영어 FAQ도 독립 사용자 문서로 완료됐다. README/사용 설명서의
 스크린샷 배치, 최신 빌드의 64비트 Windows 7 회귀 확인, upstream 입력 버그
-보고와 GitHub Release 준비가 남아 있다.
+보고와 GitHub 첫 공개 Release의 최종 점검이 남아 있다.
 
 ## 제품 원칙
 

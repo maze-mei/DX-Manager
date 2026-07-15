@@ -23,6 +23,18 @@ DexManager/bin/Debug
 DexManager/bin/Release
 ```
 
+Keep `bin/Release` as the developer build output. From the repository root,
+run the packaging script to create the user-facing folder and ZIP:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Package-Release.ps1
+```
+
+The script rebuilds Release and writes `dist/DX Manager` and
+`dist/DX-Manager-v1.0.0-win-x64.zip`. Use `-SkipBuild` only when the current
+Release output has already been verified. `ExecutionPolicy Bypass` applies
+only to this process and does not change the system policy.
+
 The application is portable, but `DXManager.exe` is not standalone. A release
 package must include:
 
@@ -30,6 +42,12 @@ package must include:
 - `tools/scrcpy` and all of its runtime files
 - `tools/adb`
 - the `licenses` directory, including `THIRD_PARTY_NOTICES.md`
+- `README.md`, `LICENSE`, the user guides, FAQs, and guide images
+
+The package script uses this allowlist and deliberately excludes PDB files and
+runtime `config`, `logs`, and `screenshot` data. It refuses to run while DX
+Manager is open, stops the bundled Release ADB server when necessary, and
+clears Debug/Release log and screenshot test files before building.
 
 The `config`, `logs`, and `screenshot` directories are created or populated at
 runtime. Run the portable package from a user-writable directory; an

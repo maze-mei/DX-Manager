@@ -26,7 +26,7 @@ namespace DexManager.Forms
         private readonly Action _showLogs;
         private readonly Action _showEnvironmentCheck;
         private readonly Action<AppTheme> _applyTheme;
-        private readonly Action _settingsChanged;
+        private readonly Action<bool> _settingsChanged;
         private ThemePalette _theme;
         private readonly List<Control> _pages = new List<Control>();
         private readonly List<ThemedButton> _navigationButtons =
@@ -99,7 +99,7 @@ namespace DexManager.Forms
             Action showLogs,
             Action showEnvironmentCheck,
             Action<AppTheme> applyTheme,
-            Action settingsChanged)
+            Action<bool> settingsChanged)
         {
             _settingsService = settingsService;
             _settings = settings;
@@ -835,7 +835,7 @@ namespace DexManager.Forms
                 {
                     _applyTheme(_settings.Theme);
                 }
-                if (_settingsChanged != null) _settingsChanged();
+                if (_settingsChanged != null) _settingsChanged(false);
                 ShowSaveStatus(
                     LocalizationService.Get("Settings.SavedInline"),
                     Color.DarkGreen,
@@ -889,7 +889,7 @@ namespace DexManager.Forms
                 if (previousTheme != _settings.Theme &&
                     _applyTheme != null)
                     _applyTheme(_settings.Theme);
-                if (_settingsChanged != null) _settingsChanged();
+                if (_settingsChanged != null) _settingsChanged(true);
                 ShowSaveStatus(
                     LocalizationService.Get(
                         "Settings.ResetDefaultsDone"),

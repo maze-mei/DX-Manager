@@ -1107,6 +1107,7 @@ namespace DexManager.Forms
     internal sealed class ThemedNumberControl : ThemedPaintedTextControl
     {
         private decimal _value;
+        private decimal _valueBeforeEdit;
         private bool _updatingText;
 
         public ThemedNumberControl()
@@ -1123,6 +1124,8 @@ namespace DexManager.Forms
         public decimal Maximum { get; set; }
         public decimal Increment { get; set; }
         public bool ShowStepButtons { get; set; }
+        public bool RestorePreviousValueOnMinimumReject { get; set; }
+        public bool RestorePreviousValueOnMaximumReject { get; set; }
 
         public decimal Value
         {
@@ -1142,6 +1145,7 @@ namespace DexManager.Forms
 
         public event EventHandler ValueChanged;
         public event EventHandler MinimumValueRejected;
+        public event EventHandler MaximumValueRejected;
 
         protected override bool AcceptCharacter(char value)
         {
@@ -1154,11 +1158,22 @@ namespace DexManager.Forms
             if (_updatingText) return;
             decimal parsed;
             if (!decimal.TryParse(Text, out parsed)) return;
+            if ((parsed < Minimum && RestorePreviousValueOnMinimumReject) ||
+                (parsed > Maximum && RestorePreviousValueOnMaximumReject))
+            {
+                return;
+            }
             parsed = Math.Max(Minimum, Math.Min(Maximum, parsed));
             if (_value == parsed) return;
             _value = parsed;
             var handler = ValueChanged;
             if (handler != null) handler(this, EventArgs.Empty);
+        }
+
+        protected override void OnEnter(EventArgs e)
+        {
+            _valueBeforeEdit = _value;
+            base.OnEnter(e);
         }
 
         protected override void OnLeave(EventArgs e)
@@ -1173,6 +1188,7 @@ namespace DexManager.Forms
             {
                 Focus();
                 Value += e.Y < Height / 2 ? Increment : -Increment;
+                _valueBeforeEdit = _value;
                 return;
             }
             base.OnMouseDown(e);
@@ -1203,14 +1219,22 @@ namespace DexManager.Forms
             else if (e.KeyCode == Keys.Up)
             {
                 Value += Increment;
+                _valueBeforeEdit = _value;
                 e.SuppressKeyPress = true;
             }
             else if (e.KeyCode == Keys.Down)
             {
                 Value -= Increment;
+                _valueBeforeEdit = _value;
                 e.SuppressKeyPress = true;
             }
             base.OnKeyDown(e);
+        }
+
+        protected override bool IsInputKey(Keys keyData)
+        {
+            if ((keyData & Keys.KeyCode) == Keys.Enter) return true;
+            return base.IsInputKey(keyData);
         }
 
         private void CommitTextValue()
@@ -1218,11 +1242,29 @@ namespace DexManager.Forms
             decimal parsed;
             var hasParsedValue = decimal.TryParse(Text, out parsed);
             var belowMinimum = hasParsedValue && parsed < Minimum;
-            Value = hasParsedValue ? parsed : Minimum;
+            var aboveMaximum = hasParsedValue && parsed > Maximum;
+            var restorePrevious =
+                (belowMinimum && RestorePreviousValueOnMinimumReject) ||
+                (aboveMaximum && RestorePreviousValueOnMaximumReject);
+            Value = restorePrevious
+                ? _valueBeforeEdit
+                : hasParsedValue ? parsed : Minimum;
 
-            if (!belowMinimum) return;
-            var handler = MinimumValueRejected;
-            if (handler != null) handler(this, EventArgs.Empty);
+            if (!belowMinimum && !aboveMaximum)
+                _valueBeforeEdit = _value;
+
+            if (belowMinimum)
+            {
+                var minimumHandler = MinimumValueRejected;
+                if (minimumHandler != null)
+                    minimumHandler(this, EventArgs.Empty);
+            }
+            if (aboveMaximum)
+            {
+                var maximumHandler = MaximumValueRejected;
+                if (maximumHandler != null)
+                    maximumHandler(this, EventArgs.Empty);
+            }
         }
 
         protected override void DrawAdornment(Graphics graphics)

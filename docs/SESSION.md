@@ -1,12 +1,12 @@
 # Session Handoff
 
-마지막 갱신: 2026-07-14
+마지막 갱신: 2026-07-15
 
 ## Git
 
 - 저장소: `E:\vs\dex system`
 - 브랜치: `fix/audit-hardening-20260711`
-- 마지막 커밋: `1343631 Harden display lifecycle and input handling`
+- 마지막 커밋: `e147083 Pin device sessions and add standalone FAQs`
 - 현재 작업: v1 배포 문서와 GitHub 첫 공개 Release 준비
 
 새 세션에서는 실제 `git status --short --branch`와 `git log`를 다시 확인한다.
@@ -29,9 +29,18 @@
 - 제작자/GitHub 링크, MIT 라이선스, 제3자 고지와 파일 속성 완료
 - README/설명서용 한국어·영어 스크린샷 6장 저장
 - 한국어/영어 FAQ 15문항을 독립 문서로 작성하고 README와 설명서에서 연결
+- 사용자 지정 해상도 가로·세로 4096 상한과 DPI 120 하한 위반 시 이전 값 복원
+- 초기화 직후 현재 선택한 모드의 실행 옵션이 다시 덮어써지지 않도록 UI 재동기화
+- 공개 패키지를 `dist\DX Manager`와 버전별 x64 ZIP으로 만드는 스크립트 추가
+- 자동 실행, 트레이 시작, 자동 숨김과 선택 키 보정을 끈 v1 기본값으로 정리
 
 2026-07-13 현재 .NET Framework 4.6.2 참조 어셈블리로 x64 Debug/Release
 빌드가 모두 경고 0, 오류 0으로 통과했다.
+
+2026-07-15 변경 후에도 같은 .NET Framework 4.6.2 참조 어셈블리로 x64
+Debug/Release 재빌드가 모두 경고 0, 오류 0으로 통과했다. 패키징 스크립트로
+`dist\DX Manager`와 `DX-Manager-v1.0.0-win-x64.zip`을 생성하고, PDB·런타임
+설정·로그·스크린샷 및 `.gitkeep`이 포함되지 않은 것을 확인했다.
 
 2026-07-14 연결 해제 로그에서 고정 기기가 없을 때 target serial을 비운 뒤
 즉시 복구하는 1초 주기 상태 반복을 확인했다. 선택 서비스가 기기 없음
@@ -55,7 +64,7 @@
 
 1. Windows 7 최신 빌드 회귀 확인
 2. README/설명서 스크린샷 배치
-3. Release 폴더 정리 및 GitHub 첫 공개 Release 준비
+3. 생성된 `dist\DX Manager` 패키지 확인 및 GitHub 첫 공개 Release 준비
 
 빌드·커밋·배포 전 `bin\Debug`, `bin\Release`의 `logs`, `screenshot` 테스트
 파일을 비운다. 실기 확인하지 않은 흐름은 문서나 보고에서 확인 완료로 쓰지 않는다.

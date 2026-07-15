@@ -147,7 +147,10 @@ mapping is not applied to SDL2-based scrcpy versions or other Windows apps.
 - No external NuGet packages
 
 Open `DexManager.sln` and build the `Release` configuration. The output is
-written to `DexManager/bin/Release`. See
+written to `DexManager/bin/Release`. To create the public portable folder and
+ZIP, run `scripts/Package-Release.ps1`. It keeps the developer output in place
+and writes `dist/DX Manager` plus
+`dist/DX-Manager-v1.0.0-win-x64.zip`. See
 [DexManager/README.md](DexManager/README.md) for packaging notes.
 
 ## Project Status
@@ -321,7 +324,9 @@ DX Manager는 SDL3 기반 scrcpy 창이 활성화된 동안 물리 오른쪽 Shi
 - 외부 NuGet 패키지 없음
 
 `DexManager.sln`을 열고 `Release` 구성으로 빌드합니다. 결과물은
-`DexManager/bin/Release`에 생성됩니다. 배포 파일 구성은
+`DexManager/bin/Release`에 생성됩니다. 공개용 포터블 폴더와 ZIP은
+`scripts/Package-Release.ps1`을 실행해 만듭니다. 개발 빌드 폴더는 유지하고
+`dist/DX Manager`와 `dist/DX-Manager-v1.0.0-win-x64.zip`을 생성합니다. 배포 파일 구성은
 [DexManager/README.md](DexManager/README.md)를 참조하십시오.
 
 ## 프로젝트 상태

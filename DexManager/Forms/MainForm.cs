@@ -69,7 +69,6 @@ namespace DexManager.Forms
         private readonly CheckBox _useHidKeyboardBox;
         private readonly CheckBox _useHidMouseBox;
         private readonly CheckBox _forceStopAppBox;
-        private readonly CheckBox _reuseDisplayBox;
         private readonly CheckBox _flexDisplayBox;
         private readonly ThemedTextControl _additionalArgumentsBox;
         private readonly ThemedSelectControl _startAppBox;
@@ -233,11 +232,16 @@ namespace DexManager.Forms
                 LocalizationService.Get("Main.Custom"), 0, 0));
             _resolutionBox.SelectedIndexChanged += ResolutionBox_SelectedIndexChanged;
             _widthBox = CreateCustomNumber(
-                320, 7680, 285, 263, 55, false);
+                320, 4096, 285, 263, 55, false);
             _heightBox = CreateCustomNumber(
-                240, 4320, 395, 263, 55, false);
+                240, 4096, 395, 263, 55, false);
             _dpiBox = CreateCustomNumber(
                 120, 640, 490, 263, 90, true);
+            _widthBox.RestorePreviousValueOnMaximumReject = true;
+            _heightBox.RestorePreviousValueOnMaximumReject = true;
+            _dpiBox.RestorePreviousValueOnMinimumReject = true;
+            _widthBox.MaximumValueRejected += ResolutionBox_MaximumValueRejected;
+            _heightBox.MaximumValueRejected += ResolutionBox_MaximumValueRejected;
             _dpiBox.MinimumValueRejected += DpiBox_MinimumValueRejected;
             _bitRateBox = CreateCustomNumber(
                 1, 9999, 105, 298, 130, false);
@@ -266,7 +270,6 @@ namespace DexManager.Forms
             _useHidKeyboardBox = CreateOption(LocalizationService.Get("Main.HidKeyboard"), 32, 429);
             _useHidMouseBox = CreateOption(LocalizationService.Get("Main.HidMouse"), 32, 463);
             _forceStopAppBox = CreateOption(LocalizationService.Get("Main.ForceStop"), 392, 395);
-            _reuseDisplayBox = CreateOption(LocalizationService.Get("Main.ReuseDisplay"), 392, 429);
             _flexDisplayBox = CreateOption(
                 LocalizationService.Get("Main.FlexDisplay"),
                 392,
@@ -352,7 +355,6 @@ namespace DexManager.Forms
             Controls.Add(_useHidKeyboardBox);
             Controls.Add(_useHidMouseBox);
             Controls.Add(_forceStopAppBox);
-            Controls.Add(_reuseDisplayBox);
             Controls.Add(_flexDisplayBox);
             Controls.Add(_stayAwakeBox);
             Controls.Add(_startAppBox);
@@ -572,7 +574,7 @@ namespace DexManager.Forms
             }
         }
 
-        private async Task StopDexAsync()
+        private async Task StopDexAsync(bool suppressUserError = false)
         {
             _connectionError = null;
             SetOperationState(
@@ -585,9 +587,12 @@ namespace DexManager.Forms
             try { await _orchestrator.StopAsync(); }
             catch (Exception ex)
             {
-                ShowError(
-                    LocalizationService.Get("Error.StopDex"),
-                    ex);
+                if (!suppressUserError)
+                {
+                    ShowError(
+                        LocalizationService.Get("Error.StopDex"),
+                        ex);
+                }
             }
             finally { UpdateRunningState(); }
         }
@@ -781,7 +786,7 @@ namespace DexManager.Forms
                 System.Threading.Interlocked.Increment(
                     ref _screenOffReapplyGeneration);
                 if (_orchestrator.IsRunning)
-                    await StopDexAsync();
+                    await StopDexAsync(true);
                 if (IsAnySingleWindowRunning())
                 {
                     try
@@ -947,7 +952,7 @@ namespace DexManager.Forms
         {
             if (_exitInProgress) return;
             if (_orchestrator.IsRunning)
-                await StopDexAsync();
+                await StopDexAsync(true);
 
             if (IsAnySingleWindowRunning())
             {
@@ -1823,7 +1828,6 @@ namespace DexManager.Forms
                 startAppPackage = _settings.Scrcpy.StartAppPackage;
                 startAppName = _settings.Scrcpy.StartAppName;
                 additionalArguments = _settings.Scrcpy.AdditionalArguments;
-                _reuseDisplayBox.Checked = true;
             }
             else
             {
@@ -2212,6 +2216,26 @@ namespace DexManager.Forms
                 MessageBoxIcon.Information);
         }
 
+        private void ResolutionBox_MaximumValueRejected(
+            object sender,
+            EventArgs e)
+        {
+            if (_exitInProgress || IsDisposed || Disposing) return;
+            var control = sender as ThemedNumberControl;
+            var fieldName = ReferenceEquals(control, _heightBox)
+                ? LocalizationService.Get("Main.Height")
+                : LocalizationService.Get("Main.Width");
+            MessageBox.Show(
+                this,
+                LocalizationService.Format(
+                    "Main.ResolutionMaximum",
+                    fieldName,
+                    control == null ? 4096 : (int)control.Maximum),
+                LocalizationService.Get("App.Name"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+
         private string GetSelectedAppName(string packageName)
         {
             var app = _startAppBox.SelectedItem as ScrcpyAppInfo;
@@ -2595,7 +2619,6 @@ namespace DexManager.Forms
             MoveToCard(_useHidKeyboardBox, _optionsCard, 20, 84);
             MoveToCard(_useHidMouseBox, _optionsCard, 20, 119);
             MoveToCard(_forceStopAppBox, _optionsCard, 362, 49);
-            MoveToCard(_reuseDisplayBox, _optionsCard, 362, 84);
             MoveToCard(_flexDisplayBox, _optionsCard, 362, 84);
             MoveToCard(
                 _stayAwakeBox,
@@ -2608,7 +2631,6 @@ namespace DexManager.Forms
                 _useHidKeyboardBox,
                 _useHidMouseBox,
                 _forceStopAppBox,
-                _reuseDisplayBox,
                 _flexDisplayBox,
                 _stayAwakeBox
             })
@@ -2694,7 +2716,6 @@ namespace DexManager.Forms
                 _useHidKeyboardBox,
                 _useHidMouseBox,
                 _forceStopAppBox,
-                _reuseDisplayBox,
                 _flexDisplayBox,
                 _stayAwakeBox
             })
@@ -2891,8 +2912,6 @@ namespace DexManager.Forms
                 LocalizationService.Get("Main.DisplaySettings.Dex");
             _startButton.Text = LocalizationService.Get("Main.StartDex");
             _stopButton.Text = LocalizationService.Get("Main.StopDex");
-            _reuseDisplayBox.Visible = false;
-            _reuseDisplayBox.Enabled = false;
             _flexDisplayBox.Visible = false;
             _flexDisplayBox.Enabled = false;
             _stayAwakeBox.Top = 84;
@@ -2913,8 +2932,6 @@ namespace DexManager.Forms
                     slot);
             _startButton.Text = LocalizationService.Get("Main.StartSingle");
             _stopButton.Text = LocalizationService.Get("Main.StopSingle");
-            _reuseDisplayBox.Visible = false;
-            _reuseDisplayBox.Enabled = false;
             _flexDisplayBox.Visible = true;
             _flexDisplayBox.Enabled = true;
             _stayAwakeBox.Top = 119;
@@ -3016,7 +3033,6 @@ namespace DexManager.Forms
             _useHidKeyboardBox.CheckedChanged += changed;
             _useHidMouseBox.CheckedChanged += changed;
             _forceStopAppBox.CheckedChanged += changed;
-            _reuseDisplayBox.CheckedChanged += changed;
             _flexDisplayBox.CheckedChanged += changed;
             _additionalArgumentsBox.TextChanged += changed;
             _startAppBox.SelectedIndexChanged += changed;
@@ -3263,8 +3279,15 @@ namespace DexManager.Forms
             });
         }
 
-        private void ApplyGeneralSettingsChanges()
+        private void ApplyGeneralSettingsChanges(bool defaultsRestored)
         {
+            if (defaultsRestored)
+            {
+                LoadRunSettings();
+                Array.Clear(_modeSettingsDirty, 0, _modeSettingsDirty.Length);
+                UpdateApplySettingsLink();
+            }
+
             try
             {
                 _captureCoordinator.ReloadHotkeys();

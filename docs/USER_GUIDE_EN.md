@@ -60,6 +60,11 @@ to fit on the screen.
 Custom resolution values are stored separately from the presets. Selecting a
 preset does not overwrite the last custom width and height.
 
+scrcpy automatically scales the video to fit the PC monitor and current window
+size. The visible scrcpy window size therefore does not change the actual DeX
+resolution configured in DX Manager. Custom width and height values may each
+be set up to 4096.
+
 ### Run Options
 
 - **Turn phone screen off (`-S`)**: turns off the physical screen while
@@ -69,6 +74,11 @@ preset does not overwrite the last custom width and height.
 - **Force-stop selected app**: stops the existing app process before launch
 - **Reuse existing virtual display**: reuses a compatible DeX display
 - **Keep active (`-w`)**: keeps the phone awake during the session
+
+Turn phone screen off (`-S`) does not lock the phone. It only turns off the
+physical panel while the device remains active. Touch, long-press, and
+fingerprint input may still work with the screen off, so take care to avoid
+unintended settings changes or app actions.
 
 When HID keyboard and HID mouse are disabled, scrcpy uses its non-HID input
 mode. Mouse input is sent like direct touchscreen input, and holding a mouse
@@ -177,6 +187,10 @@ The capture hotkey only works while a scrcpy window is active.
 3. Drag the mouse to capture a selected region.
 4. Press `Esc` to cancel.
 
+Drag capture is not limited to the scrcpy window. You can select an area from
+a webpage, document, or another PC application and send the captured image
+directly to the phone.
+
 Captures are saved to the `screenshot` folder by default. Enable
 **Send captures to phone** to also transfer them to the configured phone
 folder.
@@ -190,9 +204,10 @@ Keyboard correction is only applied while a scrcpy window is active.
 
 - **Korean/English key correction** sends the key as Android Shift+Space.
 - **Right Windows key correction** improves Android input compatibility.
-- Enter conversion starts in normal Enter mode.
-- `Scroll Lock` toggles between normal Enter and Shift+Enter.
-- Direct Shift+Space input can optionally be ignored.
+- When enabled, Enter conversion starts in normal Enter mode.
+- `Scroll Lock` toggles between normal Enter and Shift+Enter while Enter
+  conversion is enabled.
+- Direct Shift+Space input can optionally be ignored (off by default).
 
 On Windows, scrcpy 4.0/SDL3 may fail to forward the physical right Shift
 key even though Windows detects it. DX Manager maps right Shift to left Shift
