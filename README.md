@@ -209,7 +209,7 @@ under their own licenses. See
 
 ## 개요
 
-DX Manager는 Samsung DeX, ADB와
+DX Manager는 삼성 덱스(Samsung DeX), ADB와
 [scrcpy](https://github.com/Genymobile/scrcpy)를 기반으로 동작하는
 Windows 유틸리티입니다. 올바른 DeX 가상 디스플레이를 생성하고 추적한 뒤
 해당 화면을 scrcpy로 실행하며, 앱별 가상 디스플레이를 최대 3개까지 추가로
