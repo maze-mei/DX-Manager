@@ -35,6 +35,7 @@
 - 자동 실행, 트레이 시작, 자동 숨김과 선택 키 보정을 끈 v1 기본값으로 정리
 - 저장소 샘플 설정을 `AppSettings.CreateDefault()`와 정확히 일치시켜 개인 설정 제거
 - scrcpy, ADB, SDL3, FFmpeg, libusb, dav1d, zlib과 MinGW 런타임 고지 및 라이선스 원문 포함
+- GitHub 메인 README와 분리된 HTML 없는 포터블 패키지 전용 README 추가
 
 2026-07-17 .NET Framework 4.6.2 참조 어셈블리로 x64 Release 재빌드가
 경고 0, 오류 0으로 통과했다. `DX-Manager-v1.0.0-win-x64.zip` 56개 항목을

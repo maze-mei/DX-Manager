@@ -32,6 +32,7 @@
 - README, 사용 설명서와 FAQ에 한국어/영어 스크린샷 배치
 - 한국어/영어 자주 묻는 질문을 독립 문서로 분리하고 README와 설명서에서 연결
 - GitHub 저장소 public 전환과 `DX Manager v1.0.0` 첫 공개 Release 게시
+- 배포 ZIP에는 영어 다음 한국어 순서의 별도 HTML 없는 포터블 README 사용
 
 ## 2026-07 - 입력 및 사용성 안정화
 

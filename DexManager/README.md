@@ -42,7 +42,8 @@ package must include:
 - `tools/scrcpy` and all of its runtime files
 - `tools/adb`
 - the `licenses` directory, including `THIRD_PARTY_NOTICES.md`
-- `README.md`, `LICENSE`, the user guides, FAQs, and guide images
+- the HTML-free portable `README.md` generated from `docs/PACKAGE_README.md`
+- `LICENSE`, the user guides, FAQs, and guide images
 
 The package script uses this allowlist and deliberately excludes PDB files and
 runtime `config`, `logs`, and `screenshot` data. It refuses to run while DX

@@ -21,6 +21,9 @@ Windows WinForms 프로그램이다. DeX 화면 한 개와 앱별 단일창 세 
 `scripts\Package-Release.ps1`로 `dist\DX Manager` 폴더와 버전이 포함된 x64
 ZIP을 만든다. 실행 파일만 복사하지 말고 `tools`, Scrcpy DLL과
 `scrcpy-server`, 라이선스와 사용자 문서를 포함한 폴더 전체를 배포한다.
+GitHub 메인 README와 별도로 HTML이 없는 `docs\PACKAGE_README.md`를 배포
+폴더의 `README.md`로 사용하며, 모든 이중 언어 문서는 영어 다음 한국어
+순서로 작성한다.
 
 ## 완료 기능
 
