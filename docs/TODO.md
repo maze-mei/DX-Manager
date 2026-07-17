@@ -22,7 +22,7 @@
 - [x] 한국어 Q&A 초안 사용자 검토 및 수정
 - [x] 한국어 Q&A 승인 후 독립 영문 FAQ로 번역
 - [ ] Windows 7/11 최종 회귀 테스트
-- [ ] GitHub 첫 공개 Release 운영 방식과 공개 시점 결정
+- [x] GitHub 첫 공개 Release 게시 및 저장소 public 전환
 - [x] DX Manager 자체 소스 라이선스를 MIT로 확정
 
 설치 프로그램은 방향이 정해질 때까지 보류한다.
