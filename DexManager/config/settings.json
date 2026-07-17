@@ -1,5 +1,5 @@
 {
-  "SchemaVersion": 13,
+  "SchemaVersion": 18,
   "Paths": {
     "AdbPath": "",
     "AdbSelectionMode": 0,
@@ -19,9 +19,9 @@
     "CustomHeight": 900
   },
   "Scrcpy": {
-    "BitRate": "20M",
+    "BitRate": "8M",
     "MaxFps": 60,
-    "WindowTitle": "DEX Manager - Scrcpy",
+    "WindowTitle": "DX Manager - DeX Station",
     "TurnScreenOff": true,
     "UseHidKeyboard": true,
     "UseHidMouse": true,
@@ -34,22 +34,24 @@
   "Timing": {
     "DeviceMonitorIntervalMs": 1000,
     "DisconnectMonitorIntervalMs": 2000,
-    "ConnectedStartDelayMs": 3000,
+    "ConnectedStartDelayMs": 1000,
     "AdbWakeUpDelayMs": 3000,
     "AutoHideIdleSeconds": 30,
     "CaptureWaitSeconds": 5,
-    "ProcessTimeoutMs": 15000
+    "ProcessTimeoutMs": 15000,
+    "VirtualDisplayDetectionTimeoutMs": 3000
   },
   "Features": {
     "StartWithWindows": false,
-    "StartMinimizedToTray": true,
+    "StartMinimizedToTray": false,
     "RegisterAdbPathAutomatically": false,
     "ScrcpyWakeUpMode": 1,
-    "AutoHideEnabled": true,
+    "AutoHideEnabled": false,
     "PushCaptureToDevice": true,
     "ResetVirtualDisplayOnStop": true,
     "DisableStayAwakeOnStop": true,
-    "AutoStartDexOnDeviceConnected": true
+    "AutoStartDexOnDeviceConnected": false,
+    "ShowConnectedDeviceInfo": true
   },
   "KeyMappings": {
     "CaptureHotkey": "F8",
@@ -59,19 +61,19 @@
     "ConvertKoreanEnglishKey": true,
     "KoreanEnglishInputMode": 1,
     "HandleRightWindowsKey": true,
-    "ConvertEnterToShiftEnter": true,
+    "ConvertEnterToShiftEnter": false,
     "EnterInputMode": 1,
-    "IgnoreShiftSpace": true
+    "IgnoreShiftSpace": false
   },
   "LastSuccess": {
     "Width": 0,
     "Height": 0,
     "Dpi": 0,
-    "AdbPath": "",
-    "ScrcpyPath": "",
-    "ScrcpyArguments": "",
+    "AdbPath": null,
+    "ScrcpyPath": null,
+    "ScrcpyArguments": null,
     "DisplayId": 0,
-    "SavedAtUtc": ""
+    "SavedAtUtc": null
   },
   "SingleWindowSlots": [
     {
@@ -79,7 +81,7 @@
       "Width": 1600,
       "Height": 900,
       "Dpi": 150,
-      "BitRate": "20M",
+      "BitRate": "8M",
       "MaxFps": 60,
       "TurnScreenOff": true,
       "StayAwake": true,
@@ -98,7 +100,7 @@
       "Width": 1600,
       "Height": 900,
       "Dpi": 150,
-      "BitRate": "20M",
+      "BitRate": "8M",
       "MaxFps": 60,
       "TurnScreenOff": true,
       "StayAwake": true,
@@ -117,7 +119,7 @@
       "Width": 1600,
       "Height": 900,
       "Dpi": 150,
-      "BitRate": "20M",
+      "BitRate": "8M",
       "MaxFps": 60,
       "TurnScreenOff": true,
       "StayAwake": true,
@@ -137,5 +139,8 @@
     "WirelessHost": "",
     "WirelessPort": 5555,
     "AutoReconnect": true
-  }
+  },
+  "Language": 0,
+  "Theme": 0,
+  "RememberedApps": []
 }

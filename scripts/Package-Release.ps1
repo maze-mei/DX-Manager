@@ -154,7 +154,8 @@ New-Item -ItemType Directory -Path $packageRoot -Force | Out-Null
 foreach ($item in $requiredOutput) {
     Copy-Item -LiteralPath (Join-Path $releaseRoot $item) -Destination $packageRoot -Recurse -Force
 }
-Copy-Item -LiteralPath (Join-Path $repoRoot "README.md") -Destination $packageRoot
+$packageReadme = Join-Path $packageRoot "README.md"
+Copy-Item -LiteralPath (Join-Path $repoRoot "README.md") -Destination $packageReadme
 Copy-Item -LiteralPath (Join-Path $repoRoot "LICENSE") -Destination $packageRoot
 
 $packageDocs = Join-Path $packageRoot "docs"
@@ -170,6 +171,32 @@ foreach ($document in @(
 $imageRoot = Join-Path $repoRoot "docs\images"
 if (Test-Path -LiteralPath $imageRoot) {
     Copy-Item -LiteralPath $imageRoot -Destination $packageDocs -Recurse -Force
+}
+
+$packageImageRoot = Join-Path $packageDocs "images"
+New-Item -ItemType Directory -Path $packageImageRoot -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $repoRoot "DexManager\Resources\DXManager_256.png") `
+    -Destination (Join-Path $packageImageRoot "DXManager_256.png") -Force
+
+# The repository README and user guides link to source-tree paths. Rewrite only
+# the generated package copies so their local links also work after extraction.
+$packageMarkdownFiles = @($packageReadme) + @(
+    Get-ChildItem -LiteralPath $packageDocs -Filter "*.md" -File |
+        ForEach-Object { $_.FullName }
+)
+$utf8WithoutBom = New-Object Text.UTF8Encoding($false)
+foreach ($markdownPath in $packageMarkdownFiles) {
+    $markdown = [IO.File]::ReadAllText($markdownPath)
+    $markdown = $markdown.Replace(
+        "DexManager/Resources/DXManager_256.png",
+        "docs/images/DXManager_256.png")
+    $markdown = $markdown.Replace(
+        "DexManager/licenses/THIRD_PARTY_NOTICES.md",
+        "licenses/THIRD_PARTY_NOTICES.md")
+    $markdown = $markdown.Replace(
+        "[DexManager/README.md](DexManager/README.md)",
+        "[DexManager/README.md](https://github.com/maze-mei/DX-Manager/blob/main/DexManager/README.md)")
+    [IO.File]::WriteAllText($markdownPath, $markdown, $utf8WithoutBom)
 }
 
 Get-ChildItem -LiteralPath $packageRoot -Filter ".gitkeep" -File -Recurse |

@@ -22,6 +22,10 @@ Approve the RSA debugging prompt shown on the phone during the first
 connection. You may select **Always allow from this computer** on a trusted
 PC.
 
+<p align="center">
+  <img src="images/en/usb-debugging-rsa-en.png" width="520" alt="USB debugging RSA authorization prompt">
+</p>
+
 ## 2. Installation and First Run
 
 1. Extract the complete release ZIP to a folder your account can write to.
@@ -33,6 +37,10 @@ PC.
 4. Connect the phone over USB and approve the RSA debugging prompt.
 5. Wait for the device-connected status.
 6. Select **Start DeX**.
+
+<p align="center">
+  <img src="images/en/guide-device-connected-en.png" width="900" alt="DX Manager after detecting the connected phone">
+</p>
 
 After detecting an authorized USB or wireless device, DX Manager waits for
 the configured device-start delay before sending session start commands. The
@@ -46,6 +54,10 @@ files.
 ## 3. DeX Mode
 
 Select **DeX** in the left navigation.
+
+<p align="center">
+  <img src="images/en/guide-dex-running-en.png" width="900" alt="DX Manager while DeX is running">
+</p>
 
 ### Display Settings
 
@@ -72,8 +84,7 @@ be set up to 4096.
 - **HID keyboard (`-K`)**: sends the keyboard as an Android input device
 - **HID mouse (`-M`)**: sends the mouse as an Android input device
 - **Force-stop selected app**: stops the existing app process before launch
-- **Reuse existing virtual display**: reuses a compatible DeX display
-- **Keep active (`-w`)**: keeps the phone awake during the session
+- **Stay awake (`-w`)**: keeps the phone awake during the session
 
 Turn phone screen off (`-S`) does not lock the phone. It only turns off the
 physical panel while the device remains active. Touch, long-press, and
@@ -251,6 +262,10 @@ The log may include:
 Use **Settings > Diagnostics > Run environment check** to verify ADB, scrcpy,
 Windows, device connectivity, and important folders.
 
+<p align="center">
+  <img src="images/en/guide-diagnostics-en.png" width="900" alt="DX Manager Diagnostics page">
+</p>
+
 Select **Show advanced options** on the Diagnostics page to access device
 monitoring intervals, virtual-display detection timeout, ADB wake-up settings,
 process timeout, and capture selection timeout. These recovery and timing
@@ -260,6 +275,10 @@ Before sharing a saved log, verify that it does not contain private network
 information or other sensitive data.
 
 ## 11. Language, Theme, and Reset
+
+<p align="center">
+  <img src="images/en/guide-settings-basic-en.png" width="900" alt="DX Manager General settings page">
+</p>
 
 - Display language: automatic, Korean, or English
 - App theme: follow Windows, light, or dark

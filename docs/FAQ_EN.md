@@ -20,6 +20,11 @@ On some One UI versions, you may need to select the same resolution again to
 turn it off. The remaining virtual screen disappears when the setting is
 disabled.
 
+<p align="center">
+  <img src="images/en/simulate-secondary-display-en.png" width="45%" alt="Simulate secondary displays in Developer options">
+  <img src="images/en/simulate-secondary-display-options-en.png" width="45%" alt="Simulate secondary displays selection menu">
+</p>
+
 ## Q2. Why use Force-stop selected app when launching Samsung Internet automatically?
 
 On some systems, Korean/English input switching may stop working if Samsung
@@ -187,7 +192,7 @@ normally, it attempts to restore the phone screen and stay-awake state.
 
 ## Q15. The phone screen stays on while it is charging.
 
-DX Manager restores the original **Stay awake while charging** setting when
+DX Manager restores the original **Stay awake (`-w`)** setting when
 the DeX or single-window session, or the program itself, is closed normally.
 
 If DX Manager exits abnormally, or exits while the phone is disconnected, it

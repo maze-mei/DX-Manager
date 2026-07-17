@@ -22,6 +22,10 @@
   <a href="DexManager/licenses/THIRD_PARTY_NOTICES.md">Third-party notices</a>
 </p>
 
+<p align="center">
+  <img src="docs/images/en/readme-hero-en.png" width="900" alt="DX Manager running Samsung DeX">
+</p>
+
 <a id="english"></a>
 
 ## Overview
@@ -198,6 +202,10 @@ under their own licenses. See
 <a id="korean"></a>
 
 # 한국어
+
+<p align="center">
+  <img src="docs/images/ko/readme-hero-ko.png" width="900" alt="Samsung DeX를 실행 중인 DX Manager">
+</p>
 
 ## 개요
 

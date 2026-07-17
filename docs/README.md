@@ -1,6 +1,6 @@
 # DexManager 개발 문서
 
-마지막 전체 정리: 2026-07-13
+마지막 전체 정리: 2026-07-17
 
 새 채팅에서는 `PROJECT_BRIEF.md`, `SESSION.md`, `TODO.md`,
 `AI_WORKFLOW.md` 순서로 읽는다. 작업 성격에 따라 `TECH_NOTES.md`,
