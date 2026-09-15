@@ -14,6 +14,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using DexManager.FileTransfer;
 using DexManager.Models;
+using DexManager.Utils;
 
 namespace DexManager.Services
 {
@@ -83,24 +84,9 @@ namespace DexManager.Services
                     AppDomain.CurrentDomain.BaseDirectory,
                     "tools",
                     "adb-proxy");
-                var candidateName = OperatingSystem.IsWindows() ? "DXMAdbProxy.exe" : "DXMAdbProxy";
-                var candidatePath = Path.Combine(proxyDir, candidateName);
-                if (File.Exists(candidatePath))
-                {
-                    _proxyPath = candidatePath;
-                }
-                else if (File.Exists(Path.Combine(proxyDir, "DXMAdbProxy.dll")))
-                {
-                    _proxyPath = Path.Combine(proxyDir, "DXMAdbProxy.dll");
-                }
-                else if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DXMAdbProxy.dll")))
-                {
-                    _proxyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DXMAdbProxy.dll");
-                }
-                else
-                {
-                    _proxyPath = Path.Combine(proxyDir, "DXMAdbProxy.exe");
-                }
+                _proxyPath = AdbProxyLocator.Resolve(
+                    proxyDir,
+                    AppDomain.CurrentDomain.BaseDirectory);
             }
             _pipeName = "DXManager.Transfer." +
                 Process.GetCurrentProcess().Id.ToString(

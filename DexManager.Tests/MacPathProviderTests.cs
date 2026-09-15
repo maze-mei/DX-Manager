@@ -1,6 +1,8 @@
 using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using DexManager.Mac.Platform;
 using DexManager.Models;
 using DexManager.Platform;
@@ -158,6 +160,250 @@ namespace DexManager.Tests
             settings.Paths.AdbPath = "/nonexistent/path/to/adb";
 
             Assert.Throws<FileNotFoundException>(() => pathService.SelectAdbPath(settings, 3000));
+        }
+
+        [Fact]
+        public void GetCandidateScrcpyPaths_PrefersBundledArchitectureDirectory()
+        {
+            var archDirectory = MacPathProvider.GetMacScrcpyDirectoryName();
+            if (string.IsNullOrEmpty(archDirectory)) return;
+
+            var candidates = _provider.GetCandidateScrcpyPaths();
+            var architectureIndex = Array.FindIndex(
+                candidates,
+                p => string.Equals(
+                    p,
+                    Path.Combine(_provider.BaseDirectory, "tools", archDirectory, "scrcpy"),
+                    StringComparison.Ordinal));
+            var legacyIndex = Array.FindIndex(
+                candidates,
+                p => string.Equals(
+                    p,
+                    Path.Combine(_provider.BaseDirectory, "tools", "scrcpy", "scrcpy"),
+                    StringComparison.Ordinal));
+
+            Assert.True(architectureIndex >= 0);
+            Assert.True(
+                legacyIndex < 0 || architectureIndex < legacyIndex,
+                "The architecture specific scrcpy path must be tried before the legacy x86_64 build.");
+        }
+
+        [Fact]
+        public void ResolveDefaultScrcpyPath_ReturnsRunnableBinary()
+        {
+            var resolved = _provider.ResolveDefaultScrcpyPath();
+
+            Assert.True(
+                MacExecutableInspector.IsRunnableOnThisMachine(resolved),
+                resolved + " cannot run on this Mac.");
+        }
+
+        [Fact]
+        public void DefaultProxyExecutablePath_IsRunnableOnThisMachine()
+        {
+            var path = _provider.DefaultProxyExecutablePath;
+
+            Assert.True(
+                MacExecutableInspector.IsRunnableOnThisMachine(path) ||
+                path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase),
+                path + " cannot run on this Mac.");
+        }
+
+        [Fact]
+        public void MacExecutableInspector_RejectsMissingFile()
+        {
+            Assert.False(MacExecutableInspector.IsRunnableOnThisMachine(null));
+            Assert.False(MacExecutableInspector.IsRunnableOnThisMachine(string.Empty));
+            Assert.False(MacExecutableInspector.IsRunnableOnThisMachine(
+                Path.Combine(_provider.BaseDirectory, "tools", "does-not-exist")));
+        }
+
+        [Fact]
+        public void MacExecutableInspector_AcceptsCurrentArchitectureSlice()
+        {
+            var cpuType = RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                ? 0x0100000Cu
+                : 0x01000007u;
+            var path = WriteTemporaryBinary(BuildThinMachO(cpuType));
+
+            try
+            {
+                Assert.True(MacExecutableInspector.IsRunnableOnThisMachine(path));
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void MacExecutableInspector_RejectsOtherArchitectureSlice()
+        {
+            var otherCpuType = RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                ? 0x01000007u
+                : 0x0100000Cu;
+            var path = WriteTemporaryBinary(BuildThinMachO(otherCpuType));
+
+            try
+            {
+                Assert.False(MacExecutableInspector.IsRunnableOnThisMachine(path));
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void MacExecutableInspector_AcceptsUniversalBinary()
+        {
+            var path = WriteTemporaryBinary(BuildFatMachO(0x0100000Cu, 0x01000007u));
+
+            try
+            {
+                Assert.True(MacExecutableInspector.IsRunnableOnThisMachine(path));
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void MacExecutableInspector_TreatsNonMachOFileAsRunnable()
+        {
+            var path = WriteTemporaryBinary("#!/bin/sh\necho scrcpy\n"u8.ToArray());
+
+            try
+            {
+                Assert.True(MacExecutableInspector.IsRunnableOnThisMachine(path));
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [Fact]
+        public void MacExecutableInspector_MatchesBundledScrcpyArchitecture()
+        {
+            var arm64 = Path.Combine(
+                _provider.BaseDirectory,
+                "tools",
+                "scrcpy-macos-aarch64-v3.3.4",
+                "scrcpy");
+            var x64 = Path.Combine(
+                _provider.BaseDirectory,
+                "tools",
+                "scrcpy-macos-x86_64-v3.3.4",
+                "scrcpy");
+
+            if (File.Exists(arm64))
+            {
+                Assert.Equal(
+                    RuntimeInformation.ProcessArchitecture == Architecture.Arm64,
+                    MacExecutableInspector.IsRunnableOnThisMachine(arm64));
+            }
+
+            if (File.Exists(x64))
+            {
+                Assert.Equal(
+                    RuntimeInformation.ProcessArchitecture == Architecture.X64,
+                    MacExecutableInspector.IsRunnableOnThisMachine(x64));
+            }
+        }
+
+        [Fact]
+        public void AdbProxyLocator_PrefersMacArchitectureDirectory()
+        {
+            if (!OperatingSystem.IsMacOS()) return;
+            var archDirectory = MacPathProvider.GetMacArchDirectoryName();
+            if (string.IsNullOrEmpty(archDirectory)) return;
+
+            var root = CreateTemporaryDirectory();
+            var proxyDirectory = Path.Combine(root, "tools", "adb-proxy");
+            var archBinary = Path.Combine(proxyDirectory, archDirectory, "DXMAdbProxy");
+            Directory.CreateDirectory(Path.Combine(proxyDirectory, archDirectory));
+            File.WriteAllText(archBinary, "arch");
+            File.WriteAllText(Path.Combine(proxyDirectory, "DXMAdbProxy"), "legacy");
+            File.WriteAllText(Path.Combine(proxyDirectory, "DXMAdbProxy.dll"), "dll");
+
+            try
+            {
+                Assert.Equal(archBinary, AdbProxyLocator.Resolve(proxyDirectory, root));
+            }
+            finally
+            {
+                Directory.Delete(root, true);
+            }
+        }
+
+        [Fact]
+        public void AdbProxyLocator_FallsBackToDllWhenNoNativeProxyExists()
+        {
+            if (OperatingSystem.IsWindows()) return;
+
+            var root = CreateTemporaryDirectory();
+            var proxyDirectory = Path.Combine(root, "tools", "adb-proxy");
+            Directory.CreateDirectory(proxyDirectory);
+            var dll = Path.Combine(proxyDirectory, "DXMAdbProxy.dll");
+            File.WriteAllText(dll, "dll");
+
+            try
+            {
+                Assert.Equal(dll, AdbProxyLocator.Resolve(proxyDirectory, root));
+            }
+            finally
+            {
+                Directory.Delete(root, true);
+            }
+        }
+
+        private static byte[] BuildThinMachO(uint cpuType)
+        {
+            var data = new byte[32];
+            data[0] = 0xCF;
+            data[1] = 0xFA;
+            data[2] = 0xED;
+            data[3] = 0xFE;
+            BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4), cpuType);
+            return data;
+        }
+
+        private static byte[] BuildFatMachO(params uint[] cpuTypes)
+        {
+            var data = new byte[8 + (cpuTypes.Length * 20)];
+            data[0] = 0xCA;
+            data[1] = 0xFE;
+            data[2] = 0xBA;
+            data[3] = 0xBE;
+            BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(4), (uint)cpuTypes.Length);
+            for (var index = 0; index < cpuTypes.Length; index++)
+            {
+                BinaryPrimitives.WriteUInt32BigEndian(
+                    data.AsSpan(8 + (index * 20)),
+                    cpuTypes[index]);
+            }
+
+            return data;
+        }
+
+        private static string WriteTemporaryBinary(byte[] content)
+        {
+            var path = Path.Combine(
+                Path.GetTempPath(),
+                "dxm-macho-" + Guid.NewGuid().ToString("N"));
+            File.WriteAllBytes(path, content);
+            return path;
+        }
+
+        private static string CreateTemporaryDirectory()
+        {
+            var path = Path.Combine(
+                Path.GetTempPath(),
+                "dxm-test-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(path);
+            return path;
         }
     }
 }

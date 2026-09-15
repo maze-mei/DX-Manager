@@ -120,7 +120,9 @@ public sealed class InteractiveHost : IDisposable
         {
             var modified = false;
             var currentAdb = _settings.Paths.AdbPath ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(currentAdb) || !File.Exists(currentAdb) || currentAdb.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(currentAdb) || !File.Exists(currentAdb) ||
+                !MacExecutableInspector.IsRunnableOnThisMachine(currentAdb) ||
+                currentAdb.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
                 var adb = _pathProvider.ResolveDefaultAdbPath();
                 if (File.Exists(adb))
@@ -131,7 +133,9 @@ public sealed class InteractiveHost : IDisposable
             }
 
             var currentScrcpy = _settings.Paths.ScrcpyPath ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(currentScrcpy) || !File.Exists(currentScrcpy) || currentScrcpy.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(currentScrcpy) || !File.Exists(currentScrcpy) ||
+                !MacExecutableInspector.IsRunnableOnThisMachine(currentScrcpy) ||
+                currentScrcpy.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
                 var scrcpy = _pathProvider.ResolveDefaultScrcpyPath();
                 if (File.Exists(scrcpy))
@@ -170,7 +174,9 @@ public sealed class InteractiveHost : IDisposable
         private void InitializeRuntimeFactory()
         {
             var scrcpyPath = _settings.Paths.ScrcpyPath;
-            if (string.IsNullOrWhiteSpace(scrcpyPath) || !File.Exists(scrcpyPath) || scrcpyPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(scrcpyPath) || !File.Exists(scrcpyPath) ||
+                !MacExecutableInspector.IsRunnableOnThisMachine(scrcpyPath) ||
+                scrcpyPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
                 scrcpyPath = _pathProvider.ResolveDefaultScrcpyPath();
             }

@@ -32,19 +32,16 @@ public sealed class MacPathProvider : IPathProvider
         get
         {
             var proxyDir = Path.Combine(BaseDirectory, "tools", "adb-proxy");
-            var archDir = RuntimeInformation.ProcessArchitecture switch
-            {
-                Architecture.Arm64 => "osx-arm64",
-                Architecture.X64 => "osx-x64",
-                _ => string.Empty,
-            };
+            var archDir = GetMacArchDirectoryName();
             if (!string.IsNullOrEmpty(archDir))
             {
                 var archNative = Path.Combine(proxyDir, archDir, "DXMAdbProxy");
-                if (File.Exists(archNative)) return archNative;
+                if (MacExecutableInspector.IsRunnableOnThisMachine(archNative))
+                    return archNative;
             }
             var native = Path.Combine(proxyDir, "DXMAdbProxy");
-            if (File.Exists(native)) return native;
+            if (MacExecutableInspector.IsRunnableOnThisMachine(native))
+                return native;
             var dllInProxy = Path.Combine(proxyDir, "DXMAdbProxy.dll");
             if (File.Exists(dllInProxy)) return dllInProxy;
             var dllInBase = Path.Combine(BaseDirectory, "DXMAdbProxy.dll");
@@ -57,7 +54,7 @@ public sealed class MacPathProvider : IPathProvider
     {
         foreach (var path in GetCandidateAdbPaths())
         {
-            if (File.Exists(path))
+            if (MacExecutableInspector.IsRunnableOnThisMachine(path))
                 return Path.GetFullPath(path);
         }
 
@@ -69,7 +66,7 @@ public sealed class MacPathProvider : IPathProvider
     {
         foreach (var path in GetCandidateScrcpyPaths())
         {
-            if (File.Exists(path))
+            if (MacExecutableInspector.IsRunnableOnThisMachine(path))
                 return Path.GetFullPath(path);
         }
 
@@ -107,20 +104,17 @@ public sealed class MacPathProvider : IPathProvider
 
     public string[] GetCandidateScrcpyPaths()
     {
-        var scrcpyDir = RuntimeInformation.ProcessArchitecture switch
-        {
-            Architecture.Arm64 => "scrcpy-macos-aarch64-v3.3.4",
-            Architecture.X64 => "scrcpy-macos-x86_64-v3.3.4",
-            _ => string.Empty,
-        };
+        var scrcpyDir = GetMacScrcpyDirectoryName();
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var candidates = new List<string>
-        {
-            Path.Combine(BaseDirectory, "tools", "scrcpy", "scrcpy"),
-        };
+        var candidates = new List<string>();
         if (!string.IsNullOrEmpty(scrcpyDir))
         {
             candidates.Add(Path.Combine(BaseDirectory, "tools", scrcpyDir, "scrcpy"));
+        }
+        candidates.Add(Path.Combine(BaseDirectory, "tools", "scrcpy", "scrcpy"));
+        if (!string.IsNullOrEmpty(scrcpyDir))
+        {
+            candidates.Add(Path.Combine(home, "Downloads", scrcpyDir, "scrcpy"));
         }
         candidates.Add(Path.Combine(home, "Downloads", "scrcpy-macos-x86_64-v3.3.4", "scrcpy"));
         candidates.Add(Path.Combine(home, "Downloads", "scrcpy-macos-aarch64-v3.3.4", "scrcpy"));
@@ -137,6 +131,29 @@ public sealed class MacPathProvider : IPathProvider
 
         return [.. candidates];
     }
+
+    /// <summary>
+    /// Name of the bundled macOS scrcpy folder that matches the running CPU.
+    /// </summary>
+    public static string GetMacScrcpyDirectoryName() =>
+        RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.Arm64 => "scrcpy-macos-aarch64-v3.3.4",
+            Architecture.X64 => "scrcpy-macos-x86_64-v3.3.4",
+            _ => string.Empty,
+        };
+
+    /// <summary>
+    /// Name of the bundled ADB proxy folder that matches the running CPU.
+    /// Must stay in sync with <see cref="DexManager.Utils.AdbProxyLocator"/>.
+    /// </summary>
+    public static string GetMacArchDirectoryName() =>
+        RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.Arm64 => "osx-arm64",
+            Architecture.X64 => "osx-x64",
+            _ => string.Empty,
+        };
 
     private static string FindInPath(string binaryName)
     {
