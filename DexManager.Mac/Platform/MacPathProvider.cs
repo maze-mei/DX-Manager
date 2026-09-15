@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using DexManager.Platform;
 
 namespace DexManager.Mac.Platform;
@@ -31,6 +32,17 @@ public sealed class MacPathProvider : IPathProvider
         get
         {
             var proxyDir = Path.Combine(BaseDirectory, "tools", "adb-proxy");
+            var archDir = RuntimeInformation.ProcessArchitecture switch
+            {
+                Architecture.Arm64 => "osx-arm64",
+                Architecture.X64 => "osx-x64",
+                _ => string.Empty,
+            };
+            if (!string.IsNullOrEmpty(archDir))
+            {
+                var archNative = Path.Combine(proxyDir, archDir, "DXMAdbProxy");
+                if (File.Exists(archNative)) return archNative;
+            }
             var native = Path.Combine(proxyDir, "DXMAdbProxy");
             if (File.Exists(native)) return native;
             var dllInProxy = Path.Combine(proxyDir, "DXMAdbProxy.dll");
@@ -95,17 +107,27 @@ public sealed class MacPathProvider : IPathProvider
 
     public string[] GetCandidateScrcpyPaths()
     {
+        var scrcpyDir = RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.Arm64 => "scrcpy-macos-aarch64-v3.3.4",
+            Architecture.X64 => "scrcpy-macos-x86_64-v3.3.4",
+            _ => string.Empty,
+        };
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var candidates = new List<string>
         {
             Path.Combine(BaseDirectory, "tools", "scrcpy", "scrcpy"),
-            Path.Combine(home, "Downloads", "scrcpy-macos-x86_64-v3.3.4", "scrcpy"),
-            Path.Combine(home, "Downloads", "scrcpy-macos-aarch64-v3.3.4", "scrcpy"),
-            "/opt/homebrew/bin/scrcpy",
-            "/usr/local/bin/scrcpy",
-            "/usr/bin/scrcpy",
-            Path.Combine(BaseDirectory, "tools", "scrcpy", "scrcpy.exe")
         };
+        if (!string.IsNullOrEmpty(scrcpyDir))
+        {
+            candidates.Add(Path.Combine(BaseDirectory, "tools", scrcpyDir, "scrcpy"));
+        }
+        candidates.Add(Path.Combine(home, "Downloads", "scrcpy-macos-x86_64-v3.3.4", "scrcpy"));
+        candidates.Add(Path.Combine(home, "Downloads", "scrcpy-macos-aarch64-v3.3.4", "scrcpy"));
+        candidates.Add("/opt/homebrew/bin/scrcpy");
+        candidates.Add("/usr/local/bin/scrcpy");
+        candidates.Add("/usr/bin/scrcpy");
+        candidates.Add(Path.Combine(BaseDirectory, "tools", "scrcpy", "scrcpy.exe"));
 
         var inPath = FindInPath("scrcpy");
         if (!string.IsNullOrWhiteSpace(inPath) && !candidates.Contains(inPath))
