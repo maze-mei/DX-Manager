@@ -170,6 +170,13 @@ namespace DexManager.Forms
 
         private void SelectDeviceContext(DeviceUiContext context)
         {
+            SelectDeviceContext(context, true);
+        }
+
+        private void SelectDeviceContext(
+            DeviceUiContext context,
+            bool saveCurrentMode)
+        {
             if (context == null || ReferenceEquals(
                     context,
                     _selectedDeviceContext) &&
@@ -178,7 +185,7 @@ namespace DexManager.Forms
                 return;
             }
 
-            SaveCurrentModeBeforeSwitch();
+            if (saveCurrentMode) SaveCurrentModeBeforeSwitch();
             if (_selectedDeviceContext != null)
             {
                 _selectedDeviceContext.SelectedMode = _selectedMode;

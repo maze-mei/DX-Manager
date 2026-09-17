@@ -2,16 +2,41 @@
 
 세부 변경은 Git 이력을 사용하고 여기에는 큰 이정표만 적는다.
 
-## 2026-08 - v2.0.0 (macOS Cross-Platform Edition)
+## 2026-08 - macOS Cross-Platform / Portable Integration
 
+- Apple Silicon arm64와 Intel x64용 self-contained 포터블 ZIP 패키징 추가
+- GitHub Actions가 각 Mac 아키텍처에서 단위·통합 테스트와 다중 기기 테스트를
+  실행한 뒤 미리 빌드된 ZIP과 SHA-256 파일을 artifact로 업로드하고, 버전
+  태그에서는 정확한 파일명과 체크섬을 확인해 Release 초안을 만들도록 구성
+- 공식 scrcpy 4.1 macOS 정적 아카이브의 SHA-256, Mach-O 아키텍처, 실행 권한,
+  외부 Homebrew 경로 의존성과 배포 제외 파일을 자동 검증
+- `Start DX Manager.command` 더블클릭 실행기와 macOS 패키지 전용 영어·한국어
+  README 및 .NET Runtime 제3자 고지 추가
+- `Q` 종료가 실행 중인 DeX·단일창·전송 서비스를 실제로 중지하고 연결된 기기의
+  overlay 정리를 기다리도록 종료 경로 수정
+- DeX 시작과 overlay 제거 직전에 물리 기기 identity를 다시 조회하고, 보류된
+  정리를 identity별 독립 항목으로 보존해 같은 Wi-Fi endpoint를 다른 휴대폰이
+  재사용해도 이전 기기의 정리 기록을 덮어쓰거나 잘못 제거하지 않도록 보강
+- CLI 시작·자연 종료 대기 중 `Ctrl+C`를 실제 시작 취소와 원자적 종료 확인 경로에
+  연결하고 Scrcpy 종료 이벤트마다 누락 없는 overlay 정리 작업을 예약
+- USB로 시작한 세션에서 USB가 사라져도 같은 물리 identity로 검증된 Wi-Fi ADB
+  transport가 남아 있으면 해당 경로로 overlay를 정리하도록 전환 복구 추가
 - **macOS 크로스플랫폼 포팅 완료 (.NET 8 Native)**:
   - 플랫폼 독립적인 비즈니스 로직, 세션 레지스트리, ADB/Scrcpy 오케스트레이션을 `DexManager.Core` (.NET 8)로 분리
   - macOS 네이티브 인터랙티브 호스트 및 TUI 대시보드 `DexManager.Mac` 구현 (ANSI 컬러 콘솔, 실시간 기기 감시, 키보드 인터랙션)
   - macOS 플랫폼 서비스 구현 (`MacPlatformService`, `MacPathProvider`, `MacCaptureService` [screencapture 연동], `MacAutoStartService` [LaunchAgents plist])
   - Scrcpy 파일 드롭 가로채기 및 관리형 전송 중계를 위한 `DexManager.AdbProxy` (.NET 8) 크로스플랫폼 이식
   - C# 12 최신 문법(파일 범위 네임스페이스, 패턴 매칭, 레코드, 식 본문 멤버, 컬렉션 식) 적용 및 코드베이스 리팩터링
-  - 92개 xUnit 단위/통합 테스트 (`DexManager.Tests`) 및 39개 다중 기기 독립 회귀 테스트 (`DexManager.MultiDeviceTests`) 100% 통과
+  - 95개 xUnit 단위/통합 테스트 (`DexManager.Tests`) 및 39개 다중 기기 독립 회귀 테스트 (`DexManager.MultiDeviceTests`) 100% 통과
   - macOS 사용자 및 개발자 가이드 문서(`docs/MACOS_GUIDE.md`) 작성
+
+## 2026-08 - v2.0.1
+
+- 프로그램 시작 시 첫 물리 휴대폰 identity가 초기 UI 컨텍스트에 결속된 뒤
+  기기별 DeX 해상도·DPI·비트레이트·FPS·실행 옵션을 다시 표시하도록 수정
+- 시작부터 여러 휴대폰이 연결된 경우에도 identity 확정 전 표시한 공통 기본값을
+  어느 휴대폰의 DeX 설정에도 저장하지 않도록 최초 선택 경로를 분리
+- DX Companion은 변경 없이 검증된 2.0.0(versionCode 6) APK를 유지
 
 ## 2026-08 - v2.0.0
 

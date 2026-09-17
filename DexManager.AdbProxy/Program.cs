@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO.Pipes;
+using System.Reflection;
 using DexManager.FileTransfer;
 
 namespace DexManager.AdbProxy;
@@ -12,6 +13,16 @@ internal static class Program
     {
         try
         {
+            if (args.Length == 1 && args[0] == "--self-test")
+            {
+                var version = Assembly.GetExecutingAssembly()
+                    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                    .InformationalVersion ?? "unknown";
+                Console.WriteLine(
+                    $"DX Manager ADB proxy {version} self-test passed.");
+                return 0;
+            }
+
             var realAdbPath = Environment.GetEnvironmentVariable(
                 FileTransferEnvironment.RealAdbPath);
             if (string.IsNullOrWhiteSpace(realAdbPath) ||

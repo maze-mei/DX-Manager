@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using DexManager.Mac.Hosting;
 
@@ -5,7 +6,10 @@ namespace DexManager.Mac;
 
 internal static class Program
 {
-    private const string Version = "2.0.0 (macOS Edition)";
+    internal static string Version =>
+        Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion ?? "unknown";
 
     private static async Task<int> Main(string[] args)
     {
@@ -43,15 +47,19 @@ internal static class Program
                 switch (cmd)
                 {
                     case "--diag" or "-d":
-                        await host.RunDiagnosticsAsync();
+                        await host.RunDiagnosticsAsync(cts.Token);
                         return 0;
 
                     case "--dex" or "-x":
-                        await host.StartDexAsync();
+                        if (!await host.StartDexAsync(cts.Token))
+                        {
+                            return 1;
+                        }
                         AnsiConsole.Info("DeX launched. Press Ctrl+C to stop...");
                         try
                         {
-                            while (!cts.Token.IsCancellationRequested)
+                            while (!cts.Token.IsCancellationRequested &&
+                                   host.IsDexRunning)
                             {
                                 await Task.Delay(500, cts.Token);
                             }
@@ -60,12 +68,32 @@ internal static class Program
                         {
                             // Expected on Ctrl+C
                         }
-                        await host.StopDexAsync();
-                        return 0;
+                        if (!cts.Token.IsCancellationRequested)
+                        {
+                            try
+                            {
+                                if (await host.WaitForDexCleanupAsync(cts.Token))
+                                {
+                                    return 0;
+                                }
+                                if (!cts.Token.IsCancellationRequested)
+                                {
+                                    return 1;
+                                }
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                // Continue through the atomic stop/cleanup path.
+                            }
+                        }
+                        return await host.StopDexAsync() ? 0 : 1;
 
                     case "--stop-dex":
-                        await host.StopDexAsync();
-                        return 0;
+                        return await host.StopDexAsync(
+                            cleanupUntrackedOverlay: true,
+                            cancellationToken: cts.Token)
+                            ? 0
+                            : 1;
 
                     default:
                         AnsiConsole.Warning($"Unknown option: '{args[0]}'. Showing help:");
@@ -92,12 +120,14 @@ internal static class Program
     {
         AnsiConsole.Header($"DX MANAGER for macOS (.NET 8) - v{Version}");
         Console.WriteLine("Usage:");
-        Console.WriteLine("  dotnet run --project DexManager.Mac               # Start Interactive Dashboard");
-        Console.WriteLine("  dotnet run --project DexManager.Mac -- --dex       # Launch DeX immediately (Ctrl+C to stop)");
-        Console.WriteLine("  dotnet run --project DexManager.Mac -- --stop-dex  # Stop active DeX session");
-        Console.WriteLine("  dotnet run --project DexManager.Mac -- --diag      # Run system diagnostics");
-        Console.WriteLine("  dotnet run --project DexManager.Mac -- --version   # Display version info");
-        Console.WriteLine("  dotnet run --project DexManager.Mac -- --help      # Show this help message");
+        Console.WriteLine("  DXManager.Mac              # Start Interactive Dashboard");
+        Console.WriteLine("  DXManager.Mac --dex         # Launch DeX immediately (Ctrl+C to stop)");
+        Console.WriteLine("  DXManager.Mac --stop-dex    # Stop active DeX session");
+        Console.WriteLine("  DXManager.Mac --diag        # Run system diagnostics");
+        Console.WriteLine("  DXManager.Mac --version     # Display version info");
+        Console.WriteLine("  DXManager.Mac --help        # Show this help message");
+        Console.WriteLine();
+        Console.WriteLine("Source developers may use: dotnet run --project DexManager.Mac -- [option]");
         Console.WriteLine();
     }
 }

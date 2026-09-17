@@ -1,7 +1,7 @@
 # DX Manager
 
 Portable Windows package for managing Samsung DeX and up to three independent
-scrcpy app windows per connected Galaxy phone. Version 2.0.0 supports multiple
+scrcpy app windows per connected Galaxy phone. Version 2.0.1 supports multiple
 physical phones simultaneously and bundles scrcpy 4.1.
 
 ## English
@@ -164,7 +164,7 @@ Project page: https://github.com/maze-mei/DX-Manager
 
 여러 Galaxy 휴대폰의 Samsung DeX 가상 디스플레이와 휴대폰별 scrcpy
 단일창을 최대 3개까지 동시에 관리하는 Windows용 포터블 프로그램입니다.
-버전 2.0.0은 scrcpy 4.1을 포함합니다.
+버전 2.0.1은 scrcpy 4.1을 포함합니다.
 
 ### 요구 사항
 

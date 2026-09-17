@@ -59,7 +59,7 @@ public sealed class MacPlatformService : IPlatformService
         if (string.IsNullOrWhiteSpace(directory)) return false;
         var norm = Path.GetFullPath(directory).TrimEnd('/');
         var path = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-        foreach (var part in path.Split([':'], StringSplitOptions.RemoveEmptyEntries))
+        foreach (var part in path.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries))
         {
             if (string.Equals(Path.GetFullPath(part).TrimEnd('/'), norm, StringComparison.Ordinal))
                 return true;

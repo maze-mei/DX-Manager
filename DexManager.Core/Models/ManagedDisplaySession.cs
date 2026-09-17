@@ -4,6 +4,7 @@ namespace DexManager.Models
     {
         public string Mode { get; set; }
         public string Serial { get; set; }
+        public string DeviceIdentity { get; set; }
         public string AppPackage { get; set; }
         public int DisplayId { get; set; }
         public int ScrcpyProcessId { get; set; }

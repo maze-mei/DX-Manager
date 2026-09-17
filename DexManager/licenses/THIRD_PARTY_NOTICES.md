@@ -1,4 +1,4 @@
-# DX Manager v2.0.0 - Third-Party Notices
+# DX Manager v2.0.1 - Third-Party Notices
 
 DX Manager is an independently developed utility. The third-party binaries
 listed below are distributed without modification and remain under their

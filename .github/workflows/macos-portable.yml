@@ -1,0 +1,181 @@
+name: macOS portable packages
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/macos-portable.yml"
+      - "build/macos/**"
+      - "DexManager.AdbProxy/**"
+      - "DexManager.Core/**"
+      - "DexManager.Mac/**"
+      - "DexManager.MultiDeviceTests/**"
+      - "DexManager.Tests/**"
+      - "DexManager/licenses/**"
+      - "DexManager/config/README.txt"
+      - "Shared/**"
+      - "DexManager.Mac.sln"
+      - "LICENSE"
+      - "docs/MACOS_GUIDE.md"
+      - "docs/PACKAGE_README_MACOS.md"
+      - "global.json"
+      - "scripts/Package-Mac-Release.sh"
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+    paths:
+      - ".github/workflows/macos-portable.yml"
+      - "build/macos/**"
+      - "DexManager.AdbProxy/**"
+      - "DexManager.Core/**"
+      - "DexManager.Mac/**"
+      - "DexManager.MultiDeviceTests/**"
+      - "DexManager.Tests/**"
+      - "DexManager/licenses/**"
+      - "DexManager/config/README.txt"
+      - "Shared/**"
+      - "DexManager.Mac.sln"
+      - "LICENSE"
+      - "docs/MACOS_GUIDE.md"
+      - "docs/PACKAGE_README_MACOS.md"
+      - "global.json"
+      - "scripts/Package-Mac-Release.sh"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version used in the generated ZIP filenames
+        required: true
+        default: "2.0.1"
+
+permissions:
+  contents: read
+
+jobs:
+  build-portable:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Apple Silicon arm64
+            runner: macos-15
+            rid: osx-arm64
+            package_arch: arm64
+          - name: Intel x64
+            runner: macos-15-intel
+            rid: osx-x64
+            package_arch: x64
+
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Resolve package version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          if [[ "$REF_TYPE" == "tag" ]]; then
+            version="${REF_NAME#v}"
+          elif [[ -n "$REQUESTED_VERSION" ]]; then
+            version="$REQUESTED_VERSION"
+          else
+            version="2.0.1"
+          fi
+          echo "DXM_PACKAGE_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Install pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Build with warnings treated as errors
+        run: dotnet build DexManager.Mac.sln --configuration Release --warnaserror --nologo
+
+      - name: Run unit and integration tests
+        run: dotnet test DexManager.Tests/DexManager.Tests.csproj --configuration Release --no-build --nologo
+
+      - name: Run multi-device foundation tests
+        run: dotnet run --project DexManager.MultiDeviceTests/DexManager.MultiDeviceTests.csproj --configuration Release --no-build
+
+      - name: Build and verify portable ZIP
+        run: >-
+          scripts/Package-Mac-Release.sh
+          --rid "${{ matrix.rid }}"
+          --version "$DXM_PACKAGE_VERSION"
+          --skip-tests
+
+      - name: Upload prebuilt portable package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: DX-Manager-v${{ env.DXM_PACKAGE_VERSION }}-macos-${{ matrix.package_arch }}
+          path: |
+            dist/DX-Manager-v${{ env.DXM_PACKAGE_VERSION }}-macos-${{ matrix.package_arch }}.zip
+            dist/DX-Manager-v${{ env.DXM_PACKAGE_VERSION }}-macos-${{ matrix.package_arch }}.zip.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+  create-draft-release:
+    name: Create a verified draft GitHub Release
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs:
+      - build-portable
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download both verified packages
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: DX-Manager-v*-macos-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Verify the exact release asset set and checksums
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          expected=(
+            "DX-Manager-v${version}-macos-arm64.zip"
+            "DX-Manager-v${version}-macos-arm64.zip.sha256"
+            "DX-Manager-v${version}-macos-x64.zip"
+            "DX-Manager-v${version}-macos-x64.zip.sha256"
+          )
+          mapfile -t actual < <(find release-assets -type f -print | sort)
+          if [[ "${#actual[@]}" -ne "${#expected[@]}" ]]; then
+            echo "Expected exactly four release files, found ${#actual[@]}." >&2
+            exit 1
+          fi
+          for filename in "${expected[@]}"; do
+            if [[ ! -f "release-assets/$filename" ]]; then
+              echo "Expected release file is missing: $filename" >&2
+              exit 1
+            fi
+          done
+          (
+            cd release-assets
+            sha256sum --check "DX-Manager-v${version}-macos-arm64.zip.sha256"
+            sha256sum --check "DX-Manager-v${version}-macos-x64.zip.sha256"
+          )
+
+      - name: Create draft release with verified packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "A release already exists for $RELEASE_TAG; refusing to overwrite it." >&2
+            exit 1
+          fi
+          mapfile -t assets < <(find release-assets -type f -print | sort)
+          gh release create "$RELEASE_TAG" "${assets[@]}" \
+            --verify-tag \
+            --draft \
+            --generate-notes \
+            --title "DX Manager $RELEASE_TAG"

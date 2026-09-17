@@ -15,6 +15,8 @@ namespace DexManager.Services
         private readonly int _disconnectConfirmationMs;
         private readonly object _stateLock = new object();
         private readonly object _lifecycleLock = new object();
+        private readonly ManualResetEventSlim _firstPollCompleted =
+            new ManualResetEventSlim(false);
         private readonly Dictionary<string, string> _deviceNameCache =
             new Dictionary<string, string>(
                 StringComparer.OrdinalIgnoreCase);
@@ -78,6 +80,7 @@ namespace DexManager.Services
                 if (_timer != null) return;
                 Interlocked.Exchange(ref _stopping, 0);
                 _missingSinceUtc = DateTime.MinValue;
+                _firstPollCompleted.Reset();
                 _timer = new Timer(Poll, null, 0, _intervalMs);
                 _logService.Info(LocalizationService.Get(
                     "Log.DeviceMonitor.Started"));
@@ -97,9 +100,19 @@ namespace DexManager.Services
             lock (_lifecycleLock)
             {
                 Interlocked.Exchange(ref _stopping, 1);
+                _firstPollCompleted.Set();
                 if (_timer != null)
                     _timer.Change(Timeout.Infinite, Timeout.Infinite);
             }
+        }
+
+        public bool WaitForFirstPoll(
+            int timeoutMs,
+            CancellationToken cancellationToken)
+        {
+            return _firstPollCompleted.Wait(
+                Math.Max(0, timeoutMs),
+                cancellationToken);
         }
 
         public void Dispose()
@@ -114,6 +127,7 @@ namespace DexManager.Services
         private void StopTimer()
         {
             Interlocked.Exchange(ref _stopping, 1);
+            _firstPollCompleted.Set();
             var timer = Interlocked.Exchange(ref _timer, null);
             if (timer == null) return;
 
@@ -130,6 +144,7 @@ namespace DexManager.Services
             if (IsStopping ||
                 Interlocked.Exchange(ref _polling, 1) == 1) return;
 
+            var snapshotCompleted = false;
             try
             {
                 IList<AdbDeviceInfo> devices;
@@ -141,6 +156,7 @@ namespace DexManager.Services
 
                 RefreshVisibleDevices(devices);
                 ReconcilePhysicalDevices(devices);
+                snapshotCompleted = true;
                 var eligibleDevices = GetEligibleDevices(devices);
                 var preferred = _wirelessAdbService.FindPreferredDevice(
                     eligibleDevices,
@@ -219,6 +235,8 @@ namespace DexManager.Services
             finally
             {
                 Interlocked.Exchange(ref _polling, 0);
+                if (snapshotCompleted)
+                    _firstPollCompleted.Set();
             }
         }
 

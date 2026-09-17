@@ -8,7 +8,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Title>DX Manager ADB Proxy</Title>
+    <Description>ADB compatibility helper for DX Manager</Description>
+    <Company>maze</Company>
+    <Product>DX Manager</Product>
+    <Copyright>Copyright © 2026 maze</Copyright>
+    <Version>2.0.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>

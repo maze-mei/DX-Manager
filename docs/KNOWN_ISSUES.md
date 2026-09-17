@@ -140,3 +140,17 @@ DX Manager가 만든 화면과 사용자가 개발자 옵션에서 직접 선택
 - README, 사용 설명서와 FAQ의 한국어/영어 스크린샷 배치 완료
 - 공개 ZIP에서 개인 설정, PDB, 로그와 테스트 스크린샷 제외 확인
 - 자동화 테스트 없이 주요 흐름은 실기 테스트에 의존
+
+## macOS 포터블 서명과 실기 범위
+
+macOS arm64/x64 ZIP은 self-contained이므로 Homebrew와 별도 .NET 설치에
+의존하지 않는다. 다만 현재 자동화 설정에는 Apple Developer ID 인증서와
+notarization 자격 증명이 구성되어 있지 않다. 브라우저로 받은 ZIP은 최초 실행
+시 Gatekeeper 승인이 필요할 수 있으며, 서명·공증 전에는 모든 macOS
+버전에서 경고 없는 최초 실행을 보장하지 않는다. 패키징 스크립트가 quarantine
+속성을 자동 삭제하거나 macOS 보안 기능을 우회하지 않는다.
+
+Apple Silicon ZIP은 Apple Silicon Mac에서 실제 바이너리 기동을 확인했다.
+Intel ZIP은 아키텍처와 외부 경로를 검사하고 Apple Silicon Mac의 Rosetta에서
+실행 파일 기동을 확인했지만, Intel 실기 전체 DeX 흐름은 GitHub의
+`macos-15-intel` 자동 빌드와 별도로 실제 Intel Mac 확인이 남아 있다.

@@ -2,6 +2,24 @@
 
 ## 다음 작업
 
+- [x] v2.0.1 DeX 기기별 설정 표시 회귀 수정
+  - [x] 첫 물리 identity 결속 뒤 기기별 DeX 설정 UI 재동기화
+  - [x] 최초 다중 기기 선택에서 공통 기본값의 기기별 설정 덮어쓰기 차단
+  - [x] Windows 버전 2.0.1과 기존 DX Companion 2.0.0(versionCode 6) 호환 확인
+  - [x] .NET Framework 4.6.2 x64 Release와 39개 다중 기기 회귀 테스트
+
+- [x] macOS 아키텍처별 포터블 배포 기반
+  - [x] arm64/x64 DX Manager와 ADB proxy self-contained single-file publish
+  - [x] 공식 scrcpy 4.1 arm64/x86_64 아카이브 SHA-256 검증 및 번들
+  - [x] ZIP 재압축 해제, 실행 권한, 아키텍처, 외부 경로, 제외 파일 검증
+  - [x] Apple Silicon/x64 GitHub Actions matrix, PR artifact와 검증된 Release 초안
+  - [ ] PR에서 첫 GitHub Actions arm64/x64 원격 실행 결과 확인
+  - [x] `Q` 정상 종료의 DeX·단일창·전송·overlay cleanup 보강
+  - [x] DeX 시작·정리 전 live identity 재검증과 identity별 보류 정리 분리
+  - [x] CLI 시작·자연 종료 대기의 `Ctrl+C` 취소 및 종료 경합 보강
+  - [ ] 실제 Intel Mac에서 Galaxy DeX 시작·중지와 overlay cleanup 실기 확인
+  - [ ] Apple Developer ID 서명·notarization 자격이 준비되면 공개 ZIP 서명
+
 - [x] v2.0.0 공개 후보 준비
   - [x] Windows 버전 2.0.0과 DX Companion 2.0.0(versionCode 6) 일치
   - [x] 다중 기기 README·사용 설명서·FAQ·개발 문서 최신화
@@ -22,6 +40,30 @@
   - 대용량 전송·중단·재연결 테스트를 먼저 보강한 뒤 진행한다.
 - [ ] `WirelessAdbService`의 기기별 연결 명령과 자동 재연결 snapshot 계산을 분리
   - USB·무선 동시 연결과 여러 무선 기기의 격리 테스트를 유지한다.
+- [ ] Android 11+ 무선 ADB의 현재 연결 endpoint를 mDNS로 자동 발견
+  - 번들 ADB의 `adb mdns services`에서 `_adb-tls-connect._tcp` 서비스를 조회하고,
+    페어링용 `_adb-tls-pairing._tcp` 포트와 실제 연결 포트를 명확히 구분한다.
+  - 검색 결과의 첫 항목을 임의로 선택하지 않는다. 물리 기기 identity, 기존 USB
+    serial, 모델과 이미 검증된 transport를 대조해 현재 선택한 휴대폰의 endpoint만
+    갱신하며, 같은 모델 여러 대와 복수 무선 기기를 안전하게 구분한다.
+  - 휴대폰 재부팅, 무선 디버깅 재활성화, Wi-Fi 변경 등으로 연결 포트가 바뀌면
+    자동 재연결 전에 새 endpoint를 다시 발견한다. 검증에 성공한 경우에만 기기별
+    `WirelessHost`와 `WirelessPort`를 갱신한다.
+  - mDNS를 사용할 수 없거나 방화벽·공유기가 multicast 검색을 차단하면 현재의
+    수동 IP·연결 포트 입력과 저장된 endpoint를 폴백으로 유지한다.
+  - 사용자가 선택한 USB 전용·무선 전용 연결 정책은 그대로 지킨다. 자동 발견을
+    이유로 USB와 Wi-Fi 사이를 임의로 전환하지 않는다.
+  - Windows 7의 legacy ADB와 `USB로 무선 준비`의 고정 5555 방식은 지원 여부와
+    동작이 다르므로 Android 11+ 보안 무선 디버깅 경로와 분리한다.
+  - 로그에는 발견 서비스, 대상 기기 판정 근거, 이전/새 endpoint, 폴백 사유와
+    연결 결과를 남기되 6자리 페어링 코드와 인증 정보는 기록하지 않는다.
+  - 한 대, 같은 모델 두 대, USB+Wi-Fi 혼합, 무선 두 대, 포트 변경, stale 서비스,
+    mDNS 차단과 수동 폴백을 독립 회귀 테스트와 실제 기기에서 확인한다.
+  - 구현과 실기 검증이 끝난 뒤 README, 영어·한국어 사용 설명서와 FAQ의 무선 ADB
+    안내를 갱신한다. 기본 흐름은 `최초 1회 페어링 -> 연결 endpoint 자동 발견`으로
+    설명하고, 수동 IP·포트 입력은 폴백으로 안내한다. 페어링 포트와 연결 포트가
+    서로 다르며 연결 포트는 바뀔 수 있다는 설명, legacy 5555 방식, 관련 스크린샷과
+    캡션도 함께 수정한다.
 - [ ] `AppSettings.EnsureDefaults`를 설정 범주별 정규화 helper로 축소
   - 기존 스키마 설정 파일 마이그레이션 표본을 만든 뒤 진행한다.
 - [x] v2 1단계 물리 기기·ADB transport 기반
@@ -157,8 +199,9 @@
 - [x] v1.3.0 공개 Release 게시와 DX Companion 번들 배포
 - [x] DX Manager 자체 소스 라이선스를 MIT로 확정
 
-별도 설치 프로그램은 보류한다. v1.3.0 WinGet manifest는 등록됐으며,
-v2.0.0 공개 Release가 게시된 뒤 해당 자산의 해시로 manifest를 갱신한다.
+별도 설치 프로그램은 보류한다. v1.3.0 WinGet manifest는 등록됐다.
+- [ ] 별도 `winget-pkgs` 작업 사본에서 v2.0.0 manifest의 제출·승인 상태를
+  확인하고, 필요하면 공개 자산 URL과 SHA-256으로 갱신한다.
 
 ## 독립 FAQ 반영 항목
 

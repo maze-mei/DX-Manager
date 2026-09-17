@@ -326,3 +326,45 @@ Scrcpy, DeX orchestrator, 단일창, 화면 OFF, Companion 수신기와 PC→휴
 않는다. 코드 양보다 종료 순서, 슬롯별 상태, 사용자 창 닫기와 연결 분리 경합을
 보존하는 것이 우선이다. 공통화는 이 경로를 직접 검증하는 테스트가 생긴 뒤 별도
 작업으로 수행한다.
+
+## 2026-08 - macOS는 아키텍처별 self-contained ZIP으로 배포한다
+
+macOS 사용자가 저장소를 clone하거나 .NET, Homebrew, scrcpy와 ADB를 직접
+설치하도록 하지 않는다. 원본 Windows 프로젝트가 실행 파일과 도구 폴더 전체를
+미리 만든 ZIP으로 배포하는 것과 같은 원칙을 적용한다. Apple Silicon arm64와
+Intel x64는 하나의 universal ZIP으로 합치지 않고 각각 해당 RID로 DX Manager와
+ADB proxy를 self-contained publish한다.
+
+.NET single-file 내부 압축은 사용하지 않는다. macOS arm64 self-contained
+실행 파일을 같은 추출 캐시에서 연속 실행할 때 내부 압축을 켠 빌드에서
+`System.AccessViolationException`을 반복 재현했고, 압축만 끈 같은 빌드는
+연속 실행을 통과했다. 실행 파일은 계속 single-file로 publish하며 최종 ZIP의
+표준 압축은 유지한다.
+
+저장소의 개발용 `tools`에는 x86 전용 파일이 있을 수 있으므로 공개 패키징에서
+그 폴더를 무조건 복사하지 않는다. 공식 scrcpy 4.1 macOS 정적 아카이브를
+아키텍처별 URL과 SHA-256으로 고정해 넣고, 번들 도구를 PATH와 Homebrew보다 먼저
+사용한다. GitHub Actions도 실제 아키텍처가 일치하는 `macos-15`와
+`macos-15-intel`에서 별도로 빌드·실행 검증한다.
+
+DeX overlay를 만들거나 제거하기 직전에는 선택 화면에 남은 identity만 신뢰하지
+않고 해당 ADB transport에서 안정적인 물리 identity를 다시 읽는다. 이미 알고 있던
+안정 identity와 다르면 같은 Wi-Fi endpoint를 다른 휴대폰이 재사용한 것으로 보고
+작업을 중단한다. 처음 관찰한 identity가 임시 `transport:*` 값이면 live 조회로
+안정 identity를 얻은 경우에만 세션을 시작한다.
+
+세션을 시작한 transport가 사라졌더라도 같은 안정 identity의 다른 authorized
+transport가 연결돼 있으면 그 현재 serial에서 overlay reset을 수행한다. 예를 들어
+USB로 시작한 뒤 USB가 끊기고 같은 휴대폰의 Wi-Fi ADB가 남은 경우에는 Wi-Fi
+transport의 live identity를 다시 확인한 뒤 정리한다. 같은 endpoint의 다른
+identity나 identity를 확인할 수 없는 연결에는 정리 명령을 보내지 않는다.
+
+연결이 끊겨 overlay를 제거하지 못한 기록은 serial 하나를 키로 덮어쓰지 않고
+물리 identity와 lease를 함께 가진 독립 항목으로 보존한다. 같은 identity의 새
+transport에서 `EnsureVirtualDisplay`가 성공하거나 명시적 reset이 성공한 뒤에만
+해당 보류 기록을 완료 처리한다. 시작 전, identity 미확인 상태 또는 다른 기기에
+명령이 전달된 상태에서는 보류 기록을 삭제하지 않는다.
+
+Apple Developer ID와 notarization 자격 증명은 저장소에 넣지 않는다. 인증서가
+구성되기 전 자동 artifact에는 Developer ID 서명·공증이 없음을 문서에 표시하고
+Gatekeeper를 자동으로 우회하지 않는다.

@@ -183,7 +183,7 @@ if (![string]::Equals(
     $actualCompanionHash,
     $companionApkSha256,
     [StringComparison]::OrdinalIgnoreCase)) {
-    throw "The signed DX Companion APK hash does not match the v2.0.0 release candidate."
+    throw "The signed DX Companion APK hash does not match the verified 2.0.0 build."
 }
 
 if ([string]::IsNullOrWhiteSpace($Version)) {

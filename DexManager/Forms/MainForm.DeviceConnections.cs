@@ -70,7 +70,23 @@ namespace DexManager.Forms
                         context.Device != null &&
                         context.Device.IsConnected)
                     {
-                        SelectDeviceContext(context);
+                        if (initialSelectionPending)
+                        {
+                            if (ReferenceEquals(
+                                    context,
+                                    _selectedDeviceContext))
+                            {
+                                RefreshInitiallyBoundDeviceSettings(context);
+                            }
+                            else
+                            {
+                                SelectDeviceContext(context, false);
+                            }
+                        }
+                        else
+                        {
+                            SelectDeviceContext(context);
+                        }
                         break;
                     }
                 }
@@ -80,6 +96,22 @@ namespace DexManager.Forms
             RefreshSelectedDeviceState();
             if (_settingsForm != null && !_settingsForm.IsDisposed)
                 _settingsForm.RefreshSelectedDeviceContext();
+        }
+
+        private void RefreshInitiallyBoundDeviceSettings(
+            DeviceUiContext context)
+        {
+            if (context == null) return;
+
+            // The main form initially displays the legacy default template
+            // before a physical device identity is known.  The first device
+            // reuses that already-selected context, so SelectDeviceContext()
+            // intentionally returns without reloading the controls.  Reload
+            // directly here and do not save the stale template values into
+            // the newly bound per-device profile.
+            _selectedDeviceIdentity = context.Identity ?? string.Empty;
+            _modeSettingsDirty = context.ModeSettingsDirty ?? new bool[4];
+            LoadRunSettings();
         }
 
         private DeviceUiContext EnsureDeviceContext(PhysicalDeviceInfo device)

@@ -28,6 +28,12 @@ GitHub 메인 README와 별도로 HTML이 없는 `docs\PACKAGE_README.md`를 배
 폴더의 `README.md`로 사용하며, 모든 이중 언어 문서는 영어 다음 한국어
 순서로 작성한다.
 
+macOS 에디션은 `scripts/Package-Mac-Release.sh`로 Apple Silicon arm64와
+Intel x64 self-contained ZIP을 별도로 만든다. 각 ZIP에는 해당 아키텍처로
+미리 publish한 DX Manager와 ADB proxy, 공식 scrcpy 4.1 정적 빌드, ADB,
+scrcpy-server, 실행기와 라이선스를 포함한다. 사용자는 Homebrew나 .NET을
+설치하거나 소스를 빌드하지 않고 ZIP 전체를 풀어 실행한다.
+
 ## 완료 기능
 
 - DeX overlay 가상 디스플레이 생성, 재사용, 초기화
@@ -83,10 +89,14 @@ GitHub 메인 README와 별도로 HTML이 없는 `docs\PACKAGE_README.md`를 배
 
 ## 현재 상태
 
-v1.3.0까지 공개 배포됐고 v2.0.0 공개 후보를 준비했다. Windows 11에서
+v2.0.1은 첫 물리 휴대폰 identity가 확정된 뒤에도 DeX 화면에 공통 기본값이
+남아 있던 UI 동기화 회귀를 수정한 GitHub 업로드 후보이다. DX Companion은
+변경 없이 2.0.0(versionCode 6)을 유지한다.
+
+v2.0.0과 DX Companion 2.0.0을 공개 배포했다. Windows 11에서
 휴대폰 두 대의 USB·무선 조합, 독립 DeX·단일창, 설정, Companion과 양방향
 전송을 확인했다. 64비트 Windows 7 SP1/.NET 4.6.2에서는 USB 복수 기기와
-핵심 기능을 확인했다. v2.0.0은 물리 기기별 런타임·설정·연결 정책과
+핵심 기능을 확인했다. 공개 v2.0.0은 물리 기기별 런타임·설정·연결 정책과
 Companion 2.0.0 종료 보호를 포함한다. 설정의 진단 페이지에는 현재 선택된
 휴대폰의 Android·SDK·One UI·보안 패치와 연결 방식을 표시하고, 민감 정보를
 가린 진단 보고서를 텍스트 파일로 저장하는 기능도 포함한다.
@@ -97,9 +107,10 @@ Companion 2.0.0 종료 보호를 포함한다. 설정의 진단 페이지에는 
 앱 아이콘, 다국어 UI, 개발 문서와 제3자 라이선스 고지는 완료됐다.
 한국어/영어 FAQ도 독립 사용자 문서로 완료됐으며 README, 사용 설명서와
 FAQ의 스크린샷 배치도 완료됐다. 공개용 x64 ZIP을 만들고 개인 설정, PDB,
-로그와 테스트 스크린샷이 포함되지 않은 것도 확인했다. GitHub 저장소를
-public으로 전환하고 `DX Manager v1.0.0` Release와 x64 ZIP 게시도 완료했다.
-최신 빌드의 64비트 Windows 7 회귀 확인과 upstream 입력 버그 보고가 남아 있다.
+로그와 테스트 스크린샷이 포함되지 않은 것도 확인했다. GitHub 저장소와
+`DX Manager v2.0.0` Release, x64 ZIP 및 최종 대표 이미지 게시도 완료했다.
+Windows 7 실제 종료 복원 재확인, 일부 키보드 실기 확인, 무선 ADB endpoint
+자동 발견과 upstream 입력 버그 보고가 차기 작업으로 남아 있다.
 
 ## 제품 원칙
 

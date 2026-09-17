@@ -31,8 +31,11 @@ public sealed class InteractiveHost : IDisposable
     private DeviceRuntimeServiceFactory _runtimeFactory;
     private DeviceRuntimeServiceSet _activeRuntime;
     private string _selectedDeviceSerial;
+    private string _selectedDeviceIdentity;
     private bool _isRunning;
     private bool _disposed;
+    private int _shutdownStarted;
+    private int _runtimeServicesDisposed;
 
     public InteractiveHost()
     {
@@ -120,7 +123,12 @@ public sealed class InteractiveHost : IDisposable
         {
             var modified = false;
             var currentAdb = _settings.Paths.AdbPath ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(currentAdb) || !File.Exists(currentAdb) ||
+            var forcePortableAdb = _pathProvider.IsPortablePackage &&
+                _settings.Paths.AdbSelectionMode != AdbSelectionMode.Manual;
+
+            if (forcePortableAdb ||
+                string.IsNullOrWhiteSpace(currentAdb) ||
+                !File.Exists(currentAdb) ||
                 !MacExecutableInspector.IsRunnableOnThisMachine(currentAdb) ||
                 currentAdb.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
@@ -133,7 +141,9 @@ public sealed class InteractiveHost : IDisposable
             }
 
             var currentScrcpy = _settings.Paths.ScrcpyPath ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(currentScrcpy) || !File.Exists(currentScrcpy) ||
+            if (_pathProvider.IsPortablePackage ||
+                string.IsNullOrWhiteSpace(currentScrcpy) ||
+                !File.Exists(currentScrcpy) ||
                 !MacExecutableInspector.IsRunnableOnThisMachine(currentScrcpy) ||
                 currentScrcpy.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
@@ -217,10 +227,12 @@ public sealed class InteractiveHost : IDisposable
                 switch (input.ToUpperInvariant())
                 {
                     case "1":
-                        await StartDexAsync();
+                        await StartDexAsync(cancellationToken);
                         break;
                     case "2":
-                        await StopDexAsync();
+                        await StopDexAsync(
+                            cleanupUntrackedOverlay: true,
+                            cancellationToken: cancellationToken);
                         break;
                     case "3":
                         await StartSingleWindowAsync();
@@ -235,7 +247,7 @@ public sealed class InteractiveHost : IDisposable
                         await ManageFileTransferAsync();
                         break;
                     case "7":
-                        await RunDiagnosticsAsync();
+                        await RunDiagnosticsAsync(cancellationToken);
                         break;
                     case "8":
                         await ManageCompanionAppAsync();
@@ -266,7 +278,7 @@ public sealed class InteractiveHost : IDisposable
                 }
             }
 
-            Shutdown();
+            await ShutdownAsync();
         }
 
         private void PrintBanner()
@@ -324,6 +336,20 @@ public sealed class InteractiveHost : IDisposable
         private PhysicalDeviceInfo GetSelectedDevice()
         {
             var snapshot = _deviceRegistry.Current;
+            if (!string.IsNullOrWhiteSpace(_selectedDeviceIdentity))
+            {
+                var identityMatch = snapshot.Devices.FirstOrDefault(d =>
+                    string.Equals(
+                        d.Identity,
+                        _selectedDeviceIdentity,
+                        StringComparison.OrdinalIgnoreCase));
+                if (identityMatch != null) return identityMatch;
+                if (!PhysicalDeviceRegistry.IsTemporaryIdentity(
+                    _selectedDeviceIdentity))
+                {
+                    return null;
+                }
+            }
             if (string.IsNullOrWhiteSpace(_selectedDeviceSerial))
             {
                 return snapshot.Devices.FirstOrDefault();
@@ -349,6 +375,55 @@ public sealed class InteractiveHost : IDisposable
             return _activeRuntime;
         }
 
+        public bool IsDexRunning =>
+            _activeRuntime?.Dex.IsRunning == true;
+
+        public bool IsDexCleanupComplete
+        {
+            get
+            {
+                var runtime = _activeRuntime;
+                return runtime == null || runtime.Dex.IsCleanupComplete;
+            }
+        }
+
+        public async Task<bool> WaitForDexCleanupAsync(
+            CancellationToken cancellationToken = default)
+        {
+            var runtime = _activeRuntime;
+            if (runtime == null) return true;
+
+            var timeoutMs = (int)Math.Min(
+                60000L,
+                Math.Max(
+                    15000L,
+                    (long)_settings.Timing.ProcessTimeoutMs * 2L));
+            var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            var nextRetryUtc = DateTime.MinValue;
+            while (!runtime.Dex.IsCleanupComplete &&
+                   DateTime.UtcNow < deadline)
+            {
+                if (!runtime.Dex.IsRunning &&
+                    runtime.Dex.CurrentSession == null &&
+                    runtime.Dex.HasDeferredDisplayCleanup &&
+                    DateTime.UtcNow >= nextRetryUtc)
+                {
+                    nextRetryUtc = DateTime.UtcNow.AddSeconds(1);
+                    var device = GetSelectedDevice();
+                    var serial = GetPrimarySerial(device);
+                    if (device != null &&
+                        !string.IsNullOrWhiteSpace(serial))
+                    {
+                        await runtime.Dex.CleanupConnectedOverlayAsync(
+                            serial,
+                            device.Identity);
+                    }
+                }
+                await Task.Delay(100, cancellationToken);
+            }
+            return runtime.Dex.IsCleanupComplete;
+        }
+
         private void SelectTargetDevice()
         {
             var snapshot = _deviceRegistry.Current;
@@ -372,59 +447,145 @@ public sealed class InteractiveHost : IDisposable
             {
                 var target = snapshot.Devices[idx - 1];
                 _selectedDeviceSerial = GetPrimarySerial(target);
+                _selectedDeviceIdentity = target.Identity;
                 AnsiConsole.Success($"Selected device: {target.DisplayName}");
             }
         }
 
-        public async Task StartDexAsync()
+        public async Task<bool> StartDexAsync(
+            CancellationToken cancellationToken = default)
         {
+            await WaitForDeviceSnapshotAsync(cancellationToken);
             var device = GetSelectedDevice();
             var serial = GetPrimarySerial(device);
             if (string.IsNullOrWhiteSpace(serial))
             {
                 AnsiConsole.Error("No device connected. Please connect a Galaxy device.");
-                return;
+                return false;
             }
-
+            _selectedDeviceSerial = serial;
+            _selectedDeviceIdentity = device.Identity;
             AnsiConsole.Header($"STARTING DeX ON {device.DisplayName}");
             var runtime = GetOrCreateRuntime();
 
             try
             {
                 AnsiConsole.Info("Configuring overlay display resolution and launching scrcpy...");
-                await runtime.Dex.StartAsync(serial);
+                if (!await runtime.Dex.StartAsync(
+                    serial,
+                    device.Identity,
+                    cancellationToken))
+                {
+                    AnsiConsole.Warning(
+                        "A new DeX session was not started. " +
+                        "Stop the current session before choosing another device.");
+                    await Task.Delay(1000);
+                    return false;
+                }
+                _selectedDeviceSerial =
+                    runtime.Dex.CurrentSession?.Serial ?? serial;
+                _selectedDeviceIdentity =
+                    runtime.Dex.CurrentSession?.DeviceIdentity ??
+                    device.Identity;
                 AnsiConsole.Success("DeX successfully started!");
+                await Task.Delay(1000);
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                AnsiConsole.Info("DeX launch was cancelled; cleanup is in progress.");
+                throw;
             }
             catch (Exception ex)
             {
                 AnsiConsole.Error($"DeX launch error: {ex.Message}");
+                await Task.Delay(1000);
+                return false;
             }
-
-            await Task.Delay(1000);
         }
 
-        public async Task StopDexAsync()
+        public async Task<bool> StopDexAsync(
+            bool cleanupUntrackedOverlay = false,
+            CancellationToken cancellationToken = default)
         {
-            var device = GetSelectedDevice();
-            if (device == null)
+            var runtime = _activeRuntime;
+            var stopKnownRuntime = !cleanupUntrackedOverlay;
+            PhysicalDeviceInfo device = null;
+            string serial = null;
+
+            if (stopKnownRuntime && runtime == null)
             {
-                AnsiConsole.Warning("No target device selected.");
-                return;
+                AnsiConsole.Warning("No active DeX session is tracked.");
+                return false;
             }
 
-            AnsiConsole.Info($"Stopping DeX on {device.DisplayName}...");
-            var runtime = GetOrCreateRuntime();
+            if (cleanupUntrackedOverlay)
+            {
+                stopKnownRuntime = runtime != null &&
+                    (runtime.Dex.CurrentSession != null ||
+                     runtime.Dex.IsRunning);
+            }
+
+            if (!stopKnownRuntime)
+            {
+                await WaitForDeviceSnapshotAsync(cancellationToken);
+                device = GetSelectedDevice();
+                if (device == null)
+                {
+                    AnsiConsole.Warning("No target device selected.");
+                    return false;
+                }
+
+                serial = GetPrimarySerial(device);
+                if (string.IsNullOrWhiteSpace(serial) ||
+                    !_adbService.IsAuthorizedDeviceConnected(serial))
+                {
+                    AnsiConsole.Warning(
+                        "The target device is not connected and authorized; " +
+                        "DeX display cleanup was not attempted.");
+                    return false;
+                }
+
+                runtime = GetOrCreateRuntime();
+            }
+
+            var targetName = device?.DisplayName ??
+                runtime.Dex.CurrentSession?.Serial ??
+                "the selected device";
+            AnsiConsole.Info($"Stopping DeX on {targetName}...");
             try
             {
-                await runtime.Dex.StopAsync();
+                if (stopKnownRuntime)
+                {
+                    if (!await runtime.Dex.StopOrConfirmCleanupAsync())
+                    {
+                        AnsiConsole.Warning(
+                            "DeX stopped, but display cleanup was deferred until " +
+                            "the target device reconnects.");
+                        await Task.Delay(800);
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (!await runtime.Dex.CleanupConnectedOverlayAsync(
+                        serial,
+                        device.Identity))
+                    {
+                        throw new InvalidOperationException(
+                            "The DeX display overlay could not be removed.");
+                    }
+                }
                 AnsiConsole.Success("DeX session stopped and display overlay cleaned up.");
+                await Task.Delay(800);
+                return true;
             }
             catch (Exception ex)
             {
                 AnsiConsole.Error($"Error stopping DeX: {ex.Message}");
+                await Task.Delay(800);
+                return false;
             }
-
-            await Task.Delay(800);
         }
 
         public async Task StartSingleWindowAsync()
@@ -605,8 +766,10 @@ public sealed class InteractiveHost : IDisposable
             await Task.Delay(1000);
         }
 
-        public async Task RunDiagnosticsAsync()
+        public async Task RunDiagnosticsAsync(
+            CancellationToken cancellationToken = default)
         {
+            await WaitForDeviceSnapshotAsync(cancellationToken);
             AnsiConsole.Header("SYSTEM ENVIRONMENT & DIAGNOSTICS");
             AnsiConsole.Info("Running environment checks...");
 
@@ -629,7 +792,7 @@ public sealed class InteractiveHost : IDisposable
                 var diag = new DeviceVersionDiagnosticService(_adbService).Inspect(serial, device);
                 var companionStatus = _permissionService.Inspect(serial);
                 var report = _diagnosticReportService.CreateReport(
-                    "2.0.0",
+                    Program.Version,
                     _adbService.AdbPath,
                     "Android Debug Bridge",
                     _settings.Paths.ScrcpyPath,
@@ -664,7 +827,19 @@ public sealed class InteractiveHost : IDisposable
             Console.WriteLine($"  Detail:                   {status.Detail}");
             Console.WriteLine($"  Installed Package Code:   {status.VersionCode}");
 
-            Console.WriteLine("\n  [1] Install Bundled Companion APK & Grant Permission");
+            var bundled = _permissionService.InspectBundledApk();
+            Console.WriteLine($"  Bundled Companion APK:    {bundled.State}");
+            if (bundled.State == BundledCompanionState.Ready)
+            {
+                Console.WriteLine("\n  [1] Install Bundled Companion APK & Grant Permission");
+            }
+            else
+            {
+                Console.WriteLine("\n  [1] Install Bundled Companion APK & Grant Permission (unavailable)");
+                AnsiConsole.Warning(
+                    "This package does not contain a verified DX Companion APK. " +
+                    "Automatic installation is unavailable.");
+            }
             Console.WriteLine("  [2] Grant WRITE_SECURE_SETTINGS Permission Only");
             Console.WriteLine("  [3] Return to Main Menu");
             Console.Write("\nChoice: ");
@@ -672,6 +847,14 @@ public sealed class InteractiveHost : IDisposable
             var choice = Console.ReadLine()?.Trim();
             if (choice == "1")
             {
+                if (bundled.State != BundledCompanionState.Ready)
+                {
+                    AnsiConsole.Error(
+                        "Installation was not started because a verified bundled APK is unavailable.");
+                    await Task.Delay(1000);
+                    return;
+                }
+
                 AnsiConsole.Info("Installing Companion APK and granting permissions...");
                 var res = _permissionService.InstallAndGrant(serial);
                 if (res.State == DisplayCleanupPermissionState.Granted || res.State == DisplayCleanupPermissionState.Ready)
@@ -758,28 +941,133 @@ public sealed class InteractiveHost : IDisposable
             Console.ReadLine();
         }
 
-        public void Shutdown()
+        private async Task WaitForDeviceSnapshotAsync(
+            CancellationToken cancellationToken = default)
         {
-            if (!_isRunning) return;
+            _deviceMonitor.Start();
+            var pollTimeoutMs = (int)Math.Min(
+                60000L,
+                Math.Max(
+                    15000L,
+                    (long)_settings.Timing.ProcessTimeoutMs * 3L));
+            var completed = await Task.Run(
+                () => _deviceMonitor.WaitForFirstPoll(
+                    pollTimeoutMs,
+                    cancellationToken),
+                cancellationToken);
+            if (!completed)
+            {
+                AnsiConsole.Warning(
+                    "The first device scan did not finish before the timeout. " +
+                    "The connected-device list may still be incomplete.");
+            }
+        }
+
+        public async Task ShutdownAsync()
+        {
+            if (Interlocked.Exchange(ref _shutdownStarted, 1) != 0) return;
+
             _isRunning = false;
+            var device = GetSelectedDevice();
+            var fallbackSerial = GetPrimarySerial(device) ??
+                _selectedDeviceSerial;
+            var fallbackIdentity = device?.Identity ??
+                _activeRuntime?.Dex.CurrentSession?.DeviceIdentity ??
+                _selectedDeviceIdentity ??
+                string.Empty;
+            var errors = new List<Exception>();
 
             AnsiConsole.Info("Shutting down DX Manager and cleaning up active sessions...");
             try
             {
                 _deviceMonitor?.Stop();
-                if (_activeRuntime != null)
-                {
-                    _activeRuntime.Dex.RequestShutdown();
-                    _activeRuntime.SingleWindows.RequestShutdown();
-                    _activeRuntime.Scrcpy.RequestShutdown();
-                }
             }
             catch (Exception ex)
             {
-                AnsiConsole.Error($"Error during shutdown: {ex.Message}");
+                errors.Add(ex);
             }
 
-            AnsiConsole.Success("DX Manager stopped cleanly. Goodbye!");
+            try
+            {
+                _deviceMonitor?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                errors.Add(ex);
+            }
+
+            try
+            {
+                _keyboardService?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                errors.Add(ex);
+            }
+
+            if (_activeRuntime != null)
+            {
+                try
+                {
+                    _activeRuntime.FileTransfers.RequestShutdown();
+                    _activeRuntime.PhoneTransfers.RequestShutdown();
+                    _activeRuntime.CompanionGuardian.RequestShutdown();
+                    _activeRuntime.ScreenOff.RequestShutdown();
+                    _activeRuntime.SingleWindows.RequestShutdown();
+                    _activeRuntime.Dex.RequestShutdown();
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(ex);
+                }
+
+                try
+                {
+                    _activeRuntime.SingleWindows.StopAll();
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(ex);
+                }
+
+                try
+                {
+                    await _activeRuntime.Dex.ShutdownAsync(
+                        fallbackSerial,
+                        fallbackIdentity);
+                    if (_activeRuntime.Dex.HasDeferredDisplayCleanup)
+                    {
+                        errors.Add(new InvalidOperationException(
+                            "DeX display cleanup was deferred because the " +
+                            "target device was unavailable."));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(ex);
+                }
+            }
+
+            DisposeRuntimeServices(errors);
+
+            foreach (var error in errors)
+            {
+                AnsiConsole.Error($"Error during shutdown: {error.Message}");
+            }
+
+            if (errors.Count == 0)
+            {
+                AnsiConsole.Success("DX Manager stopped cleanly. Goodbye!");
+            }
+            else
+            {
+                AnsiConsole.Warning("DX Manager stopped, but one or more cleanup steps could not be confirmed.");
+            }
+        }
+
+        public void Shutdown()
+        {
+            ShutdownAsync().GetAwaiter().GetResult();
         }
 
         public void Dispose()
@@ -787,7 +1075,35 @@ public sealed class InteractiveHost : IDisposable
             if (_disposed) return;
             _disposed = true;
             Shutdown();
-            _deviceMonitor?.Dispose();
-            _keyboardService?.Dispose();
+        }
+
+        private void DisposeRuntimeServices(ICollection<Exception> errors)
+        {
+            if (Interlocked.Exchange(ref _runtimeServicesDisposed, 1) != 0)
+                return;
+            if (_activeRuntime == null) return;
+
+            var disposables = new IDisposable[]
+            {
+                _activeRuntime.SingleWindows,
+                _activeRuntime.Scrcpy,
+                _activeRuntime.ScreenOff,
+                _activeRuntime.PhoneTransfers,
+                _activeRuntime.CompanionGuardian,
+                _activeRuntime.FileTransfers
+            };
+
+            foreach (var disposable in disposables)
+            {
+                try
+                {
+                    disposable.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    _logService.Error("macOS runtime service disposal failed.", ex);
+                    errors.Add(ex);
+                }
+            }
         }
     }

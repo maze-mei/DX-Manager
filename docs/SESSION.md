@@ -1,6 +1,37 @@
 # Session Handoff
 
-마지막 갱신: 2026-08-22
+마지막 갱신: 2026-08-31
+
+## macOS 포터블 배포 작업
+
+- 현재 통합 브랜치: `dev-mac-integrated` (upstream v2.0.1 merge commit 전)
+- 원 PR #3 작업 브랜치: `codex/macos-portable-release` (역사적 기록)
+- `scripts/Package-Mac-Release.sh`가 `osx-arm64`와 `osx-x64`용 DX Manager와
+  ADB proxy를 self-contained single-file로 publish한다.
+- 공식 scrcpy 4.1 arm64/x86_64 정적 아카이브를 고정 SHA-256으로 검증해
+  ADB와 scrcpy-server를 함께 포함한다.
+- `DX-Manager-v2.0.0-macos-arm64.zip`과
+  `DX-Manager-v2.0.0-macos-x64.zip`, 각 `.sha256` 파일을 생성한다.
+- GitHub Actions workflow는 `macos-15`와 `macos-15-intel`에서 빌드·95개
+  테스트·39개 다중 기기 테스트·package smoke test를 각각 수행하도록
+  구성했다. PR에서는 artifact를 보관하고, `v*` 태그에서는 정확한 네 파일과
+  체크섬을 검증한 뒤 Release 초안을 만든다. 첫 원격 run 결과 확인은 남아 있다.
+- Apple Silicon ZIP은 native 실행 검증을 통과했다. Intel ZIP은 Mach-O x64
+  검사와 이 Mac의 Rosetta에서 DX Manager, proxy, scrcpy 4.1, ADB 37.0.0
+  실행을 확인했다. 실제 Intel Mac의 Galaxy DeX 실기는 남아 있다.
+- macOS `Q` 종료가 no-op이던 조건을 제거하고 실행 중인 서비스 정지와 DeX
+  overlay cleanup 완료를 기다리도록 수정했다. CLI `--dex`/`--stop-dex`도 기기
+  감시가 첫 snapshot을 읽은 뒤 동작하며 시작·자연 종료 대기의 `Ctrl+C`를 실제
+  정리 경로에 연결한다.
+- DeX 시작·overlay 제거 직전에 live stable identity를 다시 읽는다. 같은 endpoint의
+  다른 휴대폰에는 정리 명령을 보내지 않고, USB transport가 사라져도 같은
+  identity로 검증된 Wi-Fi transport가 남아 있으면 그 경로로 정리한다. 보류된
+  cleanup은 identity별 독립 항목으로 보존하고 새 overlay 설정이 성공한 뒤에만
+  완료 처리한다.
+- 최종 소스 기준 .NET 8 Release 빌드는 경고 0·오류 0, xUnit 95개와 다중 기기
+  회귀 테스트 39개는 모두 통과했다.
+- 자동 artifact는 아직 Apple Developer ID 서명·notarization이 없으므로 최초
+  실행 시 Gatekeeper 승인이 필요할 수 있다.
 
 ## macOS 크로스플랫폼 변환 작업 현황 (v2.0.0 macOS Edition)
 
@@ -9,7 +40,7 @@
   - `DexManager.Mac` (.NET 8.0): macOS 전용 ANSI 컬러 콘솔 호스트 (`InteractiveHost`), TUI 대시보드, 네이티브 플랫폼 서비스 (`MacPlatformService`, `MacPathProvider`, `MacCaptureService`, `MacKeyboardService`, `MacAutoStartService`) 구현 완료
   - `DexManager.AdbProxy` (.NET 8.0): Named Pipe 기반 Scrcpy 파일 드롭 가로채기 및 관리형 전송 중계 구현 완료
 - **2단계 (테스트 및 검증)**:
-  - `DexManager.Tests` (net8.0, xUnit 2.5.3): 92개 단위/통합 테스트 100% 통과
+  - `DexManager.Tests` (net8.0, xUnit 2.5.3): 95개 단위/통합 테스트 100% 통과
   - `DexManager.MultiDeviceTests` (net8.0): 39개 다중 기기 세션 격리 회귀 테스트 100% 통과
 - **3단계 (리팩터링, 품질 개선, 문서화)**:
   - C# 12 / .NET 8 최신 문법(파일 범위 네임스페이스, 패턴 매칭, 레코드, 컬렉션 식, 식 본문 멤버) 적용
@@ -18,10 +49,38 @@
   - macOS 전용 가이드 문서 `docs/MACOS_GUIDE.md` 작성 및 `CHANGELOG.md` 갱신
   - 최종 릴리스 빌드 및 테스트 스위트 검증 완료
 
-## Git
+## 2026-08-23 v2.0.1 DeX 설정 표시 회귀 수정
 
-- 솔루션: `DexManager.Mac.sln` (macOS), `DexManager.sln` (Windows)
-- 현재 작업: macOS 크로스플랫폼 포팅 3단계(리팩터링 및 품질/문서화) 완료
+프로그램 시작 시 UI가 물리 휴대폰 identity를 알기 전에 공통 기본 설정을 먼저
+표시하고, 첫 휴대폰이 기존 초기 컨텍스트를 재사용하면 기기별 설정을 다시 읽지
+않는 문제를 수정했다. 첫 identity 결속 뒤 선택 기기의 DeX 해상도·DPI·비트레이트·
+FPS와 실행 옵션을 다시 표시한다. 여러 휴대폰이 시작부터 연결된 경우에도 최초
+선택 전 공통 기본값을 기존 기기 프로필에 저장하지 않는다.
+
+Windows 앱 버전은 2.0.1이다. Android 소스와 프로토콜은 변경하지 않았으며 번들
+DX Companion은 기존의 검증된 2.0.0(versionCode 6)을 유지한다.
+
+최종 Release 재빌드는 경고 0, 오류 0이며 다중 기기 회귀 테스트 39개를 모두
+통과했다. GitHub 업로드용 ZIP은 64개 항목이고, PDB·사용자 설정·로그·스크린샷·
+서명 비밀 파일을 포함하지 않는다. upstream에서 검증한 ZIP SHA-256은
+`5F9C5A6AF6199D38458F6266869DDBACC58722A3A915696FF02935CF8965B2C1`이다.
+
+## 2026-08-22 v2.0.0 공개 및 작업 이관
+
+DX Manager v2.0.0과 DX Companion 2.0.0을 GitHub에 공개했고, 영어·한국어
+README·사용 설명서·FAQ·릴리스 설명 및 다중 기기/진단/Companion 스크린샷을
+현재 기능에 맞게 갱신했다. 공개 태그 뒤 대표 이미지에 실제 DeX 아이콘이 보이는
+최종 스크린샷을 반영한 커밋이 `e8e47e6`이다.
+
+다음 작업이 긴 대화 기록 없이도 안전하게 이어지도록 현재 제품 기준점, 저장소
+구조, 다중 기기·전송·Companion·Windows 종료 불변 조건, 검증 명령, 실기 확인
+범위와 차기 후보를 `docs/HANDOFF.md`에 통합했다. `AGENTS.md`와 개발 문서의
+“v2 준비 중” 표현도 공개 완료 상태로 바로잡았다.
+
+이관 시점의 제품 소스는 공개 v2.0.0과 동일하다. 새로 합의된 기능 후보는 Android
+11+ 무선 ADB 연결 endpoint의 mDNS 자동 발견이며, 페어링 포트와 연결 포트를
+분리하고 동일 모델 복수 기기를 추측으로 선택하지 않는 상세 조건을 `TODO.md`에
+기록했다. 구현은 아직 시작하지 않았다.
 
 Windows 종료 중 `adb.exe` 네이티브 오류창이 반복되는 문제 때문에 실제 종료
 경로를 일반적인 Alt+F8·트레이 종료와 완전히 분리했다. `WM_QUERYENDSESSION`을
