@@ -125,9 +125,11 @@ public sealed class InteractiveHost : IDisposable
             var currentAdb = _settings.Paths.AdbPath ?? string.Empty;
             var forcePortableAdb = _pathProvider.IsPortablePackage &&
                 _settings.Paths.AdbSelectionMode != AdbSelectionMode.Manual;
+
             if (forcePortableAdb ||
                 string.IsNullOrWhiteSpace(currentAdb) ||
                 !File.Exists(currentAdb) ||
+                !MacExecutableInspector.IsRunnableOnThisMachine(currentAdb) ||
                 currentAdb.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
                 var adb = _pathProvider.ResolveDefaultAdbPath();
@@ -142,6 +144,7 @@ public sealed class InteractiveHost : IDisposable
             if (_pathProvider.IsPortablePackage ||
                 string.IsNullOrWhiteSpace(currentScrcpy) ||
                 !File.Exists(currentScrcpy) ||
+                !MacExecutableInspector.IsRunnableOnThisMachine(currentScrcpy) ||
                 currentScrcpy.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
                 var scrcpy = _pathProvider.ResolveDefaultScrcpyPath();
@@ -181,7 +184,9 @@ public sealed class InteractiveHost : IDisposable
         private void InitializeRuntimeFactory()
         {
             var scrcpyPath = _settings.Paths.ScrcpyPath;
-            if (string.IsNullOrWhiteSpace(scrcpyPath) || !File.Exists(scrcpyPath) || scrcpyPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(scrcpyPath) || !File.Exists(scrcpyPath) ||
+                !MacExecutableInspector.IsRunnableOnThisMachine(scrcpyPath) ||
+                scrcpyPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
                 scrcpyPath = _pathProvider.ResolveDefaultScrcpyPath();
             }

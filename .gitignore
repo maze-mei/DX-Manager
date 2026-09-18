@@ -24,6 +24,10 @@ packages/
 
 # Generated release packages
 dist/
+
+# Generated publish output
+publish/
+
 # macOS system files
 .DS_Store
 **/.DS_Store
