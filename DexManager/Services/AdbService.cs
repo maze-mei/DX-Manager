@@ -46,6 +46,48 @@ namespace DexManager.Services
             get { return _processRunner.IsShutdownRequested; }
         }
 
+        internal Process StartShellSession(string serial, string command,
+            DataReceivedEventHandler output, DataReceivedEventHandler error)
+        {
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = _adbPath,
+                    Arguments = AdbCommandBuilder.ForDevice(serial, "shell -T " + command),
+                    WorkingDirectory = Path.GetDirectoryName(_adbPath),
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8
+                }
+            };
+            process.OutputDataReceived += output;
+            process.ErrorDataReceived += error;
+            try
+            {
+                _processRunner.StartPersistentProcess(process);
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                return process;
+            }
+            catch
+            {
+                try { if (!process.HasExited) process.Kill(); } catch { }
+                _processRunner.ForgetPersistentProcess(process);
+                process.Dispose();
+                throw;
+            }
+        }
+
+        internal void ForgetShellSession(Process process)
+        {
+            _processRunner.ForgetPersistentProcess(process);
+        }
+
         public void BeginProcessShutdown()
         {
             _processRunner.BeginShutdown();

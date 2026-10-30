@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -322,12 +322,22 @@ namespace DexManager.Forms
             }
         }
 
+        private async Task StopContextTransportAsync(DeviceUiContext context, string serial)
+        {
+            // Invalidate pending DeX immediately and include all old window cleanup
+            // in the task awaited by the next launch for this physical phone.
+            var previousCleanup = context.DexCleanupTask;
+            var stopDex = context.Runtime.Dex.StopForSerialAsync(serial);
+            await Task.WhenAll(previousCleanup, stopDex);
+            await Task.Run(delegate { context.Runtime.SingleWindows.StopForSerial(serial); });
+        }
+
         private async void StopDisconnectedSerialAsync(DeviceUiContext context, string serial)
         {
             try
             {
-                await context.Runtime.Dex.StopForSerialAsync(serial);
-                await Task.Run(delegate { context.Runtime.SingleWindows.StopForSerial(serial); });
+                context.DexCleanupTask = StopContextTransportAsync(context, serial);
+                await context.DexCleanupTask;
             }
             catch (Exception ex) { _logService.Error("Could not stop disconnected transport " + serial + ".", ex); }
         }
@@ -341,8 +351,8 @@ namespace DexManager.Forms
         {
             try
             {
-                await context.Runtime.Dex.StopForSerialAsync(previousSerial);
-                await Task.Run(delegate { context.Runtime.SingleWindows.StopForSerial(previousSerial); });
+                context.DexCleanupTask = StopContextTransportAsync(context, previousSerial);
+                await context.DexCleanupTask;
             }
             catch (Exception ex)
             {
@@ -386,15 +396,25 @@ namespace DexManager.Forms
             string serial,
             bool allowAutoStart)
         {
-            var generation = context == null
-                ? -1
-                : context.ConnectionGeneration;
+            if (context == null) return;
+            var generation = context.ConnectionGeneration;
+            var orchestrator = context.Runtime.Dex;
+            var autoStart = allowAutoStart &&
+                _settings.Features.AutoStartDexOnDeviceConnected &&
+                !context.RequireManualStartAfterTransportLoss &&
+                IsContextConnectionCurrent(context, serial, generation) &&
+                !orchestrator.IsRunning;
+            // Lock the mode before the first await, including cleanup and the
+            // configured connection delay, not only during helper negotiation.
+            if (autoStart) BeginPhonePreviewStart(orchestrator);
             try
             {
                 var autoStartGeneration = _autoStartSettingsGeneration;
+                await context.DexCleanupTask;
+                if (!IsContextConnectionCurrent(context, serial, generation)) return;
                 var cleanupReady = await context.Runtime.Dex
                     .RetryDeferredCleanupAsync(serial);
-                if (cleanupReady && allowAutoStart && !context.RequireManualStartAfterTransportLoss &&
+                if (cleanupReady && autoStart && !context.RequireManualStartAfterTransportLoss &&
                     _settings.Features.AutoStartDexOnDeviceConnected)
                 {
                     var launchTransport = context.Device == null ? null :
@@ -411,6 +431,16 @@ namespace DexManager.Forms
                     "Could not retry deferred cleanup for " + serial + ".",
                     ex);
             }
+            finally
+            {
+                if (autoStart)
+                {
+                    EndPhonePreviewStart(orchestrator);
+                    if (!_exitInProgress && !IsDisposed &&
+                        ReferenceEquals(context, _selectedDeviceContext))
+                        UpdateRunningState();
+                }
+            }
         }
 
         private async Task StartDexForContextAsync(
@@ -425,6 +455,7 @@ namespace DexManager.Forms
                 return;
             }
 
+            var orchestrator = context.Runtime.Dex;
             try
             {
                 var runSettings = GetDeviceRunSettings(
@@ -438,7 +469,7 @@ namespace DexManager.Forms
                 };
                 if (!await ConfirmExperimentalFrameRateAsync(runSettings.Scrcpy.MaxFps) ||
                     !IsContextLaunchCurrent(context, serial, generation) || context.Runtime.Dex.IsShutdownRequested) return;
-                if (runSettings.Scrcpy.TurnScreenOff)
+                if (runSettings.Scrcpy.TurnScreenOff && !runSettings.VirtualDisplay.HidePhonePreview)
                     RememberManagedSerial(serial);
 
                 if (ReferenceEquals(context, _selectedDeviceContext))
@@ -465,7 +496,7 @@ namespace DexManager.Forms
                         context,
                         serial,
                         generation) ||
-                    !context.Runtime.Dex.IsRunning)
+                    !orchestrator.IsRunning)
                 {
                     return;
                 }
@@ -553,14 +584,19 @@ namespace DexManager.Forms
             context.Runtime.FileTransfers.CancelSerial(serial);
             context.Runtime.CompanionGuardian.NotifyConnectionLost(serial);
             var detachTask = context.Runtime.PhoneTransfers.DetachAsync(serial);
-            Task.Run(async delegate
+            // StopAsync invalidates an in-flight start immediately. Do not
+            // postpone cancellation until a background work item is scheduled.
+            var stopDexTask = context.Runtime.Dex.IsRunning ||
+                context.Runtime.Dex.IsBusy
+                ? context.Runtime.Dex.StopAsync()
+                : Task.FromResult(0);
+            var previousCleanup = context.DexCleanupTask;
+            context.DexCleanupTask = Task.Run(async delegate
             {
                 try
                 {
-                    if (context.Runtime.Dex.IsRunning)
-                        await context.Runtime.Dex.StopAsync()
-                            .ConfigureAwait(false);
-                    context.Runtime.SingleWindows.StopAll();
+                    await Task.WhenAll(previousCleanup, stopDexTask).ConfigureAwait(false);
+                    context.Runtime.SingleWindows.StopForSerial(serial);
                 }
                 catch (Exception ex)
                 {

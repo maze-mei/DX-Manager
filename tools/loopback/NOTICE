@@ -1,0 +1,19 @@
+DX Manager Loopback DeX Helper
+
+The Samsung loopback wireless DeX configuration and WFD negotiation are adapted
+from ScrcpyDeX (https://github.com/Aureliano021/ScrcpyDex), commit
+3e58823000a897300df5cf2c6d4a131d97b28162, specifically
+server/src/com/scrcpydex/server/DexActivator.java and wrappers/DisplayManager.java.
+Copyright 2026 Aureliano Peixoto and ScrcpyDeX Contributors.
+Licensed under the Apache License, Version 2.0; see LICENSE.
+
+DX Manager hidden-preview integration and session-lifecycle modifications:
+Copyright 2026 asyouplz (https://github.com/asyouplz).
+
+DX Manager changes: independent reflection-only helper; no custom capture, input,
+or audio implementation; bounded byte-oriented RTSP framing and CSeq correlation;
+host heartbeat lease; loopback-only sockets; unique session ownership checks;
+refusal to disconnect existing displays; before/after display selection; scoped
+cleanup; reproducible build scripts and host-side tests.
+
+This helper is experimental and is not endorsed by Samsung or ScrcpyDeX.

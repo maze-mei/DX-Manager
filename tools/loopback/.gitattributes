@@ -1,0 +1,4 @@
+*.jar -text
+*.sha256 text eol=lf
+LICENSE text eol=lf
+NOTICE text eol=lf

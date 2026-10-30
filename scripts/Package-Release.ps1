@@ -150,6 +150,10 @@ foreach ($item in $requiredOutput) {
 $requiredFiles = @(
     "ko\DXManager.resources.dll",
     "tools\adb-proxy\DXMAdbProxy.exe",
+    "tools\loopback\dxm-loopback.jar",
+    "tools\loopback\dxm-loopback.jar.sha256",
+    "tools\loopback\LICENSE",
+    "tools\loopback\NOTICE",
     "tools\adb\legacy\adb.exe",
     "tools\adb\legacy\AdbWinApi.dll",
     "tools\adb\legacy\AdbWinUsbApi.dll",
@@ -263,6 +267,7 @@ Copy-Item -LiteralPath $companionFontLicense -Destination $packageCompanionDirec
 # debugging symbols out of the public portable package.
 Get-ChildItem -LiteralPath $packageRoot -Filter "*.pdb" -File -Recurse |
     Remove-Item -Force
+Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\PHONE_PREVIEW_MODE.md') -Destination $packageRoot
 $packageReadme = Join-Path $packageRoot "README.md"
 Copy-Item -LiteralPath (Join-Path $repoRoot "docs\PACKAGE_README.md") `
     -Destination $packageReadme
@@ -292,7 +297,11 @@ if ($unexpectedPdb) {
     throw "Debug symbols must not be included in the package: $($unexpectedPdb.FullName)"
 }
 
-if (!$NoArchive) { Compress-Archive -LiteralPath $packageRoot -DestinationPath $zipPath -CompressionLevel Optimal }
+if (!$NoArchive) {
+    Compress-Archive -LiteralPath $packageRoot -DestinationPath $zipPath -CompressionLevel Optimal
+    $zipHash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    [IO.File]::WriteAllText($zipPath + '.sha256', "$zipHash  $([IO.Path]::GetFileName($zipPath))`n", [Text.UTF8Encoding]::new($false))
+}
 
 Write-Host "Release folder: $packageRoot"
 if (!$NoArchive) { Write-Host "Release archive: $zipPath" }

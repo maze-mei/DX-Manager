@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -28,6 +28,7 @@ namespace DexManager.Forms
             public int PendingSessionStarts;
             public bool RequireManualStartAfterTransportLoss;
             public string AutoStartBlockedSerial = string.Empty;
+            public Task DexCleanupTask = Task.FromResult(0);
             public int SelectedMode;
             public bool[] ModeSettingsDirty = new bool[4];
         }

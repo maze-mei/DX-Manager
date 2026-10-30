@@ -352,11 +352,10 @@ namespace DexManager.Forms
                 var dex = context.Runtime.Scrcpy.GetSessionSnapshot();
                 string original = null;
                 var serial = GetWindowsShutdownSerial(context, dex);
-                // Normal DX Manager exit removes overlay state regardless of
-                // who created it. Keep the same recovery guarantee here for
-                // every currently reachable phone, including a display left
-                // behind after its scrcpy window already closed.
-                var removeOverlay = !string.IsNullOrWhiteSpace(serial);
+                // Preserve the overlay-mode recovery policy, but a loopback
+                // session must not delete overlays that it did not create.
+                var removeOverlay = !string.IsNullOrWhiteSpace(serial) &&
+                    context.Runtime.Dex.WantsOverlayCleanup;
                 var restoreStayAwake =
                     _settings.Features.DisableStayAwakeOnStop &&
                     TryGetStayAwakeOriginalForContext(
@@ -476,11 +475,14 @@ namespace DexManager.Forms
                 ? LocalizationService.Get("Status.Running")
                 : LocalizationService.Get("Status.Idle");
             UpdateStartAppAvailability();
-            _startButton.Enabled = !running && GetContextTransport(_selectedDeviceContext) != null && GetContextTransport(_selectedDeviceContext).IsAuthorized;
-            _stopButton.Enabled = running;
+            var dexBusy = _selectedMode == 0 &&
+                (_orchestrator.IsBusy || _phonePreviewPendingStarts.ContainsKey(_orchestrator));
+            _startButton.Enabled = !running && !dexBusy && GetContextTransport(_selectedDeviceContext) != null && GetContextTransport(_selectedDeviceContext).IsAuthorized;
+            _stopButton.Enabled = running && !dexBusy;
             _startButton.Visible = !running;
             _stopButton.Visible = running;
             UpdateApplySettingsLink();
+            UpdatePhonePreviewControls();
             if (!string.IsNullOrWhiteSpace(_connectionError))
             {
                 SetConnectionIndicator(
@@ -516,6 +518,8 @@ namespace DexManager.Forms
             _startButton.Enabled = !operationRunning && !running && GetContextTransport(_selectedDeviceContext) != null && GetContextTransport(_selectedDeviceContext).IsAuthorized;
             _stopButton.Enabled = !operationRunning && running;
             _applySettingsLink.Enabled = !operationRunning;
+            UpdatePhonePreviewControls();
+            if (operationRunning) _hidePhonePreviewBox.Enabled = false;
             _dexStatusValue.Text = status;
         }
 

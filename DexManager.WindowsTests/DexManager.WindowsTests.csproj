@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>DexManager</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <UseSharedCompilation>false</UseSharedCompilation>
+  </PropertyGroup>
+  <!-- Link the Windows sources, not the separate macOS Core implementation. -->
+  <ItemGroup>
+    <Compile Include="../DexManager/Models/AppSettings.cs" Link="Windows/AppSettings.cs" />
+    <Compile Include="../DexManager/Models/AppSettings.Types.cs" Link="Windows/AppSettings.Types.cs" />
+    <Compile Include="../DexManager/Models/LastSuccessSettings.cs" Link="Windows/LastSuccessSettings.cs" />
+    <Compile Include="../DexManager/Services/SettingsService.cs" Link="Windows/SettingsService.cs" />
+    <Compile Include="../DexManager/Services/LogService.cs" Link="Windows/LogService.cs" />
+    <Compile Include="../DexManager/Services/LocalizationService.cs" Link="Windows/LocalizationService.cs" />
+    <Compile Include="../DexManager/Services/LoopbackDexProtocol.cs" Link="Windows/LoopbackDexProtocol.cs" />
+    <Compile Include="../DexManager/Services/LoopbackDexService.cs" Link="Windows/LoopbackDexService.cs" />
+    <Compile Include="../DexManager/Services/VirtualDisplayService.cs" Link="Windows/VirtualDisplayService.cs" />
+    <Compile Include="../DexManager/Services/AdbService.cs" Link="Windows/AdbService.cs" />
+    <Compile Include="../DexManager/Services/AdbCommandBuilder.cs" Link="Windows/AdbCommandBuilder.cs" />
+    <Compile Include="../DexManager/Utils/ProcessRunner.cs" Link="Windows/ProcessRunner.cs" />
+    <Compile Include="../DexManager/Models/ProcessResult.cs" Link="Windows/ProcessResult.cs" />
+    <Compile Include="../DexManager/Models/AdbDeviceInfo.cs" Link="Windows/AdbDeviceInfo.cs" />
+    <Compile Include="../DexManager/Models/AdbMdnsServiceRecord.cs" Link="Windows/AdbMdnsServiceRecord.cs" />
+    <Compile Include="../DexManager/Services/AdbMdnsOutputParser.cs" Link="Windows/AdbMdnsOutputParser.cs" />
+    <Compile Include="../DexManager/Models/DeviceAppCatalog.cs" Link="Windows/DeviceAppCatalog.cs" />
+    <Compile Include="../DexManager/Models/ScrcpyAppInfo.cs" Link="Windows/ScrcpyAppInfo.cs" />
+    <Compile Include="../DexManager/Models/FrameRateRules.cs" Link="Windows/FrameRateRules.cs" />
+    <Compile Include="../DexManager/Models/DisplayInfo.cs" Link="Windows/DisplayInfo.cs" />
+    <Compile Include="../DexManager/Models/VirtualDisplayLease.cs" Link="Windows/VirtualDisplayLease.cs" />
+    <EmbeddedResource Include="../DexManager/Resources/Strings.resx" Link="Resources/Strings.resx" />
+    <EmbeddedResource Include="../DexManager/Resources/Strings.ko.resx" Link="Resources/Strings.ko.resx" />
+    <Content Include="../tools/loopback/dxm-loopback.jar" Link="tools/loopback/dxm-loopback.jar" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -35,6 +35,7 @@ namespace DexManager.Forms
             }
             _displayedMaxFps = next;
             _turnScreenOffBox.Enabled = !FrameRateRules.RequiresScreenOn(next);
+            UpdatePhonePreviewControls();
             MarkRunSettingsDirty();
         }
 

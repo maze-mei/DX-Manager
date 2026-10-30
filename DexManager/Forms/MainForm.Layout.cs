@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -96,6 +96,7 @@ namespace DexManager.Forms
                 _useHidMouseBox,
                 _forceStopAppBox,
                 _flexDisplayBox,
+                _hidePhonePreviewBox,
                 _stayAwakeBox
             })
             {

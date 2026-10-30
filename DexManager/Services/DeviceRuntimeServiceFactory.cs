@@ -91,10 +91,6 @@ namespace DexManager.Services
                 _launchCoordinator,
                 scrcpy.RuntimeInfo,
                 _logService);
-            Func<bool> canTurnScreenOff = () => !scrcpy.RequiresPhoneScreenOn && !singleWindows.RequiresPhoneScreenOn;
-            scrcpy.CanTurnPhoneScreenOff = canTurnScreenOff;
-            singleWindows.CanTurnPhoneScreenOff = canTurnScreenOff;
-            screenOff.CanTurnPhoneScreenOff = canTurnScreenOff;
             var virtualDisplay = new VirtualDisplayService(
                 _adbService,
                 _logService);
@@ -107,6 +103,11 @@ namespace DexManager.Services
                 _logService,
                 _settings,
                 _runtimeSessions);
+            Func<bool> canTurnScreenOff = () => !dex.RequiresPhoneScreenOn &&
+                !scrcpy.RequiresPhoneScreenOn && !singleWindows.RequiresPhoneScreenOn;
+            scrcpy.CanTurnPhoneScreenOff = canTurnScreenOff;
+            singleWindows.CanTurnPhoneScreenOff = canTurnScreenOff;
+            screenOff.CanTurnPhoneScreenOff = canTurnScreenOff;
             var services = new DeviceRuntimeServiceSet(
                 fileTransfers,
                 phoneTransfers,

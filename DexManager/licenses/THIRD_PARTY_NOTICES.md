@@ -5,6 +5,19 @@ listed below are distributed without modification and remain under their
 respective licenses. DX Manager's MIT License does not replace or alter those
 licenses.
 
+## Experimental loopback DeX helper
+
+`tools/loopback/dxm-loopback.jar` is a modified Android helper based on the
+Samsung loopback activation and RTSP negotiation method in ScrcpyDeX.
+Copyright 2026 Aureliano Peixoto and ScrcpyDeX Contributors.
+DX Manager hidden-preview integration and session-lifecycle modifications:
+Copyright 2026 asyouplz (https://github.com/asyouplz).
+It is distributed under Apache License 2.0, separately from DX Manager's MIT
+license. The helper directory includes `LICENSE`, `NOTICE`, and its checksum;
+source and build instructions are in `DXLoopback/` in this repository.
+
+Reference project: https://github.com/Aureliano021/ScrcpyDex
+
 ## scrcpy
 
 DX Manager includes and uses scrcpy 5.0.1 to display and control Android

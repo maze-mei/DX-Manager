@@ -1,5 +1,10 @@
 # Known issues and limits
 
+## Experimental phone-preview hiding
+
+The Windows option is off by default. Samsung Android 12/API 31 and the required internal APIs are checked, but those checks do not prove model/One UI compatibility. Hidden-preview operation and real disconnect completion time remain physically unverified. The 15-second timeout starts cleanup; it is not a guaranteed firmware completion deadline. No automatic overlay fallback is performed after failure. A second dummy wireless stream may affect heat/battery/audio and requires testing. Existing Companion permissions and the normal overlay default are unchanged.
+
+
 ## Current scope — 2026-10-24
 
 Windows2.5.0 / scrcpy5.0.1 / official Companion2.1.6. See [FAQ](FAQ_EN.md), [한국어 FAQ](FAQ_KO.md) and [exact verification](VERIFICATION_v2.5.0.md).

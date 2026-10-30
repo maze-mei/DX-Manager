@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -105,6 +105,14 @@ namespace DexManager.Forms
         private async Task StartDexAsync()
         {
             if (_exitInProgress || _orchestrator.IsShutdownRequested) return;
+            var orchestrator = _orchestrator;
+            var context = _selectedDeviceContext;
+            if (orchestrator.IsRunning || orchestrator.IsBusy ||
+                _phonePreviewPendingStarts.ContainsKey(orchestrator)) return;
+            var generation = context == null ? -1 : context.ConnectionGeneration;
+            var serial = GetSelectedLaunchSerial();
+            var appDeviceIdentity = _selectedDeviceIdentity;
+            var launchDirtyState = _modeSettingsDirty;
             try
             {
                 if (_selectedMode == 0) ApplyRunSettings(false);
@@ -126,15 +134,12 @@ namespace DexManager.Forms
                 Color.DarkOrange,
                 LocalizationService.Get("Main.DexStarting"),
                 LocalizationService.Get("Main.DexPreparing"));
+            BeginPhonePreviewStart(orchestrator);
             try
             {
-                var serial = GetSelectedLaunchSerial();
-                var appDeviceIdentity = _selectedDeviceIdentity;
-                var launchContext = _selectedDeviceContext;
-                var orchestrator = _orchestrator;
-                var launchDirtyState = _modeSettingsDirty;
                 var launchSettings = CaptureSelectedRunSettings();
                 var scrcpySettings = launchSettings.Scrcpy;
+                if (context != null) await context.DexCleanupTask;
                 if (!await ConfirmExperimentalFrameRateAsync(scrcpySettings.MaxFps)) return;
                 if (string.IsNullOrWhiteSpace(serial))
                 {
@@ -142,19 +147,20 @@ namespace DexManager.Forms
                         LocalizationService.Get(
                             "Error.Dex.NoAuthorizedDevice"));
                 }
-                if (!await WaitForDeviceStartDelayAsync(serial)) return;
+                if (!await WaitForDeviceStartDelayAsync(serial, context, generation)) return;
 
-                if (scrcpySettings.TurnScreenOff)
+                if (scrcpySettings.TurnScreenOff && !launchSettings.VirtualDisplay.HidePhonePreview)
                     RememberManagedSerial(serial);
-                if (launchContext != null)
+                if (context != null)
                 {
-                    launchContext.RequireManualStartAfterTransportLoss = false;
-                    launchContext.AutoStartBlockedSerial = string.Empty;
-                    launchContext.PendingSessionStarts++;
+                    context.RequireManualStartAfterTransportLoss = false;
+                    context.AutoStartBlockedSerial = string.Empty;
+                    context.PendingSessionStarts++;
                 }
                 try { await orchestrator.StartAsync(serial, launchSettings, true); }
-                finally { if (launchContext != null) launchContext.PendingSessionStarts--; }
-                if (_exitInProgress || !orchestrator.IsRunning) return;
+                finally { if (context != null) context.PendingSessionStarts--; }
+                if (_exitInProgress || !orchestrator.IsRunning ||
+                    (context != null && !IsContextLaunchCurrent(context, serial, generation))) return;
                 RememberStartedApp(
                     appDeviceIdentity,
                     scrcpySettings.StartAppPackage,
@@ -163,17 +169,27 @@ namespace DexManager.Forms
             }
             catch (Exception ex)
             {
-                if (!_exitInProgress)
+                if (!_exitInProgress &&
+                    ReferenceEquals(orchestrator, _orchestrator))
                 {
                     ShowError(
                         LocalizationService.Get("Error.StartDex"),
                         ex);
                 }
+                else
+                {
+                    _logService.Error(LocalizationService.Get(
+                        "Error.StartDex"), ex);
+                }
             }
             finally
             {
-                UpdateRunningState();
-                UpdatePhoneScreenWakeSchedule();
+                EndPhonePreviewStart(orchestrator);
+                if (!_exitInProgress && !IsDisposed)
+                {
+                    UpdateRunningState();
+                    UpdatePhoneScreenWakeSchedule();
+                }
             }
         }
 
@@ -235,8 +251,10 @@ namespace DexManager.Forms
                 var serial = GetSelectedLaunchSerial();
                 var appDeviceIdentity = _selectedDeviceIdentity;
                 var launchContext = _selectedDeviceContext;
+                var launchGeneration = launchContext == null ? -1 : launchContext.ConnectionGeneration;
                 var service = _singleWindowService;
                 var launchDirtyState = _modeSettingsDirty;
+                if (launchContext != null) await launchContext.DexCleanupTask;
                 if (!await ConfirmExperimentalFrameRateAsync(settings.MaxFps)) return;
                 if (string.IsNullOrWhiteSpace(serial))
                 {
@@ -244,7 +262,7 @@ namespace DexManager.Forms
                         LocalizationService.Get(
                             "Error.Dex.NoAuthorizedDevice"));
                 }
-                if (!await WaitForDeviceStartDelayAsync(serial)) return;
+                if (!await WaitForDeviceStartDelayAsync(serial, launchContext, launchGeneration)) return;
                 if (settings.TurnScreenOff)
                     RememberManagedSerial(serial);
                 if (launchContext != null)

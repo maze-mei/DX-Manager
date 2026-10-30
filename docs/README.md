@@ -8,6 +8,8 @@ Publication was authorized on 2026-10-25. See the [release notes](RELEASE_NOTES_
 
 ### Start here
 
+- [Experimental phone-preview hiding — contributed by asyouplz](PHONE_PREVIEW_MODE.md)
+
 - [Project overview and download](../README.md)
 - [English user guide](USER_GUIDE_EN.md) · [한국어 사용 설명서](USER_GUIDE_KO.md)
 - [English FAQ —35 questions](FAQ_EN.md) · [한국어 FAQ —35개](FAQ_KO.md)

@@ -1,5 +1,12 @@
 # Technical notes
 
+## Windows hidden-preview lease
+
+`VirtualDisplayLease.IsLoopback` and `LoopbackSessionId` distinguish the helper-owned lease from the overlay workflow. `LoopbackDexService` verifies the bundled JAR hash and stable physical device identity before and after transfer. It holds one explicit-serial channel and token per session, sends 3-second heartbeats, and logs unconfirmed cleanup separately from process exit. Start generations cancel pending work; the next same-phone start waits for previous cleanup. Hidden DeX and 120 FPS share screen-on priority inside that phone's runtime.
+
+`Build-DexLoopback.*` pins D8, uses JDK 17 and rebuilds the attributed helper reproducibly. `Verify-PhonePreviewBuild.ps1` and the Windows workflow exercise linked source, native settings/power/UI and package allowlists. See PHONE_PREVIEW_MODE.md. Contribution: asyouplz.
+
+
 ## Current Windows architecture — 2026-10-25
 
 Baseline: code checkpoint `ccc10a9`, Windows2.5.0, .NET Framework4.6.2 x64, scrcpy5.0.1 and official Companion2.1.6/code13.

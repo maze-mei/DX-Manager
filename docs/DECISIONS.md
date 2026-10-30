@@ -1,5 +1,10 @@
 # Decision Log
 
+## Experimental hidden phone preview — 2026-10-30
+
+Keep the existing overlay mode as the default. The new per-phone option requests a Samsung loopback wireless DeX display while scrcpy continues to carry PC video/input/audio. A separate authenticated helper lease permits cleanup to start after a 15-second heartbeat loss even when ADB is unavailable. This uses Samsung internal APIs and requires per-firmware physical testing. Integrate the helper under Apache-2.0 notices without changing the project license or Companion permissions. Feature integration and lifecycle controls are contributed by asyouplz.
+
+
 ## 2026-10-01 Store UI fidelity correction
 
 메이님의 지시로 일부 GitHub 설정 UI를 섞었던 9월 30일 시도를 Store 소스 기준으로

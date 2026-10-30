@@ -169,6 +169,34 @@ namespace DexManager.Forms
             _useHidMouseBox.CheckedChanged += changed;
             _forceStopAppBox.CheckedChanged += changed;
             _flexDisplayBox.CheckedChanged += changed;
+            _hidePhonePreviewBox.CheckedChanged += delegate
+            {
+                if (_loadingRunSettings) return;
+                var previous = GetSelectedDeviceRunSettings()
+                    .VirtualDisplay.HidePhonePreview;
+                var requested = _hidePhonePreviewBox.Checked;
+                try
+                {
+                    // Persist only this choice immediately. A reconnect may
+                    // auto-start before the next Start/Save-mode action.
+                    _settingsService.UpdateAndSave(_settings, delegate(AppSettings settings)
+                    {
+                        GetDeviceRunSettings(settings, _selectedDeviceIdentity)
+                            .VirtualDisplay.HidePhonePreview = requested;
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _loadingRunSettings = true;
+                    _hidePhonePreviewBox.Checked = previous;
+                    _loadingRunSettings = false;
+                    UpdatePhonePreviewControls();
+                    ShowError(LocalizationService.Get("Error.ApplyLaunchSettings"), ex);
+                    return;
+                }
+                UpdatePhonePreviewControls();
+                MarkRunSettingsDirty();
+            };
             _additionalArgumentsBox.TextChanged += changed;
             _startAppBox.SelectedIndexChanged += changed;
         }
@@ -184,6 +212,71 @@ namespace DexManager.Forms
 
             _modeSettingsDirty[_selectedMode] = true;
             UpdateApplySettingsLink();
+        }
+
+        private void UpdatePhonePreviewControls()
+        {
+            if (IsDisposed || Disposing) return;
+            var isDex = _selectedMode == 0;
+            var hidePreview = isDex && _hidePhonePreviewBox.Checked;
+            _hidePhonePreviewBox.Visible = isDex;
+            _hidePhonePreviewBox.Enabled = isDex &&
+                !string.IsNullOrWhiteSpace(_selectedDeviceIdentity) &&
+                !PhysicalDeviceRegistry.IsTemporaryIdentity(_selectedDeviceIdentity) &&
+                !_exitInProgress && !_orchestrator.IsRunning &&
+                !_orchestrator.IsBusy &&
+                !_phonePreviewPendingStarts.ContainsKey(_orchestrator);
+
+            // Keep the checkbox value so returning to the existing overlay
+            // mode restores the user's preference; only the DeX launch ignores it.
+            _turnScreenOffBox.Enabled = !hidePreview && !FrameRateRules.RequiresScreenOn(GetSelectedMaxFps());
+            _turnScreenOffBox.Text = LocalizationService.Get(
+                hidePreview
+                    ? "Main.ScreenOff.HiddenPreview"
+                    : "Main.ScreenOff");
+            _deviceTabToolTip.SetToolTip(
+                _turnScreenOffBox,
+                hidePreview
+                    ? LocalizationService.Get("Main.ScreenOff.HiddenPreview.Help")
+                    : string.Empty);
+            _resolutionBox.Enabled = !hidePreview;
+            _dpiBox.Enabled = !hidePreview;
+            _widthBox.Enabled = !hidePreview && IsCustomResolutionSelected();
+            _heightBox.Enabled = !hidePreview && IsCustomResolutionSelected();
+            foreach (var control in new Control[]
+            {
+                _resolutionBox, _dpiBox, _widthBox, _heightBox,
+                _resolutionLabel, _dpiLabel
+            })
+            {
+                _deviceTabToolTip.SetToolTip(
+                    control,
+                    hidePreview
+                        ? LocalizationService.Get("Main.HidePhonePreview.ResolutionHelp")
+                        : string.Empty);
+            }
+        }
+
+        private void BeginPhonePreviewStart(DexOrchestrator orchestrator)
+        {
+            int count;
+            _phonePreviewPendingStarts.TryGetValue(orchestrator, out count);
+            _phonePreviewPendingStarts[orchestrator] = count + 1;
+            UpdatePhonePreviewControls();
+            if (!IsDisposed && !Disposing && _selectedMode == 0 &&
+                ReferenceEquals(orchestrator, _orchestrator))
+                _startButton.Enabled = false;
+        }
+
+        private void EndPhonePreviewStart(DexOrchestrator orchestrator)
+        {
+            int count;
+            if (_phonePreviewPendingStarts.TryGetValue(orchestrator, out count))
+            {
+                if (count <= 1) _phonePreviewPendingStarts.Remove(orchestrator);
+                else _phonePreviewPendingStarts[orchestrator] = count - 1;
+            }
+            UpdatePhonePreviewControls();
         }
 
         private void UpdateApplySettingsLink()

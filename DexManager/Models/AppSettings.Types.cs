@@ -179,6 +179,7 @@ namespace DexManager.Models
         [DataMember(Order = 5)] public bool ReuseExistingDisplay { get; set; }
         [DataMember(Order = 6)] public int CustomWidth { get; set; }
         [DataMember(Order = 7)] public int CustomHeight { get; set; }
+        [DataMember(Order = 8)] public bool HidePhonePreview { get; set; }
     }
 
     [DataContract]
@@ -310,4 +311,3 @@ namespace DexManager.Models
         AlwaysOnStartup = 2
     }
 }
-

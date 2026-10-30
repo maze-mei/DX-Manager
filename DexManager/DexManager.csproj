@@ -195,6 +195,8 @@
     <Compile Include="Services\LogService.cs" />
     <Compile Include="Services\AdbService.cs" />
     <Compile Include="Services\AdbMdnsOutputParser.cs" />
+    <Compile Include="Services\LoopbackDexService.cs" />
+    <Compile Include="Services\LoopbackDexProtocol.cs" />
     <Compile Include="Services\AdbCommandBuilder.cs" />
     <Compile Include="Services\AutoHideService.cs" />
     <Compile Include="Services\AutoStartService.cs" />
@@ -305,6 +307,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="tools\adb\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\tools\loopback\dxm-loopback.jar;..\tools\loopback\dxm-loopback.jar.sha256;..\tools\loopback\LICENSE;..\tools\loopback\NOTICE">
+      <Link>tools\loopback\%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

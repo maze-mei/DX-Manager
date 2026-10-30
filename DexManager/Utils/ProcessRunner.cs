@@ -55,10 +55,28 @@ namespace DexManager.Utils
 
         public void BlockNewProcessesForWindowsShutdown()
         {
-            if (Interlocked.Exchange(ref _shutdownRequested, 1) != 0)
-                return;
+            lock (_lifecycleSync)
+            {
+                if (Interlocked.Exchange(ref _shutdownRequested, 1) != 0)
+                    return;
+            }
             _logService.Info(LocalizationService.Get(
                 "Log.Process.ShutdownRequested"));
+        }
+
+        internal void StartPersistentProcess(Process process)
+        {
+            lock (_lifecycleSync)
+            {
+                if (IsShutdownRequested) throw new OperationCanceledException();
+                process.Start();
+                _activeProcesses.Add(process);
+            }
+        }
+
+        internal void ForgetPersistentProcess(Process process)
+        {
+            lock (_lifecycleSync) _activeProcesses.Remove(process);
         }
 
         public ProcessResult Run(

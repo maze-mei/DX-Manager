@@ -79,6 +79,7 @@ namespace DexManager.Forms
         private readonly CheckBox _useHidMouseBox;
         private readonly CheckBox _forceStopAppBox;
         private readonly CheckBox _flexDisplayBox;
+        private readonly CheckBox _hidePhonePreviewBox;
         private readonly ThemedTextControl _additionalArgumentsBox;
         private readonly ThemedSelectControl _startAppBox;
         private readonly Button _loadAppsButton;
@@ -107,6 +108,8 @@ namespace DexManager.Forms
         private int _phoneScreenWakeSuppression;
         private int _screenOffReapplyGeneration;
         private bool _loadingRunSettings;
+        private readonly Dictionary<DexOrchestrator, int> _phonePreviewPendingStarts =
+            new Dictionary<DexOrchestrator, int>();
         private bool _resolutionSelectionInitialized;
         private bool _resolutionWasCustom;
         private readonly object _stayAwakeTaskLock = new object();
@@ -384,6 +387,13 @@ namespace DexManager.Forms
                 LocalizationService.Get("Main.StayAwake"),
                 392,
                 463);
+            _hidePhonePreviewBox = CreateOption(
+                LocalizationService.Get("Main.HidePhonePreview"),
+                392,
+                497);
+            _deviceTabToolTip.SetToolTip(
+                _hidePhonePreviewBox,
+                LocalizationService.Get("Main.HidePhonePreview.Help"));
 
             _startAppBox = CreateCustomSelect(132, 502, 313);
             _startAppBox.SelectionChangeCommitted +=
@@ -486,6 +496,7 @@ namespace DexManager.Forms
             Controls.Add(_useHidMouseBox);
             Controls.Add(_forceStopAppBox);
             Controls.Add(_flexDisplayBox);
+            Controls.Add(_hidePhonePreviewBox);
             Controls.Add(_stayAwakeBox);
             Controls.Add(_startAppBox);
             Controls.Add(_loadAppsButton);

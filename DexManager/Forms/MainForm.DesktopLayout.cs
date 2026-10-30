@@ -152,8 +152,8 @@ namespace DexManager.Forms
                 _heightLabel, _heightBox, _dpiLabel, _dpiBox, _bitRateLabel, _bitRateBox, _maxFpsLabel, _maxFpsBox })
                 control.Parent = _displayCard;
             var options = new[] { _turnScreenOffBox, _useHidKeyboardBox, _useHidMouseBox,
-                _forceStopAppBox, _flexDisplayBox, _stayAwakeBox };
-            var symbols = new[] { UiSymbol.Phone, UiSymbol.Keyboard, UiSymbol.Mouse, UiSymbol.Close, UiSymbol.Display, UiSymbol.Moon };
+                _forceStopAppBox, _flexDisplayBox, _stayAwakeBox, _hidePhonePreviewBox };
+            var symbols = new[] { UiSymbol.Phone, UiSymbol.Keyboard, UiSymbol.Mouse, UiSymbol.Close, UiSymbol.Display, UiSymbol.Moon, UiSymbol.Display };
             for (var index = 0; index < options.Length; index++)
             {
                 options[index].Parent = _optionsCard;
@@ -162,6 +162,9 @@ namespace DexManager.Forms
                 _deviceTabToolTip.SetToolTip(options[index], options[index].Text);
                 options[index].Text = System.Text.RegularExpressions.Regex.Replace(options[index].Text, @"\s+\(-[^)]*\)$", string.Empty);
             }
+            _hidePhonePreviewBox.Text = LocalizationService.Get("Main.HidePhonePreview.Short");
+            _deviceTabToolTip.SetToolTip(_hidePhonePreviewBox,
+                LocalizationService.Get("Main.HidePhonePreview.Help"));
             foreach (var control in new Control[] { _startAppBox, _loadAppsButton, _appProfileButton,
                 _advancedToggle, _additionalArgumentsBox }) control.Parent = _appCard;
             ((ThemedButton)_loadAppsButton).Symbol = UiSymbol.Refresh;
@@ -254,6 +257,7 @@ namespace DexManager.Forms
             Place(_forceStopAppBox, 36 + optionWidth, 96, optionWidth, 40);
             Place(_flexDisplayBox, 36 + optionWidth, 143, optionWidth, 40);
             Place(_stayAwakeBox, 36 + optionWidth, _selectedMode == 0 ? 143 : 190, optionWidth, 40);
+            Place(_hidePhonePreviewBox, 36 + optionWidth, 190, optionWidth, 40);
             LayoutStartAppControls(_selectedMode != 0);
             Place(_advancedToggle, 28, 132, 170, 28);
             Place(_additionalArgumentsBox, 24, 168, width - 48, 40);

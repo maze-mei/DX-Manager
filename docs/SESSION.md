@@ -1,5 +1,18 @@
 # Session Handoff
 
+## 2026-10-30 — experimental Windows phone-preview proposal by asyouplz
+
+### English
+
+Prepared an opt-in, per-phone hidden DeX preview feature on upstream v2.5.0. Feature integration and regression tests are contributed by [asyouplz](https://github.com/asyouplz); ScrcpyDeX original copyright and Apache-2.0 notices remain in the helper source and bundle. The attributed helper is reproducibly rebuilt and hash-pinned.
+
+Local checks passed: net462 x64 cross-compilation with zero warnings/errors, 29 linked Windows-source regression tests and 18 Java host checks; the native WinForms fixture compiles. The added Windows workflow builds the original solution, runs foundation/120 FPS/feature tests and independently inspects the package. Physical Galaxy/One UI behavior, actual disconnect completion time and Windows 7/11 hardware acceptance remain unverified. This proposal changes no release version, update channel, Companion APK or Mac implementation and publishes no release.
+
+### 한국어
+
+asyouplz가 기여한 Windows 휴대폰 미리보기 숨김 선택 기능을 제안한다. 기본값은 꺼짐이며 기기별로 저장한다. 원저작자 표기는 유지하고 기여 표기는 문서·NOTICE와 커밋에 남긴다. 실제 Galaxy와 종료 시간은 실기 확인 항목으로 유지한다.
+
+
 ## 2026-10-25 authorized Windows 2.5.0 publication
 
 The maintainer authorized the local final commit and GitHub upload. The final EXE has a maintainer-reported clean scan.

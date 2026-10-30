@@ -1,0 +1,65 @@
+name: Windows phone-preview validation
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'feat/windows-hide-phone-preview']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-build-and-tests:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Prepare .NET Framework 4.6.2 reference assemblies
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'dxm-net462.nupkg'
+          $destination = Join-Path $env:RUNNER_TEMP 'dxm-net462'
+          Invoke-WebRequest 'https://api.nuget.org/v3-flatcontainer/microsoft.netframework.referenceassemblies.net462/1.0.3/microsoft.netframework.referenceassemblies.net462.1.0.3.nupkg' -OutFile $archive
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne 'ee692a845743500910855d4c330ca6e9ef87c16e16f740e4474d187185d66e21') {
+            throw 'Unexpected reference assembly package checksum.'
+          }
+          [IO.Compression.ZipFile]::ExtractToDirectory($archive, $destination)
+          "DXM_TARGET_FRAMEWORK_ROOT=$destination\build" >> $env:GITHUB_ENV
+      - name: Build and verify Windows application and fixtures
+        shell: pwsh
+        run: ./scripts/Verify-PhonePreviewBuild.ps1
+      - name: Build and independently inspect portable package
+        shell: pwsh
+        run: |
+          $info = [Diagnostics.FileVersionInfo]::GetVersionInfo((Resolve-Path DexManager/bin/Release/DXManager.exe))
+          $version = '{0}.{1}.{2}' -f $info.FileMajorPart, $info.FileMinorPart, $info.FileBuildPart
+          ./scripts/Package-Release.ps1 -SkipBuild -Version $version -OutputRoot dist/phone-preview-ci -PackageDirectoryName "DX Manager v$version"
+          ./scripts/Verify-PhonePreviewPackage.ps1
+      - name: Upload phone-preview candidate and checksum
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: phone-preview-windows-${{ github.sha }}
+          path: |
+            dist/phone-preview-ci/**/*.zip
+            dist/phone-preview-ci/**/*.zip.sha256
+            dist/phone-preview-ci/**/package-verification.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: phone-preview-evidence-${{ github.sha }}
+          path: |
+            .build-tools/phone-preview-validation/verification-summary.json
+            .build-tools/phone-preview-validation/**/*.log
+            .build-tools/phone-preview-validation/**/*.png
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14
