@@ -14,7 +14,7 @@ using DexManager.Models;
 using DexManager.Services;
 using DexManager.Utils;
 
-internal static class ExperimentalFrameRateIntegrationTests
+internal static partial class ExperimentalFrameRateIntegrationTests
 {
     private static int checks;
     private static readonly BindingFlags Hidden = BindingFlags.NonPublic | BindingFlags.Instance;
@@ -81,32 +81,7 @@ internal static class ExperimentalFrameRateIntegrationTests
         FrameRateRules.Normalize(legacy); legacy.MaxFps = 60; FrameRateRules.Normalize(legacy);
         Check(legacy.TurnScreenOff && legacy.TurnScreenOffBeforeHighFps == null, "legacy 120 without backup restores documented default");
     }
-    private static void UpdateHistory()
-    {
-        var root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "notice-tests"); Directory.CreateDirectory(root);
-        var state = Path.Combine(root, "update-notice.json"); if (File.Exists(state)) File.Delete(state);
-        var notice = new PortableUpdateNoticeService(root, new Version(2,5,0));
-        Check(!notice.ShouldShowNotice(false), "fresh install skips release notes");
-        Check(notice.ShouldShowNotice(true), "old consent without tracker identifies an upgrade");
-        string error;
-        Check(notice.TryMarkCurrentVersionSeen(out error), "release-notice checkpoint saved atomically");
-        Check(!notice.ShouldShowNotice(true), "same version does not repeat");
-        var lower = new PortableUpdateNoticeService(root, new Version(2,0,1));
-        Check(!lower.ShouldShowNotice(true) && lower.TryMarkCurrentVersionSeen(out error) && !notice.ShouldShowNotice(true), "downgrade never lowers checkpoint");
-        Check(new PortableUpdateNoticeService(root,new Version(2,5,1)).ShouldShowNotice(true), "newer version shows notes");
-        File.WriteAllText(state,"invalid"); Check(notice.ShouldShowNotice(true), "malformed state safely retries existing-user notes");
-        var blocked = Path.Combine(root,"blocked"); File.WriteAllText(blocked,"fixture");
-        var failure = new PortableUpdateNoticeService(blocked,new Version(2,5,0));
-        Check(!failure.TryMarkCurrentVersionSeen(out error) && error != null && failure.ShouldShowNotice(true), "write failure remains retryable");
-        var onboardingRoot = Path.Combine(root,"onboarding"); Directory.CreateDirectory(onboardingRoot);
-        var oldConsent = Path.Combine(onboardingRoot,"onboarding.json"); if(File.Exists(oldConsent))File.Delete(oldConsent);
-        File.WriteAllText(Path.Combine(onboardingRoot,"settings.json"),"{}");
-        var onboarding = new PortableOnboardingService(onboardingRoot);
-        Check(!onboarding.HasAcceptedAnyFirstRunNotice, "settings file alone is not an existing installation");
-        File.WriteAllText(Path.Combine(onboardingRoot,"onboarding.json"),"{\"FirstRunNoticeVersion\":1}");
-        Check(onboarding.HasAcceptedAnyFirstRunNotice && onboarding.RequiresNotice(), "old safety consent counts before new consent");
-    }
-    private static bool Confirm(MainForm form, bool accept, string capture, Func<Task<bool>> operation = null)
+    private static bool Confirm(MainForm form, bool accept, string capture, Func<Task<bool>> operation = null, string requiredText = null)
     {
         Exception failure = null; bool handled = false;
         using (var timer = new Timer { Interval = 40 })
@@ -123,7 +98,7 @@ internal static class ExperimentalFrameRateIntegrationTests
                     Check(((Control)dialog.CancelButton).Focused, "Cancel actually owns initial keyboard focus");
                     var text = string.Join("\n", Controls(dialog).Select(c => c.Text));
                     Check(text.Contains("OLED") && text.Contains("120") && text.Length > 250, "warning includes full risk information");
-                    using (var bitmap = new Bitmap(dialog.Width,dialog.Height)) { dialog.DrawToBitmap(bitmap,new Rectangle(Point.Empty,bitmap.Size)); bitmap.Save(capture,ImageFormat.Png); }
+                    if(requiredText!=null)Check(text.Contains(requiredText),"saved120 start consent includes the native single-window limitation");
                 }
                 catch (Exception exception) { failure = exception; }
                 dialog.DialogResult = accept ? DialogResult.OK : DialogResult.Cancel; dialog.Close();
@@ -136,7 +111,7 @@ internal static class ExperimentalFrameRateIntegrationTests
     }
     private static void RuntimeAndUi()
     {
-        var log = new LogService(); var settings = AppSettings.CreateDefault();
+        var log = new LogService(); var settings = AppSettings.CreateDefault(); settings.VirtualDisplay.ActivationMode=DexDisplayMode.LegacyOverlay;
         var service = new SettingsService(log); var runner = new ProcessRunner(log); runner.BlockNewProcessesForWindowsShutdown();
         var adb = new AdbService("unused-adb.exe",1000,runner,log); var path = new PathService(service,log,runner);
         var wifi = new WirelessAdbService(adb,service,settings,log); var registry = new PhysicalDeviceRegistry();
@@ -154,6 +129,10 @@ internal static class ExperimentalFrameRateIntegrationTests
             var shown=typeof(MainForm).GetMethod("MainForm_Shown",Hidden);
             form.Shown-=(EventHandler)Delegate.CreateDelegate(typeof(EventHandler),form,shown);
             form.Show(); Application.DoEvents();
+            V3SettingsAndTransitions(form,settings,service,log);
+            V3SingleWindowNotices(form,settings,runtime,other);
+            V3AiSetupNotices(form,settings);
+            V3EmbeddedDocumentation(form,settings);
             foreach (var language in new[] { AppLanguage.English,AppLanguage.Korean })
             foreach (var theme in new[] { AppTheme.Light,AppTheme.Dark })
             {
@@ -170,33 +149,9 @@ internal static class ExperimentalFrameRateIntegrationTests
                 }
                 selected.SetValue(fps,2,null);
                 var mainCapture=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"120-main-"+language+"-"+theme+".png");
-                using(var bitmap=new Bitmap(form.Width,form.Height)) { form.DrawToBitmap(bitmap,new Rectangle(Point.Empty,bitmap.Size));bitmap.Save(mainCapture,ImageFormat.Png); }
                 var output=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"120-"+language+"-"+theme+".png");
                 Check(!Confirm(form,false,output),"Cancel blocks 120 start");
                 Check(Confirm(form,true,output),"fresh confirmation is required on next start");
-                bool foundNotes=false;Exception noteFailure=null;
-                using(var timer=new Timer {Interval=30})
-                {
-                    timer.Tick+=delegate
-                    {
-                        if(foundNotes)return;
-                        var dialog=Application.OpenForms.Cast<Form>().FirstOrDefault(x=>x.GetType().Name=="DesktopDialog");
-                        if(dialog==null)return;foundNotes=true;
-                        try
-                        {
-                            var text=string.Join("\n",Controls(dialog).Select(x=>x.Text));
-                            Check(text.Contains("2.5.0") && text.Contains("2.1.6") && !text.Contains("{0}"),"local notes resolve product/APK versions");
-                            using(var bitmap=new Bitmap(dialog.Width,dialog.Height)){dialog.DrawToBitmap(bitmap,new Rectangle(Point.Empty,bitmap.Size));bitmap.Save(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"notes-"+language+"-"+theme+".png"),ImageFormat.Png);}
-                        }
-                        catch(Exception exception){noteFailure=exception;}
-                        dialog.DialogResult=DialogResult.OK;dialog.Close();
-                    };
-                    var noteRoot=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"ui-notes-"+language+"-"+theme);Directory.CreateDirectory(noteRoot);
-                    var noteState=Path.Combine(noteRoot,"update-notice.json");if(File.Exists(noteState))File.Delete(noteState);
-                    timer.Start();Call(form,"ShowLocalUpdateNotice",true,noteRoot);timer.Stop();
-                    if(noteFailure!=null)throw noteFailure;
-                    Check(foundNotes && !new PortableUpdateNoticeService(noteRoot).ShouldShowNotice(true),"normal update-note dismissal saves checkpoint");
-                }
             }
             var fpsControl=Field(form,"_maxFpsBox");var fpsSelection=fpsControl.GetType().GetProperty("SelectedIndex");
             var screenControl=(CheckBox)Field(form,"_turnScreenOffBox");
@@ -230,6 +185,12 @@ internal static class ExperimentalFrameRateIntegrationTests
             ConsentRequired(()=>runtime.Dex.StartAsync("phone-A",new DeviceRunSettingsProfile{Scrcpy=high.Scrcpy,VirtualDisplay=high.VirtualDisplay}).GetAwaiter().GetResult(),"DeX core blocks unconfirmed start before ADB/overlay");
             ConsentRequired(()=>runtime.Scrcpy.Start(high.Scrcpy,1,"phone-A"),"scrcpy core blocks unconfirmed 120");
             var slot=high.SingleWindowSlots[0];slot.MaxFps=120;slot.StartAppPackage="test.app";
+            Check(runtime.Scrcpy.BuildArguments(high.Scrcpy,1,"phone-A").Contains("--hwdec=auto"),"DeX includes the pinned5.x hardware-decoding default");
+            Check(((string)Call(runtime.SingleWindows,"BuildArguments",1,slot,"phone-A")).Contains("--hwdec=auto"),"single-window includes the same pinned5.x decoding default");
+            high.Scrcpy.AdditionalArguments="--hwdec=d3d11va";slot.AdditionalArguments="--hwdec=d3d11va";
+            Check(!runtime.Scrcpy.BuildArguments(high.Scrcpy,1,"phone-A").Contains("--hwdec=auto"),"DeX preserves an explicit hardware-decoding override");
+            Check(!((string)Call(runtime.SingleWindows,"BuildArguments",1,slot,"phone-A")).Contains("--hwdec=auto"),"single-window preserves an explicit decoding override");
+            high.Scrcpy.AdditionalArguments="";slot.AdditionalArguments="";
             ConsentRequired(()=>runtime.SingleWindows.Start(1,slot,"phone-A"),"single-window core blocks unconfirmed start before ADB/file checks");
             ConsentRequired(()=>runtime.SingleWindows.Restart(1,slot),"restart refuses unconfirmed 120 before stopping old window");
             foreach (var argument in new[]{"--max-fps=120","--max-fps 120","--max-f=120","-S","--no-power-on"})
@@ -277,8 +238,8 @@ internal static class ExperimentalFrameRateIntegrationTests
         try
         {
             Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
-            PersistedSettings();UpdateHistory();RuntimeAndUi();
-            Console.WriteLine("Experimental FPS/release notice checks passed: "+checks);return 0;
+            PersistedSettings(); V3DefaultsAndLogs();RuntimeAndUi();
+            Console.WriteLine("Experimental FPS/v3 policy checks passed: "+checks);return 0;
         }
         catch(Exception exception) { Console.WriteLine(exception);return 1; }
     }

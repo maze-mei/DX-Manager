@@ -5,10 +5,13 @@ using System.Text;
 
 namespace DexManager.Services
 {
-    public sealed class LogService
+    public enum LogEntryKind { General, Command, Response, Progress, ToolOutput }
+
+    public sealed partial class LogService : IDisposable
     {
         private readonly object _syncRoot = new object();
         private readonly List<string> _sessionEntries = new List<string>();
+        private readonly List<LogEventArgs> _sessionEvents = new List<LogEventArgs>();
         private readonly HashSet<string> _onceKeys =
             new HashSet<string>(StringComparer.Ordinal);
         private string _logDirectory;
@@ -38,6 +41,19 @@ namespace DexManager.Services
                 return _sessionEntries.ToArray();
             }
         }
+
+        public LogEventArgs[] GetSessionEvents() {
+            lock (_syncRoot) return _sessionEvents.ToArray();
+        }
+        public void Command(string message) { Write("INFO",message,null,LogEntryKind.Command); }
+        public void Response(string message) { Write("INFO",message,null,LogEntryKind.Response); }
+        public void Progress(string message) { Write("INFO",message,null,LogEntryKind.Progress); }
+        public void ProgressOnce(string key,string message) {
+            if(string.IsNullOrWhiteSpace(key)){Progress(message);return;}
+            lock(_syncRoot){if(!_onceKeys.Add(key))return;}
+            Write("INFO",message,null,LogEntryKind.Progress);
+        }
+        public void ToolOutput(string level,string message) { Write(level,message,null,LogEntryKind.ToolOutput); }
 
         public void SaveSession(string path)
         {
@@ -85,7 +101,7 @@ namespace DexManager.Services
             Write("ERROR", message, exception);
         }
 
-        private void Write(string level, string message, Exception exception)
+        private void Write(string level, string message, Exception exception, LogEntryKind kind = LogEntryKind.General)
         {
             var timestamp = DateTime.Now;
             var builder = new StringBuilder();
@@ -102,16 +118,18 @@ namespace DexManager.Services
             }
 
             var line = builder.ToString();
+            var args = new LogEventArgs(timestamp,level,line,kind);
 
             lock (_syncRoot)
             {
                 _sessionEntries.Add(line);
+                _sessionEvents.Add(args);
+                PersistAutomaticLine(level, line);
             }
 
             var handler = EntryWritten;
             if (handler != null)
             {
-                var args = new LogEventArgs(timestamp, level, line);
                 foreach (var subscriber in handler.GetInvocationList())
                 {
                     try
@@ -130,13 +148,16 @@ namespace DexManager.Services
 
     public sealed class LogEventArgs : EventArgs
     {
-        public LogEventArgs(DateTime timestamp, string level, string message)
+        public LogEventArgs(DateTime timestamp, string level, string message) : this(timestamp,level,message,LogEntryKind.General) { }
+        public LogEventArgs(DateTime timestamp, string level, string message, LogEntryKind kind)
         {
+            Kind=kind;
             Timestamp = timestamp;
             Level = level;
             Message = message;
         }
 
+        public LogEntryKind Kind { get; private set; }
         public DateTime Timestamp { get; private set; }
         public string Level { get; private set; }
         public string Message { get; private set; }

@@ -41,6 +41,27 @@
             </LinearLayout>
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/home_native_dex_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="104dp"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_status_card"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:visibility="gone"
+            android:accessibilityLiveRegion="polite">
+            <FrameLayout android:layout_width="58dp" android:layout_height="58dp" android:background="@drawable/bg_icon_tile" android:padding="14dp">
+                <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:importantForAccessibility="no" android:src="@drawable/ic_monitor" />
+            </FrameLayout>
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:layout_weight="1" android:orientation="vertical">
+                <TextView android:id="@+id/home_native_dex_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/home_native_dex_running" android:textColor="@color/text_primary" android:textSize="17sp" android:textStyle="bold" />
+                <TextView android:id="@+id/home_native_dex_detail" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="@string/home_native_dex_running_detail" android:textColor="@color/text_secondary" android:textSize="13sp" />
+            </LinearLayout>
+        </LinearLayout>
+
         <LinearLayout android:layout_width="match_parent" android:layout_height="112dp" android:layout_marginTop="14dp" android:background="@drawable/bg_action_card" android:gravity="center_vertical" android:orientation="horizontal" android:padding="16dp">
             <FrameLayout android:layout_width="58dp" android:layout_height="58dp" android:background="@drawable/bg_icon_tile" android:padding="14dp"><ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:contentDescription="@string/home_cleanup_title" android:src="@drawable/ic_broom" /></FrameLayout>
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:layout_weight="1" android:orientation="vertical">

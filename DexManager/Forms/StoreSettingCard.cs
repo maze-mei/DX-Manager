@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
@@ -23,8 +23,9 @@ namespace DexManager.Forms
         public StoreSettingCard(string title, string description, UiSymbol symbol, bool nested, bool expander)
         {
             _nested=nested; _expander=expander;
-            BackColor=Color.Transparent; Margin=new Padding(nested?14:0,0,0,8);
-            HeaderSurface=new RoundedPanel {Radius=4,BackColor=Color.Transparent};
+            BackColor=Color.Transparent;
+            Margin=new Padding(nested?14:0,0,0,nested?0:8);
+            HeaderSurface=new RoundedPanel {Radius=nested?0:4,VerticalInset=nested?0:1,BackColor=Color.Transparent};
             TitleLabel=new UiLabel {Text=title,Font=UiFonts.Pixels(14),BackColor=Color.Transparent,Tag="primary"};
             DescriptionLabel=new UiLabel {Text=description,Font=UiFonts.Pixels(12),BackColor=Color.Transparent,AutoEllipsis=true};
             _icon=new SymbolView {Symbol=symbol,Visible=!nested};
@@ -33,6 +34,8 @@ namespace DexManager.Forms
             _expand.Click+=delegate {Expanded=!Expanded;};
             HeaderSurface.Controls.AddRange(new Control[]{TitleLabel,DescriptionLabel,_icon,EditorHost,_expand});
             ChildrenPanel=new FlowLayoutPanel {FlowDirection=FlowDirection.TopDown,WrapContents=false,BackColor=Color.Transparent,Visible=false,AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink};
+            // Keep the group edge spacing after moving the row insets out of the gaps.
+            ChildrenPanel.Padding=new Padding(0,1,0,9);
             Controls.AddRange(new Control[]{HeaderSurface,ChildrenPanel});
             SizeChanged+=delegate {Reflow();}; ChildrenPanel.SizeChanged+=delegate {Reflow();};
         }
@@ -61,8 +64,6 @@ namespace DexManager.Forms
             int right=_expander?58:18;
             bool stacked=WideContent || Width<left+EditorWidth+right+118;
             int textWidth=stacked?Width-left-20:Math.Max(100,Width-left-EditorWidth-right-18);
-            // Wide diagnostics results keep their button in the header, outside EditorHost.
-            // Reserve that space so the sibling labels cannot paint over the button.
             var cardId=Tag as string;
             if(cardId=="DiagnosticsDeviceCard" || (WideContent && cardId=="DiagnosticsEnvironmentCard"))
                 textWidth=Math.Max(100,textWidth-178);

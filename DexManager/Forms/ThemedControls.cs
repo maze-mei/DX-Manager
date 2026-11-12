@@ -484,6 +484,7 @@ namespace DexManager.Forms
         public Color FillColor { get; set; }
         public Color BorderColor { get; set; }
         public int SurfaceOpacity { get; set; } = 255;
+        internal int VerticalInset { get; set; } = 1;
         public Control BackdropSource { get; set; }
 
         protected override void OnPaintBackground(PaintEventArgs e)
@@ -495,7 +496,7 @@ namespace DexManager.Forms
         {
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
             var bounds = ClientRectangle;
-            bounds.Inflate(-1,-1);
+            bounds.Inflate(-1,-VerticalInset);
             bounds.Width--;
             bounds.Height--;
             if(bounds.Width<=0 || bounds.Height<=0)return;

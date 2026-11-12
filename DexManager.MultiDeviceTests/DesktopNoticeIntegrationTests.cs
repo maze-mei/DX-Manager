@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -13,11 +13,9 @@ using DexManager.Models;
 using DexManager.Services;
 using DexManager.Utils;
 
-[assembly: AssemblyInformationalVersion("2.5.0")]
 internal static class DesktopNoticeIntegrationTests
 {
     private static int checks;
-    [DllImport("user32.dll")] private static extern bool PrintWindow(IntPtr window, IntPtr destination, uint flags);
     private static readonly BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
     [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr window, int index);
     [DllImport("user32.dll")] private static extern int SetWindowLong(IntPtr window, int index, int value);
@@ -149,192 +147,6 @@ internal static class DesktopNoticeIntegrationTests
             foreach (var window in secondary) window.Dispose();
         }
     }
-
-    private sealed class UpdateMemoryStore : IUpdateCheckStateStore
-    {
-        private UpdateCheckState state = new UpdateCheckState();
-        public UpdateCheckState Load() { return state.Copy(); }
-        public bool TrySave(UpdateCheckState value) { state = value.Copy(); return true; }
-    }
-    private sealed class UpdateFixtureSource : IReleaseUpdateSource
-    {
-        private readonly ReleaseUpdate release;
-        internal UpdateFixtureSource(ReleaseUpdate value) { release = value; }
-        public Task<ReleaseUpdate> FetchLatestAsync(CancellationToken token)
-        {
-            return Task.FromResult(release);
-        }
-    }
-    private static void PumpUntil(Func<bool> condition, string name)
-    {
-        var watch = Stopwatch.StartNew();
-        while (!condition() && watch.ElapsedMilliseconds < 3000)
-        {
-            Application.DoEvents(); Thread.Sleep(10);
-        }
-        Check(condition(), name);
-    }
-    private static Form UpdateDialog(Func<Task<UpdateCheckResult>> check)
-    {
-        var type = typeof(MainForm).Assembly.GetType("DexManager.Forms.UpdateCheckDialog");
-        return (Form)Activator.CreateInstance(type, Hidden, null, new object[] { "2.5.0", check }, null);
-    }
-    private static void VerifyUpdates(MainForm form, AppTheme theme)
-    {
-        ReleaseUpdate release;
-        Check(ReleaseUpdate.TryCreate("v2.5.1",
-            "https://github.com/maze-mei/DX-Manager/releases/tag/v2.5.1", out release),
-            "UI fixture uses a validated example release");
-        SetField(form, "_dismissedUpdateVersion", null);
-        Invoke(form, "RequestWindowActivation");
-        using (var checksService = new UpdateCheckService("2.5.0",
-            new UpdateFixtureSource(release), new UpdateMemoryStore()))
-        {
-            Invoke(form, "InitializeUpdateChecks", checksService);
-            Invoke(form, "BeginAutomaticUpdateCheck");
-            PumpUntil(() => Field(form, "_updateBanner") is Control &&
-                ((Control)Field(form, "_updateBanner")).Visible && ((Control)Field(form, "_updateBanner")).Parent == form,
-                "automatic mock response shows the actual main-window update banner");
-            var banner = (Control)Field(form, "_updateBanner");
-            Check(banner.Left >= 0 && banner.Top >= 0 && banner.Right <= form.ClientSize.Width,
-                "update banner fits the main window in " + theme);
-            Check(((Label)Field(banner, "_version")).Text.Contains("2.5.1"),
-                "update banner shows the complete new version: " + ((Label)Field(banner, "_version")).Text + " / resource=" + LocalizationService.Get("Update.NewVersion"));
-            foreach (Control child in ((Control)Field(banner, "_surface")).Controls)
-                Check(child.Left >= 0 && child.Top >= 0 &&
-                    child.Right <= banner.ClientSize.Width && child.Bottom <= banner.ClientSize.Height,
-                    "banner title/version/buttons fit the banner in " + theme);
-            Capture(form, "Update-Main-" + theme);
-            Check(banner.Visible, "update banner stays visible after main layout");
-            using (var native = new Bitmap(form.Width, form.Height))
-            using (var graphics = Graphics.FromImage(native))
-            {
-                var dc = graphics.GetHdc();
-                try { Check(PrintWindow(form.Handle, dc, 2), "native window rendering succeeds for the update banner"); }
-                finally { graphics.ReleaseHdc(dc); }
-                native.Save(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Native-Update-" + theme + ".png"), ImageFormat.Png);
-            }
-            Console.WriteLine("BANNER " + banner.Bounds + " z=" + form.Controls.GetChildIndex(banner) + " child=" + ((Control)Field(banner, "_surface")).Bounds);
-            using (var image = new Bitmap(banner.Width, banner.Height)) { banner.DrawToBitmap(image, banner.ClientRectangle); image.Save(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Banner-" + theme + ".png"), ImageFormat.Png); }
-            foreach (var outcome in new[] { UpdateCheckOutcome.Available,
-                UpdateCheckOutcome.Current, UpdateCheckOutcome.Failed, UpdateCheckOutcome.Busy })
-            {
-                using (var dialog = UpdateDialog(null))
-                {
-                    Check(dialog.StartPosition == FormStartPosition.CenterParent,
-                        "manual update result is centered on its owner");
-                    Invoke(dialog, "DisplayResult", new UpdateCheckResult(outcome,
-                        outcome == UpdateCheckOutcome.Available ? release : null));
-                    ShowOffscreen(dialog);
-                    var open = (Button)Field(dialog, "_releaseButton");
-                    Check(open.Visible == (outcome == UpdateCheckOutcome.Available),
-                        "release button is present only for an available update");
-                    var title = (Label)Field(dialog, "_title");
-                    var palette = typeof(MainForm).Assembly.GetType("DexManager.Forms.ThemeColors")
-                        .GetProperty("Current", BindingFlags.Static | BindingFlags.Public).GetValue(null, null);
-                    var expected = (Color)palette.GetType().GetProperty("TextPrimary").GetValue(palette, null);
-                    Check(title.ForeColor == expected, "manual update title follows " + theme);
-                    foreach (Control control in ((Control)Field(dialog, "_surface")).Controls)
-                        Check(control.Left >= 0 && control.Top >= 0 &&
-                            control.Right <= dialog.ClientSize.Width &&
-                            control.Bottom <= dialog.ClientSize.Height,
-                            "update-dialog control stays inside its client area");
-                    Capture(dialog, "Update-" + outcome + "-" + theme);
-                }
-            }
-            var completion = new TaskCompletionSource<UpdateCheckResult>();
-            var waiting = UpdateDialog(() => completion.Task);
-            ShowOffscreen(waiting);
-            Capture(waiting, "Update-Checking-" + theme);
-            Invoke(form, "HideToTray", false);
-            Check(waiting.IsDisposed && !waiting.Visible,
-                "tray hiding closes a pending manual update dialog");
-            completion.SetResult(new UpdateCheckResult(UpdateCheckOutcome.Available, release));
-            Application.DoEvents();
-            Check(waiting.IsDisposed, "a late manual result does not reopen its closed dialog");
-            Invoke(form, "RequestWindowActivation");
-            Check(!waiting.Visible, "main restoration does not reopen the manual update dialog");
-            ((Button)Field(banner, "_close")).PerformClick();
-            Check(!banner.Visible, "update banner has an independent close action");
-            PumpUntil(() => checksService.KnownUpdate == null,
-                "closing the update banner persists its dismissal");
-        }
-    }
-
-
-    private static void VerifyUpdateSettings(SettingsService store, AppSettings settings,
-        AdbService adb, WirelessAdbService wifi, LogService log, AppTheme theme)
-    {
-        var rows = new System.Collections.Generic.List<EnvironmentCheckItem>();
-        foreach (var pair in new[] {
-            new[] { "ADB 파일", @"E:\vs\dex system\dist\DX Manager Preview\tools\scrcpy\adb.exe" },
-            new[] { "Scrcpy 파일", @"E:\vs\dex system\dist\DX Manager Preview\tools\scrcpy\scrcpy.exe" },
-            new[] { "파일 전송 보조 프로그램", @"E:\vs\dex system\dist\DX Manager Preview\tools\adb-proxy\DXMAdbProxy.exe" },
-            new[] { "ADB 버전", "37.0.1" },
-            new[] { "scrcpy 버전", "5.0.1" }, new[] { "Windows", "Windows 7 SP1 x64" },
-            new[] { "권한", "일반 사용자" }, new[] { "설정", "저장 가능" },
-            new[] { "PC 저장 위치", "확인됨" }, new[] { "휴대폰", "연결 대기 중" } })
-            rows.Add(new EnvironmentCheckItem { Name = pair[0], Message = pair[1],
-                Status = EnvironmentCheckStatus.Passed });
-        var environmentRuns = 0;
-        using (var options = new SettingsForm(store, settings, adb, wifi, null, null,
-            null, null, log, null, null, null, null, null, null, null,
-            delegate { Interlocked.Increment(ref environmentRuns); return rows; }))
-        {
-            ShowOffscreen(options);
-            Invoke(options, "ShowPage", 5);
-            var button = FindNamed(options, "CheckForUpdatesButton") as Button;
-            Check(button != null && button.Visible, "About page exposes a visible manual update button");
-            var called = 0;
-            options.GetType().GetProperty("UpdateCheckRequested", Hidden).SetValue(options,
-                (Action<Form>)delegate(Form owner) { if (owner == options) called++; }, null);
-            button.PerformClick();
-            Check(called == 1, "manual update button passes its Settings owner");
-            Capture(options, "Update-Settings-About-" + theme);
-            Invoke(options, "ShowPage", 4);
-            Invoke(options, "RefreshStoreEnvironment");
-            var editors = (System.Collections.IDictionary)Field(options, "_storeEditors");
-            var text = (Label)editors["DiagnosticEnvironmentText"];
-            PumpUntil(() => text.Text.Contains("5.0.1"), "environment settings show the complete scrcpy version");
-            var preferred = text.GetPreferredSize(new Size(text.Width, 0));
-            Check(text.Height >= preferred.Height,
-                "environment version row fits the expanded diagnostics card");
-            Capture(options, "Update-Settings-Diagnostics-" + theme);
-            var refresh = (Button)editors["RefreshDiagnosticsButton"];
-            var cards = (System.Collections.IDictionary)Field(options, "_storeCards");
-            var environmentCard = (Control)cards["DiagnosticsEnvironmentCard"];
-            var title = (Label)environmentCard.GetType().GetField("TitleLabel").GetValue(environmentCard);
-            var description = (Label)environmentCard.GetType().GetField("DescriptionLabel").GetValue(environmentCard);
-            var header = (Control)environmentCard.GetType().GetField("HeaderSurface").GetValue(environmentCard);
-            foreach (var width in new[] { 520, 716, 900 })
-            {
-                environmentCard.Width = width;
-                environmentCard.GetType().GetMethod("Reflow").Invoke(environmentCard, null);
-                Application.DoEvents();
-                Check(!title.Bounds.IntersectsWith(refresh.Bounds) && !description.Bounds.IntersectsWith(refresh.Bounds),
-                    "diagnostic refresh is not covered by header labels at width " + width);
-                Check(refresh.Parent == header && header.ClientRectangle.Contains(refresh.Bounds),
-                    "diagnostic refresh remains fully inside header at width " + width);
-                Check(text.Width >= environmentCard.Width - 36 && text.Height >= text.GetPreferredSize(new Size(text.Width, 0)).Height,
-                    "long environment paths retain full-width results at width " + width);
-            }
-            environmentCard.Width = 716;
-            refresh.PerformClick();
-            PumpUntil(() => environmentRuns >= 2 && text.Text.Contains("5.0.1"),
-                "the diagnostic refresh button still works after expansion and resizing");
-        }
-    }
-    private static Control FindNamed(Control parent, string name)
-    {
-        if (parent.Name == name) return parent;
-        foreach (Control child in parent.Controls)
-        {
-            var found = FindNamed(child, name);
-            if (found != null) return found;
-        }
-        return null;
-    }
-
     [STAThread] private static int Main()
     {
         MainForm form = null;
@@ -378,7 +190,7 @@ internal static class DesktopNoticeIntegrationTests
             var environment = new EnvironmentCheckService(adb, runtime.Scrcpy, path, log,
                 service, settings, () => wifi.SelectedSerial);
             keymap = new KeyMappingService(runtime.Scrcpy, runtime.SingleWindows, adb,
-                settings, settings.KeyMappings, log);
+                settings, settings.KeyMappings, log, runtime.CompanionGuardian.ForegroundApps);
             form = new MainForm(service, settings, log, adb, wifi, runtime.Scrcpy, runtime.SingleWindows,
                 runtime.ScreenOff, launch, monitor, runtime.Dex, captureCoordinator, autoHide,
                 new AutoStartService(log), environment, keymap, runtime.FileTransfers, runtime.PhoneTransfers,
@@ -452,8 +264,6 @@ internal static class DesktopNoticeIntegrationTests
                 Check(((LinkLabel)Field(form, "_advancedToggle")).UseCompatibleTextRendering,
                     "native link retains F2 compatible text in " + theme);
                 ((Label)Field(form, "_pageTitle")).Text = "Galaxy S26 Ultra";
-                VerifyUpdates(form, theme);
-                VerifyUpdateSettings(service, settings, adb, wifi, log, theme);
                 Capture(form, "Main-" + theme);
                 using (var help = new HelpForm()) Capture(help, "Help-" + theme);
             }

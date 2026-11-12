@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -17,7 +17,7 @@ namespace DexManager.Services
         private const string ConfigureAction =
             "io.github.mazemei.dxdisplaycleanup.CONFIGURE_PC_TRANSFER";
         private const string ReceiverComponent =
-            "io.github.mazemei.dxdisplaycleanup/.TransferSessionReceiver";
+            "io.github.mazemei.dxdisplaycleanup/io.github.mazemei.dxdisplaycleanup.TransferSessionReceiver";
 
         private static readonly HashSet<string> ReservedNames =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)

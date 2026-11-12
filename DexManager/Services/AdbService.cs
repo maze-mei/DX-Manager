@@ -140,7 +140,7 @@ namespace DexManager.Services
 
         public void LogStartupDiagnostics()
         {
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.Adb.SelectedPath",
                 _adbPath));
             LogCommandResult(
@@ -173,6 +173,28 @@ namespace DexManager.Services
                 serial,
                 "shell " + command,
                 writeLog);
+        }
+
+        public ProcessResult ForwardNativeForSerial(string serial) { return RunForSerial(serial,"forward tcp:0 tcp:37125",false,8000); }
+        public ProcessResult RemoveNativeForwardForSerial(string serial,int port) {
+            if(port<1||port>65535)throw new ArgumentException("Invalid native forward port.");
+            return RunForSerial(serial,"forward --remove tcp:"+port,false,2000);
+        }
+
+        public Process StartPersistentShellForSerial(string serial, string command)
+        {
+            if (string.IsNullOrWhiteSpace(serial) || string.IsNullOrWhiteSpace(command))
+                throw new ArgumentException("A captured serial and shell command are required.");
+            return _processRunner.StartInteractive(_adbPath,
+                AdbCommandBuilder.ForDevice(serial, "shell " + command),
+                Path.GetDirectoryName(_adbPath));
+        }
+
+        public ProcessResult ShellForSerial(string serial, string command, bool writeLog, int timeoutMs)
+        {
+            if (string.IsNullOrWhiteSpace(serial) || string.IsNullOrWhiteSpace(command))
+                throw new ArgumentException("A captured serial and shell command are required.");
+            return RunForSerial(serial, "shell " + command, writeLog, timeoutMs);
         }
 
         public string GetDeviceDisplayName(string serial)
@@ -506,7 +528,7 @@ namespace DexManager.Services
                 LogCommandResult(
                     LocalizationService.Get("Log.Adb.DevicesResult"),
                     result);
-                _logService.Info(LocalizationService.Format(
+                _logService.Progress(LocalizationService.Format(
                     "Log.Adb.DeviceCount",
                     devices.Count));
             }
@@ -766,7 +788,7 @@ namespace DexManager.Services
             if (!string.IsNullOrWhiteSpace(text)) message += ", " + text;
 
             if (result.IsSuccess)
-                _logService.Info(message);
+                _logService.Response(message);
             else
                 _logService.Warning(message);
         }

@@ -114,6 +114,7 @@ namespace DexManager.Forms
             _convertHangulBox.Checked = _settings.KeyMappings.ConvertKoreanEnglishKey;
             _rightWindowsBox.Checked = _settings.KeyMappings.HandleRightWindowsKey;
             _convertEnterBox.Checked = _settings.KeyMappings.ConvertEnterToShiftEnter;
+            if (_autoAppEnterBox != null) _autoAppEnterBox.Checked = _settings.KeyMappings.AutoAppEnterEnabled;
             _ignoreShiftSpaceBox.Checked = _settings.KeyMappings.IgnoreShiftSpace;
             PopulateWirelessDevices();
             UpdateManualAdbControls();
@@ -354,6 +355,7 @@ namespace DexManager.Forms
             settings.KeyMappings.ConvertKoreanEnglishKey = _convertHangulBox.Checked;
             settings.KeyMappings.HandleRightWindowsKey = _rightWindowsBox.Checked;
             settings.KeyMappings.ConvertEnterToShiftEnter = _convertEnterBox.Checked;
+            if (_autoAppEnterBox != null) settings.KeyMappings.AutoAppEnterEnabled = _autoAppEnterBox.Checked;
             settings.KeyMappings.IgnoreShiftSpace = _ignoreShiftSpaceBox.Checked;
             SaveConnectionValues(settings);
         }

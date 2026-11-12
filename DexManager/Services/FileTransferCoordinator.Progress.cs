@@ -21,7 +21,7 @@ namespace DexManager.Services
     public sealed partial class FileTransferCoordinator : IDisposable
     {
         private const string CompanionHistoryComponent =
-            "io.github.mazemei.dxdisplaycleanup/.TransferHistoryReceiver";
+            "io.github.mazemei.dxdisplaycleanup/io.github.mazemei.dxdisplaycleanup.TransferHistoryReceiver";
         private const string CompanionHistoryAction =
             "io.github.mazemei.dxdisplaycleanup.RECORD_TRANSFER_HISTORY";
 

@@ -1,14 +1,14 @@
 {
-  "VersionName": "2.1.6",
-  "VersionCode": 13,
+  "VersionName": "3.0.0",
+  "VersionCode": 16,
   "PackageName": "io.github.mazemei.dxdisplaycleanup",
   "ApkRelativePath": "release/DX-Companion.apk",
-  "ApkSha256": "904491111341D46458BB9CE9B342D9210A20BB923BC0F605484D6AF7B90DFCC9",
+  "ApkSha256": "43443968AFA2DCF59DA251A3EA909AC5A55064DF8E8158A11C369BACB26F6A29",
   "CertificateSha256": "AD615803C63760439750C36801E8152AB8664C60EE481EF1473F1DF5E80733BE",
   "OriginalWorkroom": "Store",
   "OriginalCommit": "867f384",
   "MaintainedByWorkroom": "GitHub",
-  "ChangedAt": "2026-10-16T20:31:50+09:00",
+  "ChangedAt": "2026-11-08T20:01:15+09:00",
   "SourceFiles": [
     {
       "Path": ".gitignore",
@@ -32,11 +32,11 @@
     },
     {
       "Path": "PACKAGE_README.md",
-      "Sha256": "6D0C9A3260954EF211DA5FB3B9FACB3892DA1123584E43A3A842E462AE0BBD2B"
+      "Sha256": "6F4DDD4BFC0F6557A0F1AC4B89FC9911808FC1412948D523A503A974F908A116"
     },
     {
       "Path": "README.md",
-      "Sha256": "DF128D43C5846CB3605F300CD8CB05688B50164E57EA548752C441AA50D42796"
+      "Sha256": "BF8277CF5CBEBE6EFCBAB732FC13F4B51227ADB8846C369D238030499C3EF0AC"
     },
     {
       "Path": "settings.gradle",
@@ -48,15 +48,15 @@
     },
     {
       "Path": "app/build.gradle",
-      "Sha256": "1B7A530C99052F5B3230AF53BE85E9007291075FB820D54214CD1DFAA08807C2"
+      "Sha256": "161D6FF1DEF49343BE95CC879D76C8FFB8B7DA8998B7CA331C81C20028C806BE"
     },
     {
       "Path": "app/src/main/AndroidManifest.xml",
-      "Sha256": "F4D1CBB2D982159E4B94C9ABE4D61AB4A07AB32DB7FB23CFCA89D7F25BEFFCBF"
+      "Sha256": "8D8B1514DBBDF7FF99D5F7277C0394257F7E92002657A351710E5DEC05AC7437"
     },
     {
       "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/CleanupCoordinator.java",
-      "Sha256": "F8A45358DD5B1CA8D775C75307B9A0C46B4B1940C5AAC1A146ACA61209A2BC79"
+      "Sha256": "214C6A7F003B0915B9A7877825075BE2BF18C8A830AA58A6357249D3161CA4B3"
     },
     {
       "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/CleanupPreferences.java",
@@ -71,24 +71,76 @@
       "Sha256": "654BDC89E45399C5F7630C2AC0057E04D6E2368B108C5E7AD05B70CE0DCA46CB"
     },
     {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/ForegroundAppAccessibilityService.java",
+      "Sha256": "5A1E5F9EFE07BE559384B89EF3BC8066B1F1CDCAD615C12C4B9BA5D79C1BECCF"
+    },
+    {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/ForegroundAppChannel.java",
+      "Sha256": "B52BC7476A063D992FD517C4AC67996F9C6830CA82591C9F501E090859A070F8"
+    },
+    {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/ForegroundAppRegistry.java",
+      "Sha256": "88B14807630275F01998DE6EF7F961E90C50F773F8E42FE337D31A4382F1FCCD"
+    },
+    {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/ForegroundWindowDetails.java",
+      "Sha256": "19182E522CED50D904C34A57F4BD748AB43BA40BF2C584655135C446B658A178"
+    },
+    {
       "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/GuardianIdleStopPolicy.java",
       "Sha256": "FE4AECB8FFF0118BE563BFF4206ED304FC4B0ABA511473A1A272F93A4BA82C36"
     },
     {
       "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/GuardianPreferences.java",
-      "Sha256": "C299A82B52630EE9A9A7716181A2FF8E33BC40A7F09AD19090BF5FE395CC4FBF"
+      "Sha256": "7485B2E1BDBA372F212BC5AB8213E5533248143A0C2745C1B933310C5BFD709C"
     },
     {
       "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/GuardianSessionStore.java",
-      "Sha256": "15B2AC62D2E8CC5CC638022A027A5A78BD233AB58630564FBCB32EB793BD8A1C"
+      "Sha256": "2C75473E5A6E9BCE11A9BAF16D9C14AF0C06DA093D22B7BEF8860FBD26B400F0"
+    },
+    {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/GuardianWireProtocol.java",
+      "Sha256": "640D69F4A8FBDFFA39EA75759D272286FFADAFE623CBE4BD6235ECB36B5569BC"
     },
     {
       "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/MainActivity.java",
-      "Sha256": "E60C284FE9144E2ECD7310AA98EB20C07712F5BA3BF934462AFB4DB7D442120E"
+      "Sha256": "32079CB4E3B03FC36159DDF3353DBCCB361DD2ADE3230F4544107C36361E1E33"
+    },
+    {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/NativeDensityRestorePolicy.java",
+      "Sha256": "BBC89BE34814AF9E60B2E59F79CE624A3A01ECC1DF42909FE34B6C2B9ECEE158"
+    },
+    {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/NativeDesktopDensity.java",
+      "Sha256": "A3372DC1E07F711ECA9CE03DDD1BD7647B7B5FF473DA7A0D149E39C4B12EF1C0"
+    },
+    {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/NativeDisplayCard.java",
+      "Sha256": "F25B216ED9134095801277F7C99C3837A867806A929D6E04244D0B38F3C097D0"
+    },
+    {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/NativeDisplayTruth.java",
+      "Sha256": "4F07FFE2DDF9564D8FBC2AC779A7FC0E4B25053B4456EEEA90435BD9DD9FF09B"
+    },
+    {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/NativeSessionBridge.java",
+      "Sha256": "13E37C082E13DC0609D7A5FADAC8645EADF7FCE08C66CDC40EA1F04A4AFE0324"
+    },
+    {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/NativeSessionReceiver.java",
+      "Sha256": "141EE79F3F6AA92F79F35601A88EC5D5C1B6A684F9B1EC2E9D8736CB9D741795"
+    },
+    {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/NativeSessionRules.java",
+      "Sha256": "2ABFC30441EF77E93413C486EADF8365B02D00E670B40F4C218A3CDE389E54AE"
+    },
+    {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/NativeStatusCache.java",
+      "Sha256": "501C6633BF51C27A8F6A469E794AD632CD1E6D9FFD754C3CC50F992941CED9EC"
     },
     {
       "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/OverlayDisplayRepository.java",
-      "Sha256": "1E1F6489FDE035BDA3C39AC94AB77511C1B26AED0388FA474A7E18026F13489A"
+      "Sha256": "DB9067E0AFC792A258CA913231E5E154743436E9542B540CC03E284F054FF546"
     },
     {
       "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/PhoneTransferEntry.java",
@@ -103,8 +155,12 @@
       "Sha256": "0A43A77486F413A985FF36A9DA06924756B3BE7013DF315565DCACF57205F2C3"
     },
     {
+      "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/RetainedSessionPolicy.java",
+      "Sha256": "BF0C1D676BDED59C4E5CDE7D3ADFCEAADBAED53AF2039502A4D25FB83011585F"
+    },
+    {
       "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/SessionGuardianService.java",
-      "Sha256": "692D44C17848F79B4628B6A72E512BFAD42F13764D2B28D358FC99DE8EAC4D81"
+      "Sha256": "3FBC43B4FE80E7A9F10B481B9280AC9D451E4CAF2BAAD975FE309A2C6D957C71"
     },
     {
       "Path": "app/src/main/java/io/github/mazemei/dxdisplaycleanup/ShareToPcActivity.java",
@@ -328,15 +384,15 @@
     },
     {
       "Path": "app/src/main/res/layout/page_cleanup.xml",
-      "Sha256": "7711067CF32B3F8A40C5C1371579790E01D610CBCFCA05E75F4432923110749F"
+      "Sha256": "77EF9ED298AB82649278BD8B1B1BACAF2B10788989771B3FD6068F76633EBCF3"
     },
     {
       "Path": "app/src/main/res/layout/page_home.xml",
-      "Sha256": "CD6AF05022D6621650D2142A170616FA307AAEB331699A316FFA4E4B5A1F310A"
+      "Sha256": "A13F2E96F2F64469B6D7CD2A4395791FA86D375D85909A47710D5760936D1A2F"
     },
     {
       "Path": "app/src/main/res/layout/page_settings.xml",
-      "Sha256": "543A54344EC3E5405BB04A2BA4988CCD1540470330D33CA24AB4371E46DC1237"
+      "Sha256": "96BBEE7DB245D52A8B6C798B6C293D7061AAA41A85FE102BEF5D8F7046F5F5D8"
     },
     {
       "Path": "app/src/main/res/layout/page_transfer.xml",
@@ -356,7 +412,7 @@
     },
     {
       "Path": "app/src/main/res/values/strings.xml",
-      "Sha256": "66746F322E66734F52F9FC471E95E34D255D0B1D96FE785C9F5FC240A8B25906"
+      "Sha256": "E2516B23DECE07CBDF424D4449FADCBAF21FAA1E1FB60463F584280CD9DF66F0"
     },
     {
       "Path": "app/src/main/res/values/styles.xml",
@@ -364,7 +420,7 @@
     },
     {
       "Path": "app/src/main/res/values-ko/strings.xml",
-      "Sha256": "EF7487DC75E376ADF1D313AEC51432BC67556F5F804D07B9519D3FF99B4B4E05"
+      "Sha256": "1E91F84B7A02E60E5799057C9C503AF8B106E86D4B3C86239598311E35E769B1"
     },
     {
       "Path": "app/src/main/res/values-night/colors.xml",
@@ -383,6 +439,10 @@
       "Sha256": "5511FD8D67D5D7FCC1B0F61C76FBA0FAA9B2EB3D96DC64893D9011797956143F"
     },
     {
+      "Path": "app/src/main/res/xml/foreground_app_accessibility.xml",
+      "Sha256": "8750CF620DCE08EA7168AA06F5A0EBC6252010D5E570AD08382CC6703F3C9EF1"
+    },
+    {
       "Path": "app/src/main/res/xml-v31/cleanup_widget_info.xml",
       "Sha256": "6C8090DD715A143C3593EFECBBDEB528CB1F6BC42FCBE015EEDBB05B062B23EA"
     },
@@ -391,16 +451,56 @@
       "Sha256": "FAF3B55C4D7E4447F6BB2E618322B48D5D503FFBF48F7AFA01BF3B3CB77EA608"
     },
     {
+      "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/ForegroundAppRegistryTest.java",
+      "Sha256": "0AD62587471609F6AF3E8C9A29EF6F43125981CE7F64275E147760C94ED65353"
+    },
+    {
+      "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/ForegroundWindowDetailsTest.java",
+      "Sha256": "02041F2631AEBA5A77BCC88A64A435B8BF1D0F67006CACC472C0C4C65E71D68F"
+    },
+    {
       "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/GuardianIdleStopPolicyTest.java",
       "Sha256": "445FB733458F42528EAFA9BDB95237473612FE423076A2F72923C4FF1125E92E"
     },
     {
       "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/GuardianPreferencesTest.java",
-      "Sha256": "F0650B2590F5A60AAE0A03F3D35E5C98112229B77E74BE207EE887FE9993AE23"
+      "Sha256": "7ED959407523B6E56C768A412BBC574D2CFE615A99C1A35684FBBE1F377B6697"
+    },
+    {
+      "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/GuardianWireProtocolTest.java",
+      "Sha256": "90DEF325127DDC06A2D11BC630C06406B90BF70A8AC475639146CE7E00729DD0"
+    },
+    {
+      "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/NativeDensityRestorePolicyTest.java",
+      "Sha256": "D69129111D7A97B887F464F2788846C538188285E8F69D798976C9BFC414A2C4"
+    },
+    {
+      "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/NativeDisplayCardTest.java",
+      "Sha256": "F9221F0485755B02C6C7B80A48AB304933165E20D89E3492EC641EB0F3388F69"
+    },
+    {
+      "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/NativeDisplayTruthTest.java",
+      "Sha256": "E729086894565005D8DBA13D85F8A7592F4C7A5473BAD0D2618B1A83FF68F78D"
+    },
+    {
+      "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/NativeSessionRulesTest.java",
+      "Sha256": "C47F6AA0F3BFB28D75E44EF0E937CFA73F5560A48B2FFD3510DE729E00854E8E"
+    },
+    {
+      "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/NativeStatusCacheTest.java",
+      "Sha256": "D8D73FFD3403CD4A0E7BD88ED39B0607C84939F6099CEB3A5716F429B9CF86C8"
     },
     {
       "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/OverlayDisplayRepositoryTest.java",
       "Sha256": "A2F9DE6763A16E7C67AC31600900E99C5A55AF53CE48783DF809E78616E34974"
+    },
+    {
+      "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/RetainedBrowserPolicyTest.java",
+      "Sha256": "F9DD9ACE8488D21CA8607FC5DE9E01169ABB17925907602BA0BDFE6602A36129"
+    },
+    {
+      "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/RetainedSessionPolicyTest.java",
+      "Sha256": "EDDAAF4E6D8DDBD2897191071B43D056039960CDDB5E1183C67BD255483D77A1"
     },
     {
       "Path": "app/src/test/java/io/github/mazemei/dxdisplaycleanup/ShareTransferRequestStateTest.java",

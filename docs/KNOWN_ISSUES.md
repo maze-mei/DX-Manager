@@ -1,5 +1,11 @@
 # Known issues and limits
 
+## Windows v3.0.0
+
+- The Windows release's native DeX and Companion integration tests use
+  simulated devices. Keep physical-device results separate from those checks.
+- The macOS implementation has a separate build and verification scope.
+
 ## Current scope — 2026-10-24
 
 Windows2.5.0 / scrcpy5.0.1 / official Companion2.1.6. See [FAQ](FAQ_EN.md), [한국어 FAQ](FAQ_KO.md) and [exact verification](VERIFICATION_v2.5.0.md).

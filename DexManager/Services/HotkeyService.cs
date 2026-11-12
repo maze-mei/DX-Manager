@@ -117,7 +117,7 @@ namespace DexManager.Services
             {
                 TryRegisterHotKeyForDiagnostics();
                 InstallHook();
-                _logService.Info(LocalizationService.Format(
+                _logService.Progress(LocalizationService.Format(
                     "Log.Hotkey.LowLevelEnabled",
                     _captureShortcut,
                     _exitShortcut));
@@ -268,7 +268,7 @@ namespace DexManager.Services
                 out error))
             {
                 NativeMethods.UnregisterHotKey(Handle, CaptureHotkeyId);
-                _logService.Info(LocalizationService.Get(
+                _logService.Progress(LocalizationService.Get(
                     "Log.Hotkey.DiagnosticRegistrationRemoved"));
             }
         }
@@ -320,7 +320,7 @@ namespace DexManager.Services
                 key))
             {
                 error = 0;
-                _logService.Info(LocalizationService.Format(
+                _logService.Progress(LocalizationService.Format(
                     "Log.Hotkey.Registered",
                     shortcut,
                     modifiers,

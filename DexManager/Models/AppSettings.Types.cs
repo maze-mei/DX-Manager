@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 
@@ -168,6 +168,8 @@ namespace DexManager.Models
         Left = 1
     }
 
+    public enum DexDisplayMode { Native = 0, LegacyOverlay = 1 }
+
     [DataContract]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public sealed class VirtualDisplaySettings
@@ -179,6 +181,8 @@ namespace DexManager.Models
         [DataMember(Order = 5)] public bool ReuseExistingDisplay { get; set; }
         [DataMember(Order = 6)] public int CustomWidth { get; set; }
         [DataMember(Order = 7)] public int CustomHeight { get; set; }
+        [DataMember(Order = 8)] public DexDisplayMode ActivationMode { get; set; }
+        [DataMember(Order = 9)] public bool KeepBluetoothAudioOnDexStart { get; set; }
     }
 
     [DataContract]
@@ -264,6 +268,8 @@ namespace DexManager.Models
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public sealed class FeatureSettings
     {
+        [DataMember(Order = 30)] public bool AutoSwitchToLegacyFor120Fps { get; set; }
+        [DataMember(Order = 31)] public bool AutoSaveSessionLogs { get; set; }
         [DataMember(Order = 1)] public bool StartWithWindows { get; set; }
         [DataMember(Order = 2)] public bool StartMinimizedToTray { get; set; }
         [DataMember(Order = 3)] public bool RegisterAdbPathAutomatically { get; set; }
@@ -294,6 +300,8 @@ namespace DexManager.Models
         [DataMember(Order = 8)] public bool ConvertEnterToShiftEnter { get; set; }
         [DataMember(Order = 9)] public KeyInputMode EnterInputMode { get; set; }
         [DataMember(Order = 10)] public bool IgnoreShiftSpace { get; set; }
+        [DataMember(Order = 11)] public bool AutoAppEnterEnabled { get; set; }
+        [DataMember(Order = 12)] public System.Collections.Generic.List<AppKeyProfile> AppKeyProfiles { get; set; }
     }
 
     public enum KeyInputMode

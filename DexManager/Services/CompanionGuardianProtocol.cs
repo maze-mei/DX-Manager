@@ -7,10 +7,14 @@ namespace DexManager.Services
     internal static class CompanionGuardianProtocol
     {
         public const int Magic = 0x44584744; // DXGD
-        public const int Version = 1;
+        public const int Version = 3;
         public const byte Ping = 1;
         public const byte WindowsShutdown = 2;
         public const byte StopMonitoring = 3;
+        public const byte ForegroundApp = 4;
+        public const byte AccessibilityStatus = 5;
+        public const byte Pong = 6;
+        public const byte ForegroundWindow = 7;
         public const int MaxStringBytes = 64 * 1024;
 
         public static int ReadInt32(Stream stream)
@@ -22,10 +26,30 @@ namespace DexManager.Services
                 buffer[3];
         }
 
+        public static long ReadInt64(Stream stream)
+        {
+            var bytes = ReadExact(stream, 8);
+            long value = 0;
+            foreach (var b in bytes) value = (value << 8) | b;
+            return value;
+        }
+
+        public static void WriteInt64(Stream stream, long value)
+        {
+            var bytes = new byte[8];
+            for (var i = 7; i >= 0; i--) { bytes[i] = (byte)value; value >>= 8; }
+            stream.Write(bytes, 0, bytes.Length);
+        }
+
         public static string ReadString(Stream stream)
         {
+            return ReadString(stream, MaxStringBytes);
+        }
+
+        public static string ReadString(Stream stream, int maxBytes)
+        {
             var length = ReadInt32(stream);
-            if (length < 0 || length > MaxStringBytes)
+            if (length < 0 || length > maxBytes)
                 throw new InvalidDataException(
                     "Invalid guardian string length.");
             return Encoding.UTF8.GetString(ReadExact(stream, length));

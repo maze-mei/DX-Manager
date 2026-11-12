@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +9,7 @@ namespace DexManager.Services
     public sealed class DexOrchestrator
     {
         private readonly AdbService _adbService;
+        private readonly NativeDexSessionService _nativeDex;
         private readonly VirtualDisplayService _virtualDisplayService;
         private readonly ScrcpyService _scrcpyService;
         private readonly ScrcpyLaunchCoordinator _launchCoordinator;
@@ -37,9 +38,11 @@ namespace DexManager.Services
             SettingsService settingsService,
             LogService logService,
             AppSettings settings,
-            DeviceRuntimeSessionRegistry runtimeSessions)
+            DeviceRuntimeSessionRegistry runtimeSessions,
+            NativeDexSessionService nativeDex = null)
         {
             _adbService = adbService;
+            _nativeDex = nativeDex;
             _virtualDisplayService = virtualDisplayService;
             _scrcpyService = scrcpyService;
             _launchCoordinator = launchCoordinator;
@@ -50,6 +53,72 @@ namespace DexManager.Services
                 throw new ArgumentNullException("runtimeSessions");
             _scrcpyService.RunningChanged +=
                 ScrcpyService_RunningChanged;
+            if (_nativeDex != null) {
+                _nativeDex.SessionEnded += NativeSessionEnded;
+                _nativeDex.DisplayReleased += delegate {
+                    var handler=NativeDisplayReleased;if(handler!=null)handler(this,EventArgs.Empty);
+                };
+            }
+        }
+
+        public event EventHandler NativeDisplayReleased;
+
+        private bool WantsNativeDisplay { get { return _nativeDex!=null && GetDeviceRunSettings().VirtualDisplay.ActivationMode!=DexDisplayMode.LegacyOverlay; } }
+        public bool UsesNativeDisplay { get { return _currentSession!=null&&_currentSession.DisplayLease!=null?_currentSession.DisplayLease.IsNativeDex:(_nativeDex!=null&&_nativeDex.HasRetainedDisplay)||WantsNativeDisplay; } }
+        public VirtualDisplayLease RetainedNativeLease { get { return _nativeDex==null?null:_nativeDex.RetainedLease; } }
+        public bool HasRetainedNativeForSerial(string serial) { return _nativeDex!=null&&_nativeDex.HasPendingForSerial(serial); }
+        public Task ResumeAsync(string serial) { return Task.Run(delegate { lock(_operationGate)StartCore(serial,null,false,true); }); }
+        public void UpdateNativeViewerState() {
+            if(_nativeDex==null||!Monitor.TryEnter(_operationGate))return;
+            try {
+                var lease=_nativeDex.RetainedLease;if(lease==null)return;
+                var session=_currentSession;
+                bool active=session!=null&&session.DisplayLease!=null&&session.DisplayLease.IsNativeDex&&
+                    session.DisplayLease.NativeSessionToken==lease.NativeSessionToken&&_scrcpyService.IsRunning;
+                _nativeDex.SetViewerState(active,CurrentPowerDemand(lease.Serial));
+            }finally{Monitor.Exit(_operationGate);}
+        }
+        private bool CurrentPowerDemand(string serial) {
+            var session=_currentSession;
+            bool requested=session!=null&&_scrcpyService.GetSessionSnapshot().StayAwakeRequested;
+            var runtime=_runtimeSessions.Current.FindByTransportSerial(serial);
+            if(runtime!=null)foreach(var slot in runtime.SingleWindows)requested|=slot.IsRunning&&slot.StayAwakeRequested;
+            return requested;
+        }
+        // Device reconnection restores ownership/heartbeats independently of opening a PC window.
+        // MainForm's existing auto-start policy remains the only automatic launch decision.
+        public Task RestoreNativeControlAsync(string serial, Func<bool> connectionIsCurrent = null)
+        {
+            return Task.Run(delegate
+            {
+                lock (_operationGate)
+                {
+                    if (IsShutdownRequested || (connectionIsCurrent != null && !connectionIsCurrent()) ||
+                        !HasRetainedNativeForSerial(serial)) return;
+                    var settings = SnapshotRunSettings(GetDeviceRunSettings());
+                    _nativeDex.Start(serial, settings.VirtualDisplay,
+                        delegate { return IsShutdownRequested || (connectionIsCurrent != null && !connectionIsCurrent()); },
+                        settings.Scrcpy.StayAwake, _settings.Features.DisableStayAwakeOnStop, true);
+                    UpdateNativeViewerState();
+                }
+            });
+        }
+        public Task SuspendForTransportLossAsync(string serial, Func<bool> lossIsCurrent = null) {
+            if(_nativeDex!=null&&(lossIsCurrent==null||lossIsCurrent()))_nativeDex.CancelPendingStart(serial);
+            return Task.Run(delegate { lock(_operationGate) {
+                if(lossIsCurrent!=null&&!lossIsCurrent())return;
+                if(_currentSession!=null&&!string.Equals(_currentSession.Serial,serial,StringComparison.OrdinalIgnoreCase))return;
+                if(UsesNativeDisplay)SuspendNativeCore();else StopCore();
+            }});
+        }
+        private void SuspendNativeCore() {
+            if(_nativeDex!=null){_nativeDex.Suspend();_nativeDex.RefreshRetainedPresence();}
+            _scrcpyService.Stop();ClearSession(_currentSession);
+        }
+
+        public bool SignalNativeStopWithoutAdb()
+        {
+            return _nativeDex != null && _nativeDex.SignalStopWithoutAdb();
         }
 
         public bool IsRunning
@@ -85,6 +154,7 @@ namespace DexManager.Services
 
         public Task StopAsync()
         {
+            if(_nativeDex!=null)_nativeDex.CancelPendingStart();
             return Task.Run(delegate
             {
                 lock (_operationGate) StopCore();
@@ -93,6 +163,7 @@ namespace DexManager.Services
 
         public Task StopForSerialAsync(string serial)
         {
+            if(_nativeDex!=null)_nativeDex.CancelPendingStart(serial);
             return Task.Run(delegate
             {
                 lock (_operationGate)
@@ -116,6 +187,7 @@ namespace DexManager.Services
         public void RequestShutdown()
         {
             _scrcpyService.RequestShutdown();
+            SignalNativeStopWithoutAdb();
             if (Interlocked.Exchange(ref _shutdownRequested, 1) == 0)
                 _shutdownSignal.Set();
         }
@@ -148,7 +220,7 @@ namespace DexManager.Services
             });
         }
 
-        private void StartCore(string requestedSerial, DeviceRunSettingsProfile launchSettings = null, bool experimentalFpsConfirmed = false)
+        private void StartCore(string requestedSerial, DeviceRunSettingsProfile launchSettings = null, bool experimentalFpsConfirmed = false, bool resumeOnly = false)
         {
             if (IsShutdownRequested) return;
             if (_scrcpyService.IsRunning)
@@ -174,19 +246,31 @@ namespace DexManager.Services
                     LocalizationService.Get(
                         "Error.Dex.DisplayResetFailed"));
             }
+            if(resumeOnly&&!HasRetainedNativeForSerial(serial))return;
+            if(_currentSession!=null&&_currentSession.DisplayLease!=null&&_currentSession.DisplayLease.IsNativeDex&&!_scrcpyService.IsRunning)ClearSession(_currentSession);
             CleanupStaleSession(serial);
+            var native = resumeOnly || (_nativeDex!=null && runSettings.VirtualDisplay.ActivationMode==DexDisplayMode.Native);
+            if(native && FrameRateRules.RequiresScreenOn(runSettings.Scrcpy.MaxFps))
+                throw new InvalidOperationException(LocalizationService.Get("Error.Native.Fps120RequiresLegacy"));
+            if (native) runSettings = SnapshotRunSettings(runSettings);
+
             VirtualDisplayLease lease = null;
             var scrcpyStarted = false;
             try
             {
+                if(native) {
+                    lease=_nativeDex.Start(serial,runSettings.VirtualDisplay,delegate{return IsShutdownRequested;},runSettings.Scrcpy.StayAwake,_settings.Features.DisableStayAwakeOnStop,resumeOnly);
+                    if(lease==null)return;
+                } else if(_nativeDex!=null&&!_nativeDex.RecoverForSerial(serial))throw new InvalidOperationException("Stop the pending native session before changing DeX activation mode.");
                 _launchCoordinator.RunExclusive(delegate
                 {
                     ThrowIfShutdownRequested();
-                    lease = _virtualDisplayService.EnsureVirtualDisplay(
-                        serial,
-                        runSettings.VirtualDisplay,
-                        _settings.Timing.VirtualDisplayDetectionTimeoutMs,
-                        delegate { return IsShutdownRequested; });
+                    if (!native)
+                        lease = _virtualDisplayService.EnsureVirtualDisplay(
+                            serial,
+                            runSettings.VirtualDisplay,
+                            _settings.Timing.VirtualDisplayDetectionTimeoutMs,
+                            delegate { return IsShutdownRequested; });
                     ThrowIfShutdownRequested();
                     _scrcpyService.Start(
                         runSettings.Scrcpy,
@@ -204,6 +288,7 @@ namespace DexManager.Services
                             "Error.Scrcpy.ExitedBeforeWindow"));
 
                 TrackSession("DeX", serial, lease, runSettings.Scrcpy.StartAppPackage);
+                if(native)UpdateNativeViewerState();
                 if (!_scrcpyService.IsRunning)
                     throw new InvalidOperationException(
                         LocalizationService.Get(
@@ -219,7 +304,7 @@ namespace DexManager.Services
                             "Log.Dex.LastSuccessSaveFailed"),
                         saveException);
                 }
-                _logService.Info(LocalizationService.Get(
+                _logService.Progress(LocalizationService.Get(
                     "Log.Dex.StartCompleted"));
             }
             catch (OperationCanceledException ex)
@@ -265,6 +350,7 @@ namespace DexManager.Services
                         "Error.Scrcpy.StopTimeout"));
             }
 
+            if(session==null&&_nativeDex!=null&&_nativeDex.HasRetainedDisplay)_nativeDex.Stop(_nativeDex.RetainedLease);
             if (session != null)
             {
                 if (!ReleaseDisplayLease(session.DisplayLease))
@@ -359,8 +445,36 @@ namespace DexManager.Services
                 CleanupConnectedTargetOverlay(fallbackSerial);
             }
             ClearSession(session);
-            _logService.Info(LocalizationService.Get(
+            _logService.Progress(LocalizationService.Get(
                 "Log.Dex.ShutdownCleanupCompleted"));
+        }
+
+        private void NativeSessionEnded(string token)
+        {
+            Task.Run(delegate
+            {
+                lock (_operationGate)
+                {
+                    var lease = _nativeDex.RetainedLease;
+                    if (lease == null || lease.NativeSessionToken != token || _nativeDex.HasActiveControl) return;
+                    try {
+                        var serial=lease.Serial;
+                        if (!IsShutdownRequested && _adbService.IsAuthorizedDeviceConnected(serial))
+                        {
+                            var settings = SnapshotRunSettings(GetDeviceRunSettings());
+                            if (_nativeDex.Start(serial, settings.VirtualDisplay, delegate { return IsShutdownRequested; },
+                                settings.Scrcpy.StayAwake, _settings.Features.DisableStayAwakeOnStop, true) != null) {
+                                UpdateNativeViewerState();return;
+                            }
+                        }
+                        SuspendNativeCore();
+                    }
+                    catch (Exception error) {
+                        SuspendNativeCore();
+                        _logService.Error("[Native DeX] Client disconnected; retained session needs inspection.", error);
+                    }
+                }
+            });
         }
 
         private void ScrcpyService_RunningChanged(
@@ -395,6 +509,10 @@ namespace DexManager.Services
         {
             var session = _currentSession;
             if (session == null) return;
+            if(session.DisplayLease!=null&&session.DisplayLease.IsNativeDex&&
+                (_scrcpyService.LastExitCode==2||!_adbService.IsAuthorizedDeviceConnected(session.Serial))) {
+                _nativeDex.Suspend();ClearSession(session);return;
+            }
             if (!ReleaseDisplayLease(session.DisplayLease))
             {
                 DeferDisplayCleanup(session);
@@ -404,7 +522,7 @@ namespace DexManager.Services
             }
 
             ClearSession(session);
-            _logService.Info(LocalizationService.Get(
+            _logService.Progress(LocalizationService.Get(
                 "Log.Dex.NaturalExitCleanupCompleted"));
         }
 
@@ -412,7 +530,7 @@ namespace DexManager.Services
         {
             var stale = _currentSession;
             if (stale == null) return;
-            if (string.Equals(
+            if ((stale.DisplayLease == null || !stale.DisplayLease.IsNativeDex) && string.Equals(
                 stale.Serial,
                 nextSerial,
                 StringComparison.OrdinalIgnoreCase))
@@ -445,6 +563,9 @@ namespace DexManager.Services
             bool scrcpyStarted,
             VirtualDisplayLease lease)
         {
+            if(lease!=null&&lease.IsNativeDex&&lease.NativeResumed&&!IsShutdownRequested) {
+                SuspendNativeCore();return;
+            }
             if (scrcpyStarted || _scrcpyService.IsRunning)
             {
                 try
@@ -492,6 +613,13 @@ namespace DexManager.Services
             if (string.IsNullOrWhiteSpace(serial)) return true;
             if (!_pendingDisplayCleanup.ContainsKey(serial))
                 return true;
+            var pending = _pendingDisplayCleanup[serial];
+            if (pending != null && pending.IsNativeDex)
+            {
+                if (_nativeDex == null || !_nativeDex.Stop(pending, serial)) return false;
+                _pendingDisplayCleanup.Remove(serial);
+                return true;
+            }
             // The device is available again. Do not delete the old overlay
             // merely because the previous connection ended unexpectedly;
             // the next start will compare its actual resolution and DPI.
@@ -505,6 +633,7 @@ namespace DexManager.Services
         private bool ReleaseDisplayLease(VirtualDisplayLease lease)
         {
             if (lease == null) return true;
+            if (lease.IsNativeDex) return _nativeDex != null && _nativeDex.Stop(lease);
             if (string.IsNullOrWhiteSpace(lease.Serial) ||
                 !_adbService.IsAuthorizedDeviceConnected(lease.Serial))
             {
@@ -515,6 +644,12 @@ namespace DexManager.Services
 
         private void CleanupConnectedTargetOverlay(string serial)
         {
+            if (UsesNativeDisplay)
+            {
+                if (!_adbService.IsProcessShutdownRequested) _nativeDex.RecoverForSerial(serial);
+                else _nativeDex.SignalStopWithoutAdb();
+                return;
+            }
             if (string.IsNullOrWhiteSpace(serial) ||
                 !_adbService.IsAuthorizedDeviceConnected(serial))
             {
@@ -556,24 +691,36 @@ namespace DexManager.Services
                 throw new OperationCanceledException();
         }
 
-        private void SaveLastSuccess(string serial, int displayId, DeviceRunSettingsProfile launched)
+        private static DeviceRunSettingsProfile SnapshotRunSettings(DeviceRunSettingsProfile settings)
+        {
+            var serializer = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(DeviceRunSettingsProfile));
+            using (var stream = new System.IO.MemoryStream())
+            {
+                serializer.WriteObject(stream, settings);
+                stream.Position = 0;
+                return (DeviceRunSettingsProfile)serializer.ReadObject(stream);
+            }
+        }
+
+        private void SaveLastSuccess(string serial, int displayId, DeviceRunSettingsProfile captured = null)
         {
             _settingsService.UpdateAndSave(_settings, delegate(
                 AppSettings settings)
             {
                 var runSettings = GetDeviceRunSettings(settings);
+                var source = captured ?? runSettings;
                 runSettings.LastSuccess.Width =
-                    launched.VirtualDisplay.Width;
+                    source.VirtualDisplay.Width;
                 runSettings.LastSuccess.Height =
-                    launched.VirtualDisplay.Height;
+                    source.VirtualDisplay.Height;
                 runSettings.LastSuccess.Dpi =
-                    launched.VirtualDisplay.Dpi;
+                    source.VirtualDisplay.Dpi;
                 runSettings.LastSuccess.AdbPath = _adbService.AdbPath;
                 runSettings.LastSuccess.ScrcpyPath =
                     _scrcpyService.ScrcpyPath;
                 runSettings.LastSuccess.ScrcpyArguments =
                     _scrcpyService.BuildArguments(
-                        launched.Scrcpy,
+                        source.Scrcpy,
                         displayId,
                         serial);
                 runSettings.LastSuccess.DisplayId = displayId;
@@ -586,13 +733,13 @@ namespace DexManager.Services
             string mode,
             string serial,
             VirtualDisplayLease lease,
-            string launchedPackage = null)
+            string capturedAppPackage = null)
         {
             _currentSession = new ManagedDisplaySession
             {
                 Mode = mode,
                 Serial = serial,
-                AppPackage = launchedPackage ?? GetDeviceRunSettings()
+                AppPackage = capturedAppPackage ?? GetDeviceRunSettings()
                     .Scrcpy.StartAppPackage,
                 DisplayId = lease.DisplayId,
                 ScrcpyProcessId = _scrcpyService.CurrentProcessId,
@@ -600,7 +747,7 @@ namespace DexManager.Services
                 DisplayLease = lease
             };
             _runtimeSessions.SetDexSession(serial, _currentSession);
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.Dex.SessionStarted",
                 _currentSession));
         }
@@ -632,7 +779,7 @@ namespace DexManager.Services
         {
             if (session == null ||
                 !ReferenceEquals(_currentSession, session)) return;
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.Dex.SessionEnded",
                 session));
             _runtimeSessions.SetDexSession(session.Serial, null);

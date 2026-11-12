@@ -2,7 +2,6 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" Condition="false" />
   <PropertyGroup>
-    <CompanionSharedRoot Condition="'$(CompanionSharedRoot)' == '' And Exists('$(MSBuildProjectDirectory)\..\..\DX Companion Shared\integration\CompanionRelease.cs')">$(MSBuildProjectDirectory)\..\..\DX Companion Shared</CompanionSharedRoot>
     <CompanionSharedRoot Condition="'$(CompanionSharedRoot)' == ''">$(MSBuildProjectDirectory)\..\companion</CompanionSharedRoot>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -48,9 +47,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Models\FrameRateRules.cs" />
-    <Compile Include="Services\PortableUpdateNoticeService.cs" />
-    <Compile Include="Forms\MainForm.FrameRate.cs" />
     <Compile Include="Forms\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -75,6 +71,8 @@
     <Compile Include="Forms\MainForm.PhonePower.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Forms\MainForm.FrameRate.cs"><DependentUpon>MainForm.cs</DependentUpon></Compile>
+    <Compile Include="Models\FrameRateRules.cs" />
     <Compile Include="Forms\MainForm.RunSettings.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
@@ -193,6 +191,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\LogService.cs" />
+    <Compile Include="Services\LogService.Automatic.cs" />
     <Compile Include="Services\AdbService.cs" />
     <Compile Include="Services\AdbMdnsOutputParser.cs" />
     <Compile Include="Services\AdbCommandBuilder.cs" />
@@ -357,19 +356,34 @@
     <Compile Include="Forms\SettingsForm.StoreBindings.cs" />
   </ItemGroup>
   <ItemGroup><Compile Include="Services\PortableOnboardingService.cs" /><Compile Include="Forms\DesktopDialogs.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="Services\SingleInstanceActivationService.cs" /></ItemGroup>
   <ItemGroup><Content Include="licenses\Pretendard-LICENSE.txt"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content></ItemGroup>
   <ItemGroup><Compile Include="Forms\UiRendering.cs" /><Compile Include="Forms\UiText.cs" /></ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CompanionSharedRoot)\integration\CompanionRelease.cs"><Link>Shared\CompanionRelease.cs</Link></Compile>
+    <Compile Include="Models\AppKeyProfile.cs" />
+    <Compile Include="Services\AppKeyRuleResolver.cs" />
+    <Compile Include="Services\ForegroundAppCache.cs" />
+  </ItemGroup>  <ItemGroup><Compile Include="Services\ForegroundWindowDiagnostic.cs" /></ItemGroup>
+  <ItemGroup>
+    <Compile Include="Services\PhonePowerKeyDispatcher.cs" />
+    <Compile Include="Services\NativeDexProtocol.cs" />
+    <Compile Include="Services\NativeDexProcessController.cs" />
+    <Compile Include="Services\NativeDexSessionService.cs" />
+    <Compile Include="Services\NativeStartReadiness.cs" />
+    <Compile Include="Services\NativeDexHelperRelease.cs" />
+    <Content Include="tools\native-dex\dxm-native-dex.jar"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
+    <Content Include="licenses\ScrcpyDex-APACHE-2.0.txt"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
+    <Content Include="licenses\ScrcpyDex-NOTICE.txt"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
   </ItemGroup>
-<ItemGroup>
+  <ItemGroup>
     <Compile Include="Models\ReleaseUpdate.cs" />
     <Compile Include="Services\UpdateCheckStateStore.cs" />
     <Compile Include="Services\GitHubReleaseSource.cs" />
     <Compile Include="Services\UpdateCheckService.cs" />
-    <Compile Include="Services\SingleInstanceActivationService.cs" />
+    <Compile Include="Services\PortableUpdateNoticeService.cs" />
     <Compile Include="Forms\MainForm.Updates.cs" />
     <Compile Include="Forms\UpdateCheckDialog.cs" />
     <Compile Include="Forms\UpdateAvailableBanner.cs" />
-</ItemGroup>
+    <Compile Include="$(CompanionSharedRoot)\integration\CompanionRelease.cs"><Link>Shared\CompanionRelease.cs</Link></Compile>
+  </ItemGroup>
 </Project>

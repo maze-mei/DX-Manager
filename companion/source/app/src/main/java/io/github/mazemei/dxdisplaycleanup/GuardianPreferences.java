@@ -5,7 +5,7 @@ import android.content.SharedPreferences;
 
 final class GuardianPreferences {
     static final int DISABLED = -1;
-    static final int DEFAULT_DELAY_SECONDS = 300;
+    static final int DEFAULT_DELAY_SECONDS = 0;
     static final int[] DELAY_VALUES = {
             0, 60, 300, 600, 1800, DISABLED
     };
@@ -43,5 +43,6 @@ final class GuardianPreferences {
                 .edit()
                 .putInt(KEY_DELAY_SECONDS, seconds)
                 .apply();
+        // Native DeX has a fixed grace; this preference controls legacy cleanup only.
     }
 }

@@ -61,6 +61,39 @@ namespace DexManager.Utils
                 "Log.Process.ShutdownRequested"));
         }
 
+        public Process StartInteractive(string fileName, string arguments, string workingDirectory)
+        {
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = fileName,
+                    Arguments = arguments,
+                    WorkingDirectory = workingDirectory,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8
+                },
+                EnableRaisingEvents = true
+            };
+            process.Exited += delegate { lock (_lifecycleSync) _activeProcesses.Remove(process); };
+            try
+            {
+                lock (_lifecycleSync)
+                {
+                    if (IsShutdownRequested) throw new OperationCanceledException("Process creation is blocked for shutdown.");
+                    process.Start();
+                    _activeProcesses.Add(process);
+                }
+                return process;
+            }
+            catch { process.Dispose(); throw; }
+        }
+
         public ProcessResult Run(
             string fileName,
             string arguments,
@@ -128,7 +161,7 @@ namespace DexManager.Utils
             };
 
             if (writeLog)
-                _logService.Info(LocalizationService.Format(
+                _logService.Command(LocalizationService.Format(
                     "Log.Process.Start",
                     fileName,
                     startInfo.Arguments));
@@ -329,7 +362,7 @@ namespace DexManager.Utils
                 (long)result.Duration.TotalMilliseconds);
 
             if (result.IsSuccess)
-                _logService.Info(summary);
+                _logService.Response(summary);
             else
                 _logService.Warning(summary + " Error=" + result.StandardError);
         }

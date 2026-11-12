@@ -37,14 +37,19 @@ final class CleanupCoordinator {
     }
 
     static Snapshot inspect(Context context) {
-        return new Snapshot(
-                OverlayDisplayRepository.inspect(context),
-                StayAwakeRepository.inspect(context));
+        OverlayDisplayRepository.Snapshot overlay=OverlayDisplayRepository.inspect(context);
+        NativeSessionBridge.Snapshot nativeDisplay=NativeSessionBridge.inspect(context);
+        if(nativeDisplay.active) overlay=new OverlayDisplayRepository.Snapshot(
+                OverlayDisplayRepository.Status.ACTIVE,true,"Native DeX: "+nativeDisplay.detail,null);
+        else if(NativeSessionBridge.hasSession(context)&&!nativeDisplay.confirmed&&!overlay.overlayActive)
+            overlay=new OverlayDisplayRepository.Snapshot(OverlayDisplayRepository.Status.UNKNOWN,false,nativeDisplay.detail,null);
+        return new Snapshot(overlay,StayAwakeRepository.inspect(context));
     }
 
     static Snapshot cleanup(Context context, boolean overlay, boolean stayAwake) {
         if (overlay) {
-            OverlayDisplayRepository.cleanup(context);
+            if(NativeSessionBridge.hasSession(context))NativeSessionBridge.stop(context);
+            else OverlayDisplayRepository.cleanup(context);
         }
         if (stayAwake) {
             StayAwakeRepository.cleanup(context);

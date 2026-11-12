@@ -1,5 +1,12 @@
 # Current status — Windows 2.5.0
 
+## Windows v3.0.0 release status
+
+- [x] Prepare the local release source on the published v2.5.0 base.
+- [x] Retain the GitHub update check, first-run notice and macOS source.
+- [x] Verify the Windows release build, bilingual interface and clean ZIP.
+- [ ] Publish the source and Windows ZIP after the maintainer requests upload.
+
 ## English — 2026-10-25
 
 ### Release scope completed

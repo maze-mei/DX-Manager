@@ -13,7 +13,10 @@ namespace DexManager.Forms
         private readonly RichTextBox _logTextBox;
         private readonly Panel _toolbar;
         private readonly Button _saveButton;
-        private string _lastDisplayedMessage;
+        private string _lastDisplayedMessage,_lastDisplayedLevel;
+        private LogEntryKind _lastDisplayedKind;
+        private sealed class ColorSpan { public int Start,Length; public LogEventArgs Entry; }
+        private readonly System.Collections.Generic.List<ColorSpan> _colorSpans=new System.Collections.Generic.List<ColorSpan>();
         private readonly RoundedPanel _logSurface;
         private readonly Label _heading, _description, _footer;
 
@@ -93,8 +96,8 @@ namespace DexManager.Forms
 
         private void LoadSessionLog()
         {
-            foreach (var line in _logService.GetSessionEntries())
-                AppendIfNew(line);
+            foreach (var entry in _logService.GetSessionEvents())
+                AppendIfNew(entry);
             MoveToEnd();
         }
 
@@ -149,7 +152,7 @@ namespace DexManager.Forms
                 BeginInvoke((Action)delegate
                 {
                     if (IsDisposed) return;
-                    AppendIfNew(e.Message);
+                    AppendIfNew(e);
                     MoveToEnd();
                 });
             }
@@ -159,21 +162,39 @@ namespace DexManager.Forms
             }
         }
 
-        private void AppendIfNew(string line)
+        private void AppendIfNew(LogEventArgs entry)
         {
+            var line=entry.Message;
             var comparable = GetComparableMessage(line);
             if (string.Equals(
                 comparable,
                 _lastDisplayedMessage,
-                StringComparison.Ordinal))
+                StringComparison.Ordinal) && _lastDisplayedKind==entry.Kind && _lastDisplayedLevel==entry.Level)
             {
                 return;
             }
 
-            _lastDisplayedMessage = comparable;
+            _lastDisplayedMessage = comparable;_lastDisplayedKind=entry.Kind;_lastDisplayedLevel=entry.Level;
+            int start=_logTextBox.TextLength;
+            _logTextBox.Select(start,0);
+            _logTextBox.SelectionColor=EntryColor(entry);
             _logTextBox.AppendText(line + Environment.NewLine);
+            _colorSpans.Add(new ColorSpan {Start=start,Length=_logTextBox.TextLength-start,Entry=entry});
         }
 
+        private static Color EntryColor(LogEventArgs entry) {
+            bool dark=ThemeColors.Current.IsDark;
+            if(entry.Kind==LogEntryKind.ToolOutput)return ThemeColors.Current.TextPrimary;
+            if(entry.Level=="ERROR")return dark?Color.FromArgb(255,107,129):Color.FromArgb(176,0,32);
+            if(entry.Level=="WARN")return dark?Color.FromArgb(255,179,71):Color.FromArgb(150,53,0);
+            if(entry.Kind==LogEntryKind.Progress)return dark?Color.FromArgb(188,140,255):Color.FromArgb(89,0,168);
+            return ThemeColors.Current.TextPrimary;
+        }
+        private void RefreshEntryColors() {
+            int start=_logTextBox.SelectionStart,length=_logTextBox.SelectionLength;
+            foreach(var span in _colorSpans){_logTextBox.Select(span.Start,span.Length);_logTextBox.SelectionColor=EntryColor(span.Entry);}
+            _logTextBox.Select(Math.Min(start,_logTextBox.TextLength),Math.Min(length,Math.Max(0,_logTextBox.TextLength-start)));
+        }
         private static string GetComparableMessage(string line)
         {
             if (string.IsNullOrEmpty(line)) return string.Empty;
@@ -212,6 +233,7 @@ namespace DexManager.Forms
             _saveButton.ForeColor = theme.TextPrimary;
             _logTextBox.BackColor = theme.CardBackground;
             _logTextBox.ForeColor = theme.TextPrimary;
+            RefreshEntryColors();
             ThemedScrollBar.RefreshFor(_logTextBox);
             Invalidate(true);
         }

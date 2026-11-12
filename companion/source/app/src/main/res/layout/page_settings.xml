@@ -3,6 +3,13 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="20dp" android:paddingTop="22dp" android:paddingEnd="20dp" android:paddingBottom="28dp">
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/pretendard_variable" android:text="@string/settings_page_title" android:textColor="@color/text_primary" android:textSize="27sp" android:textStyle="bold" />
 
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:background="@drawable/bg_info_card" android:orientation="vertical" android:padding="17dp">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/foreground_accessibility_label" android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/foreground_accessibility_description" android:textColor="@color/text_secondary" android:textSize="14sp" />
+            <TextView android:id="@+id/foreground_accessibility_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:textColor="@color/text_primary" android:textSize="14sp" />
+            <Button android:id="@+id/foreground_accessibility_button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="@string/foreground_accessibility_button" />
+        </LinearLayout>
+
         <LinearLayout android:id="@+id/settings_permission_card" android:layout_width="match_parent" android:layout_height="@dimen/hero_card_height" android:layout_marginTop="22dp" android:background="@drawable/bg_status_card" android:gravity="center_vertical" android:orientation="horizontal" android:padding="20dp">
             <FrameLayout android:layout_width="72dp" android:layout_height="72dp" android:background="@drawable/bg_status_icon" android:padding="18dp"><ImageView android:id="@+id/settings_permission_icon" android:layout_width="match_parent" android:layout_height="match_parent" android:contentDescription="@string/permission_title" android:src="@drawable/ic_settings" /></FrameLayout>
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:orientation="vertical">

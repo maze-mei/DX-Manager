@@ -1,74 +1,27 @@
 # DX Companion
 
-## Store follow-up 2.1.5 (2026-10-07)
+DX Companion 3.0.0 (code 16) is the shared Android app for the GitHub and
+Store editions of DX Manager. It supports Android 13 or later.
 
-The Store bundle uses versionCode 12 with the unchanged official certificate,
-package ID, permissions and wire protocol. Sharing keeps one request ID across
-Activity recreation and rejects callbacks from destroyed/finishing owners.
-Service enqueue deduplicates that ID, not the content; intentionally sharing
-the same file again remains supported. Queue cancellation, timeout and URI
-grant cleanup are unchanged. Android 28 unit tests and signed Release lint/build
-passed; actual Galaxy sharing remains a separate verification step.
+The app sends files and folders to the PC, cleans up displays and Stay awake,
+and shows the current Native DeX session. Its Quick Settings tile and home
+screen widget use the cleanup targets selected in the app. App switch
+detection can be enabled for AI app automatic line breaks.
 
-Builds may use `scripts/Build-AndroidCleanup.ps1 -SigningPropertiesPath <path>`
-to read an existing trusted signing environment without copying its private
-files into this checkout. Never commit or package those private files.
+Use **Settings → Companion** in DX Manager to install or update the signed
+app and grant cleanup permission. The Android package and official signing
+identity stay the same across updates. See [signing](SIGNING.md) for the
+certificate fingerprint.
 
-Private Android companion utility for DX Manager. It can inspect and clean up:
+The shared build uses the Android project in this directory. Build with
+JDK 17 and Android SDK 36. Run the shared Build-Companion.ps1 with a trusted
+signing properties path to create and verify the official APK.
 
-- Android's simulated-secondary-display setting (`overlay_display_devices`)
-- Developer options **Stay awake** (`stay_on_while_plugged_in`)
+## 한국어
 
-DX Companion supports Android 13 (API 33) and later. Android 13 and later can
-use DX Manager single-window sessions, while New DeX requires the Android 16 /
-One UI 8 generation. Android 12 and earlier are outside the product support
-range.
+DX Companion 3.0.0(code 16)은 GitHub판과 스토어판에서 함께 사용하는 Android 앱입니다.
+Android 13 이상에서 휴대폰에서 PC로 파일·폴더 보내기, 화면과 잠자기 방지 정리,
+네이티브 DeX 상태 확인을 지원합니다. AI 앱 자동 줄바꿈을 쓸 때 앱 전환 감지를 켭니다.
 
-The phone UI uses the same violet/cyan glass-inspired visual language and
-bundled Pretendard typeface as DX Manager Store Edition. Home, Cleanup,
-Transfer, and Settings share one 176 dp hero-card height and automatically
-follow the system light or dark theme.
-
-Home shows the active USB or Wi-Fi connection and its elapsed session time.
-Transfer keeps two separate histories: the latest 10 PC-to-phone results and
-the latest 10 phone-to-PC results. Each list can be cleared independently.
-
-The app provides separate actions for both settings and a combined action. Its
-Quick Settings tile and compact 2 × 1 home-screen widget clean both by default;
-their targets can be changed inside the app.
-
-DX Companion 2.1.2 can also keep an authenticated loopback session with a
-verified DX Manager instance. When Windows announces a real session shutdown,
-DX Manager sends the cleanup request over that already-open session instead of
-starting a new ADB process. A broken USB/Wi-Fi session does not clean up
-immediately: the default grace period is five minutes, and the user can select
-immediate cleanup, one, five, ten or thirty minutes, or disable delayed cleanup.
-
-## Safety boundary
-
-- Uses `WRITE_SECURE_SETTINGS` only for the two documented recovery settings.
-- Does not provide a shell, execute arbitrary commands, contact cloud services,
-  or collect data. Its network use is limited to authenticated local sessions
-  created through an ADB reverse tunnel by a verified DX Manager instance.
-- The permission is granted only through DX Manager after the exact package and
-  official signing certificate are verified.
-- Every cleanup operation is verified by reading the affected setting again.
-
-## Local build
-
-Run the repository build helper from PowerShell:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass `
-    -File .\scripts\Build-AndroidCleanup.ps1
-```
-
-The helper uses `JAVA_HOME` and `ANDROID_HOME` when set, or the ignored
-repository-local `.build-tools\android` toolchain. JDK 17 and Android SDK
-platform 36 are required. Never commit `signing.properties`, a keystore, or
-passwords. Back up the release keystore separately; it is required for future
-updates.
-
-Package ID: `io.github.mazemei.dxdisplaycleanup`
-
-The public signing certificate fingerprint is recorded in [SIGNING.md](SIGNING.md).
+DX Manager의 **설정 → Companion**에서 설치·업데이트와 정리 권한 부여를 진행합니다.
+서명 정보는 [SIGNING.md](SIGNING.md)에서 확인할 수 있습니다.

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -11,6 +11,17 @@ namespace DexManager.Forms
 {
     public sealed partial class MainForm : Form
     {
+        private void NativeDisplayReleased(object sender, EventArgs e)
+        {
+            RunOnUi(delegate
+            {
+                if (_exitInProgress || _systemShutdownInProgress || IsDisposed) return;
+                // A retained, control-only display can end without any scrcpy RunningChanged event.
+                // Reuse the existing per-phone/other-window guards and the user's restore preference.
+                QueueDeviceStayAwakeUpdate();
+            });
+        }
+
         private void ScrcpyService_RunningChanged(object sender, EventArgs e)
         {
             var updateSelectedUi = IsActiveRuntimeSender(sender);
@@ -222,8 +233,12 @@ namespace DexManager.Forms
                 StringComparer.OrdinalIgnoreCase);
             foreach (var context in GetAllDeviceContexts())
             {
+                var native=context.Runtime.Dex.RetainedNativeLease;
+                if(native!=null&&native.NativeStartRequested&&native.NativeStayAwakeRequested&&
+                    (!native.NativeCompanionPolicyEnabled||native.NativeViewerActive))requestedSerials.Add(native.Serial);
                 var dexSession = context.Runtime.Scrcpy
                     .GetSessionSnapshot();
+                context.Runtime.Dex.UpdateNativeViewerState();
                 if (dexSession.StayAwakeRequested)
                     requestedSerials.Add(dexSession.Serial);
                 foreach (var serial in context.Runtime.SingleWindows
@@ -237,7 +252,7 @@ namespace DexManager.Forms
             foreach (var serial in requestedSerials)
             {
                 if (IsSerialMarkedDisconnected(serial)) continue;
-                if (HasStayAwakeOriginalValue(serial)) continue;
+                var hadOriginal=HasStayAwakeOriginalValue(serial);
                 try
                 {
                     var originalResult = _adbService.ShellForSerial(
@@ -252,7 +267,14 @@ namespace DexManager.Forms
                     if (string.Equals(
                         original,
                         "7",
-                        StringComparison.Ordinal)) continue;
+                        StringComparison.Ordinal)) {
+                        var retainedOriginal=GetRetainedNativePowerOriginal(serial);
+                        if(!hadOriginal&&retainedOriginal!=null&&retainedOriginal!="7") {
+                            SetStayAwakeOriginalValue(serial,retainedOriginal);PublishPhonePowerState(serial);
+                        }
+                        continue;
+                    }
+                    if(!IsStayAwakeRequestedNow(serial))continue;
                     var result = _adbService.ShellForSerial(
                         serial,
                         "settings put global stay_on_while_plugged_in 7",
@@ -267,9 +289,17 @@ namespace DexManager.Forms
                         continue;
                     }
 
-                    SetStayAwakeOriginalValue(serial, original);
+                    var applied=_adbService.ShellForSerial(serial,"settings get global stay_on_while_plugged_in",false);
+                    if(!applied.IsSuccess||NormalizeStayAwakeValue(applied.StandardOutput)!="7") {
+                        _logService.Warning(DeviceLogFormatter.ForSerial(serial,"Stay awake command completed but its setting did not remain enabled; recheck deferred."));
+                        continue;
+                    }
+                    if(!hadOriginal) {
+                        var saved=GetRetainedNativePowerOriginal(serial);
+                        SetStayAwakeOriginalValue(serial,saved??original);
+                    }
                     PublishPhonePowerState(serial);
-                    _logService.Info(DeviceLogFormatter.ForSerial(
+                    _logService.Progress(DeviceLogFormatter.ForSerial(
                         serial,
                         LocalizationService.Get(
                             "Log.Main.StayAwakeEnabled")));
@@ -297,8 +327,32 @@ namespace DexManager.Forms
             }
         }
 
+        private bool IsStayAwakeRequestedNow(string serial) {
+            var identity=_runtimeSessions.ResolveIdentity(serial);
+            foreach(var context in GetAllDeviceContexts()) {
+                if(!string.Equals(context.Identity,identity,StringComparison.OrdinalIgnoreCase))continue;
+                if(context.PendingSessionStarts>0)return true;
+                var native=context.Runtime.Dex.RetainedNativeLease;
+                if(native!=null&&native.NativeStartRequested&&native.NativeStayAwakeRequested&&
+                    (!native.NativeCompanionPolicyEnabled||native.NativeViewerActive))return true;
+                if(context.Runtime.Scrcpy.GetSessionSnapshot().StayAwakeRequested||context.Runtime.SingleWindows.GetStayAwakeSerials().Count>0)return true;
+            }
+            return false;
+        }
+        private string GetRetainedNativePowerOriginal(string serial) {
+            var identity=_runtimeSessions.ResolveIdentity(serial);
+            foreach(var context in GetAllDeviceContexts()) {
+                var lease=context.Runtime.Dex.RetainedNativeLease;
+                if(lease!=null&&lease.NativeStartRequested&&lease.NativeDeviceIdentity==identity) {
+                    if(lease.NativeOriginalStayAwake==MissingStayAwakeValue)return MissingStayAwakeValue;
+                    var original=NormalizeStayAwakeValue(lease.NativeOriginalStayAwake);if(original!=null)return original;
+                }
+            }
+            return null;
+        }
         private void ReleaseStayAwakeOverride(string serial)
         {
+            if(IsStayAwakeRequestedNow(serial))return;
             string original;
             if (!TryGetStayAwakeOriginalValue(serial, out original))
                 return;
@@ -343,6 +397,7 @@ namespace DexManager.Forms
                     return;
                 }
 
+                if(IsStayAwakeRequestedNow(serial))return;
                 var command = original == MissingStayAwakeValue
                     ? "settings delete global stay_on_while_plugged_in"
                     : "settings put global stay_on_while_plugged_in " +
@@ -363,7 +418,7 @@ namespace DexManager.Forms
 
                 RemoveStayAwakeOriginalValue(serial);
                 PublishPhonePowerState(serial);
-                _logService.Info(DeviceLogFormatter.ForSerial(
+                _logService.Progress(DeviceLogFormatter.ForSerial(
                     serial,
                     LocalizationService.Get(
                         "Log.Main.StayAwakeDisabled")));
@@ -519,30 +574,50 @@ namespace DexManager.Forms
         private IList<string> WakePhoneScreens(IList<string> serials)
         {
             var woken = new List<string>();
+            var watch=System.Diagnostics.Stopwatch.StartNew();
+            _logService.Diagnostic("Wake","Batch queued; targetCount="+serials.Count+"; serials="+string.Join(",",serials));
             _launchCoordinator.RunExclusive(delegate
             {
+                _logService.Diagnostic("Wake","Launch gate entered; waitMs="+watch.ElapsedMilliseconds);
                 foreach (var serial in serials)
                 {
-                    if (!IsScreenOffRequestedForSerial(serial) &&
-                        WakePhoneScreen(serial))
+                    if (IsScreenOffRequestedForSerial(serial))
+                    {
+                        _logService.Diagnostic("Wake","Skipped serial="+serial+"; reason=another-managed-window-still-requests-screen-off");
+                        continue;
+                    }
+                    if (WakePhoneScreen(serial))
                     {
                         woken.Add(serial);
                     }
                 }
             });
+            _logService.Diagnostic("Wake","Batch returned; accepted="+woken.Count+"/"+serials.Count+"; elapsedMs="+watch.ElapsedMilliseconds+
+                "; physical panel state was not queried.");
             return woken;
         }
 
         private bool WakePhoneScreen(string serial)
         {
-            if (string.IsNullOrWhiteSpace(serial) ||
-                IsSerialMarkedDisconnected(serial)) return false;
+            if (string.IsNullOrWhiteSpace(serial))
+            {
+                _logService.Diagnostic("Wake","Skipped wake; reason=empty-serial");return false;
+            }
+            if (IsSerialMarkedDisconnected(serial))
+            {
+                _logService.Diagnostic("Wake","Skipped serial="+serial+"; reason=transport-marked-disconnected");return false;
+            }
+            var watch=System.Diagnostics.Stopwatch.StartNew();
+            _logService.Diagnostic("Wake","Sending input keyevent 224; serial="+serial+"; exitInProgress="+_exitInProgress);
             try
             {
                 var result = _adbService.ShellForSerial(
                     serial,
                     "input keyevent 224",
                     true);
+                _logService.Diagnostic("Wake","Command returned; serial="+serial+"; success="+result.IsSuccess+
+                    "; exitCode="+result.ExitCode+"; timedOut="+result.TimedOut+"; elapsedMs="+watch.ElapsedMilliseconds+
+                    "; stderr="+result.StandardError+"; success means command acceptance, not verified physical wake.");
                 if (result.IsSuccess)
                 {
                     _logService.Info(DeviceLogFormatter.ForSerial(
@@ -560,6 +635,7 @@ namespace DexManager.Forms
             }
             catch (Exception ex)
             {
+                _logService.Diagnostic("Wake","Command exception; serial="+serial+"; elapsedMs="+watch.ElapsedMilliseconds+"; "+ex.GetType().Name+": "+ex.Message);
                 _logService.Error(
                     DeviceLogFormatter.ForSerial(
                         serial,

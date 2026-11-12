@@ -1,0 +1,15 @@
+DX Manager Native DeX activation includes adapted Java activation/context code
+from ScrcpyDeX v1.1 by Aureliano Peixoto and ScrcpyDeX contributors.
+
+Source: https://github.com/Aureliano021/ScrcpyDex
+Upstream commit: eebbba903b73d54bbd13210096ea28fe31e51200
+License: Apache License, Version 2.0 (separate license text included).
+
+DX Manager changes include session ownership, bounded RTSP framing, requested
+initial metrics, reconnect grace, guarded cleanup, audio/power policy and a
+separate crash guard. Original copyright notices remain in the source. The
+helper JAR also contains the upstream license and modification notice.
+
+네이티브 DeX 화면 생성은 Aureliano Peixoto와 ScrcpyDeX 기여자의 ScrcpyDeX v1.1 Java 코드를 바탕으로 합니다.
+위에 고정한 리비전의 원본 코드는 Apache License 2.0을 따릅니다.
+DX Manager에서 세션 소유권, RTSP 메시지 처리, 해상도 설정, 재연결 유예, 정리, 소리와 전원 동작을 수정했습니다.

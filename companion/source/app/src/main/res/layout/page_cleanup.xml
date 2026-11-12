@@ -3,7 +3,7 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="20dp" android:paddingTop="22dp" android:paddingEnd="20dp" android:paddingBottom="28dp">
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:fontFamily="@font/pretendard_variable" android:text="@string/cleanup_page_title" android:textColor="@color/text_primary" android:textSize="27sp" android:textStyle="bold" />
 
-        <LinearLayout android:layout_width="match_parent" android:layout_height="@dimen/hero_card_height" android:layout_marginTop="22dp" android:background="@drawable/bg_card" android:gravity="center_vertical" android:orientation="horizontal" android:padding="18dp">
+        <LinearLayout android:id="@+id/cleanup_overlay_card" android:layout_width="match_parent" android:layout_height="@dimen/hero_card_height" android:layout_marginTop="22dp" android:background="@drawable/bg_card" android:gravity="center_vertical" android:orientation="horizontal" android:padding="18dp">
             <FrameLayout android:layout_width="72dp" android:layout_height="72dp" android:background="@drawable/bg_icon_tile" android:padding="18dp"><ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:contentDescription="@string/overlay_title" android:src="@drawable/ic_monitor" /></FrameLayout>
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:orientation="vertical">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/cleanup_virtual_display_short" android:textColor="@color/text_primary" android:textSize="19sp" android:textStyle="bold" />
@@ -14,7 +14,7 @@
             <Button android:id="@+id/cleanup_overlay_button" style="@style/Widget.DX.Button.Secondary" android:layout_width="82dp" android:layout_height="48dp" android:layout_marginStart="8dp" android:text="@string/cleanup_overlay_button_short" />
         </LinearLayout>
 
-        <LinearLayout android:layout_width="match_parent" android:layout_height="@dimen/hero_card_height" android:layout_marginTop="12dp" android:background="@drawable/bg_card" android:gravity="center_vertical" android:orientation="horizontal" android:padding="18dp">
+        <LinearLayout android:id="@+id/cleanup_stay_awake_card" android:layout_width="match_parent" android:layout_height="@dimen/hero_card_height" android:layout_marginTop="12dp" android:background="@drawable/bg_card" android:gravity="center_vertical" android:orientation="horizontal" android:padding="18dp">
             <FrameLayout android:layout_width="72dp" android:layout_height="72dp" android:background="@drawable/bg_icon_tile" android:padding="18dp"><ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:contentDescription="@string/stay_awake_title" android:src="@drawable/ic_sleep" /></FrameLayout>
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_weight="1" android:orientation="vertical">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/cleanup_stay_awake_short" android:textColor="@color/text_primary" android:textSize="19sp" android:textStyle="bold" />

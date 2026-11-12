@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -15,6 +15,7 @@ namespace DexManager.Services
         private const int FollowIntervalMs = 60;
         private const int BarGap = 6;
         private readonly AppSettings _settings;
+        private readonly AdbService _powerAdb;
         private readonly ScrcpyService _scrcpyService;
         private readonly SingleWindowService _singleWindowService;
         private readonly CaptureCoordinator _captureCoordinator;
@@ -34,8 +35,10 @@ namespace DexManager.Services
             SingleWindowService singleWindowService,
             CaptureCoordinator captureCoordinator,
             Action showMainWindow,
-            LogService logService)
+            LogService logService,
+            AdbService powerAdb = null)
         {
+            _powerAdb=powerAdb;
             _settings = settings ?? throw new ArgumentNullException("settings");
             _scrcpyService = scrcpyService ??
                 throw new ArgumentNullException("scrcpyService");
@@ -353,7 +356,8 @@ namespace DexManager.Services
                         SendShortcut(e.TargetHandle, Keys.O, true);
                         break;
                     case MiniControlBarCommand.Power:
-                        SendShortcut(e.TargetHandle, Keys.P, false);
+                        if(!PhonePowerKeyDispatcher.Queue(e.TargetHandle,_scrcpyService,_singleWindowService,_powerAdb,_logService))
+                            SendShortcut(e.TargetHandle,Keys.P,false);
                         break;
                     case MiniControlBarCommand.Fullscreen:
                         SendShortcut(e.TargetHandle, Keys.F, false);

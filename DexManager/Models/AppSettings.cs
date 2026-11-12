@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -10,7 +10,7 @@ namespace DexManager.Models
     [DataContract]
     public sealed class AppSettings
     {
-        public const int CurrentSchemaVersion = 28;
+        public const int CurrentSchemaVersion = 34;
         public const int MaximumRecentCustomResolutions = 5;
 
         [DataMember(Order = 1)] public int SchemaVersion { get; set; }
@@ -72,10 +72,8 @@ namespace DexManager.Models
                     LogFolder = "logs",
                     FileTransferTargetFolder = "/sdcard/Download/",
                     PhoneToPcReceiveFolder = System.IO.Path.Combine(
-                        System.Environment.GetFolderPath(
-                            System.Environment.SpecialFolder.UserProfile),
-                        "Downloads",
-                        "DX Manager")
+                        System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile),
+                        "Downloads", "DX Manager")
                 },
                 VirtualDisplay = new VirtualDisplaySettings
                 {
@@ -138,8 +136,10 @@ namespace DexManager.Models
                     ConvertKoreanEnglishKey = true,
                     KoreanEnglishInputMode = KeyInputMode.SendInputScanCode,
                     HandleRightWindowsKey = true,
-                    ConvertEnterToShiftEnter = false,
+                    ConvertEnterToShiftEnter = true,
                     EnterInputMode = KeyInputMode.SendInputScanCode,
+                    AutoAppEnterEnabled = false,
+                    AppKeyProfiles = AppKeyProfile.CreateDefaults(),
                     IgnoreShiftSpace = false
                 },
                 LastSuccess = new LastSuccessSettings(),
@@ -160,10 +160,24 @@ namespace DexManager.Models
 
             if (Paths == null) Paths = defaults.Paths;
             if (VirtualDisplay == null) VirtualDisplay = defaults.VirtualDisplay;
+            if(!System.Enum.IsDefined(typeof(DexDisplayMode),VirtualDisplay.ActivationMode))VirtualDisplay.ActivationMode=DexDisplayMode.Native;
             if (Scrcpy == null) Scrcpy = defaults.Scrcpy;
             if (Timing == null) Timing = defaults.Timing;
             if (Features == null) Features = defaults.Features;
             if (KeyMappings == null) KeyMappings = defaults.KeyMappings;
+            if (KeyMappings.AppKeyProfiles == null)
+            {
+                KeyMappings.AppKeyProfiles = AppKeyProfile.CreateDefaults();
+            }
+            else
+            {
+                var claude = AppKeyProfile.CreateClaudeDefault();
+                if (!KeyMappings.AppKeyProfiles.Exists(claude.HasSameTarget))
+                    KeyMappings.AppKeyProfiles.Add(claude);
+            }
+            // A saved explicit manual mode keeps its existing Scroll Lock semantics.
+            if (KeyMappings.ConvertEnterToShiftEnter)
+                KeyMappings.AutoAppEnterEnabled = false;
             if (LastSuccess == null) LastSuccess = defaults.LastSuccess;
             if (Connection == null) Connection = defaults.Connection;
             if (RememberedApps == null)
@@ -188,6 +202,7 @@ namespace DexManager.Models
                     SingleWindowSlots.Count + 1));
             }
             var oldSchemaVersion = SchemaVersion;
+            if(oldSchemaVersion==33) Features.AutoSaveSessionLogs=true; // Preserve previous private-test logging.
             if (SchemaVersion <= 0) SchemaVersion = defaults.SchemaVersion;
 
             if (string.IsNullOrWhiteSpace(KeyMappings.CaptureHotkey))
@@ -388,6 +403,18 @@ namespace DexManager.Models
                     new List<DeviceWirelessConnectionProfile>();
                 SchemaVersion = defaults.SchemaVersion;
             }
+            if (oldSchemaVersion < 29)
+            {
+                var geminiWeb = AppKeyProfile.CreateGeminiWebAppDefault();
+                // Preserve custom/disabled entries for this exact window target.
+                if (!KeyMappings.AppKeyProfiles.Exists(profile =>
+                    profile != null && profile.HasSameTarget(geminiWeb)))
+                    KeyMappings.AppKeyProfiles.Add(geminiWeb);
+            }
+            // Migrate the private test default only. Explicit other folders and existing files stay put.
+            if (oldSchemaVersion < 32 && string.Equals((Paths.PhoneToPcReceiveFolder ?? "").Trim(),
+                    "receive", System.StringComparison.OrdinalIgnoreCase))
+                Paths.PhoneToPcReceiveFolder = defaults.Paths.PhoneToPcReceiveFolder;
             if (oldSchemaVersion < CurrentSchemaVersion)
                 SchemaVersion = defaults.SchemaVersion;
             VirtualDisplay.Width = NormalizeRange(
@@ -1194,6 +1221,7 @@ namespace DexManager.Models
             VirtualDisplaySettings source)
         {
             source = source ?? new VirtualDisplaySettings();
+            if(!System.Enum.IsDefined(typeof(DexDisplayMode),source.ActivationMode))source.ActivationMode=DexDisplayMode.Native;
             return new VirtualDisplaySettings
             {
                 Width = source.Width,
@@ -1202,7 +1230,9 @@ namespace DexManager.Models
                 Suffix = source.Suffix,
                 ReuseExistingDisplay = source.ReuseExistingDisplay,
                 CustomWidth = source.CustomWidth,
-                CustomHeight = source.CustomHeight
+                CustomHeight = source.CustomHeight,
+                ActivationMode = source.ActivationMode,
+                KeepBluetoothAudioOnDexStart = source.KeepBluetoothAudioOnDexStart
             };
         }
 

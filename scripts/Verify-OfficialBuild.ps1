@@ -1,14 +1,15 @@
-﻿param([switch]$SkipBuild, [switch]$LiveUpdateCheck)
+param([switch]$SkipBuild, [switch]$LiveUpdateCheck)
 $ErrorActionPreference='Stop'
 $repo=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-if($repo -ne 'E:\vs\dex system-portable-backport'){throw 'Use the approved official portable worktree.'}
-$validation=Join-Path $repo '.build-tools\official250'
+$validation=Join-Path $repo '.build-tools\official300'
 [IO.Directory]::CreateDirectory($validation) | Out-Null
-$msbuild='C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe'
+$msbuild=$env:DXM_MSBUILD
+if(!$msbuild){$msbuild=(Get-Command msbuild.exe -ErrorAction Stop).Source}
+$env:DXM_MSBUILD=$msbuild
 $compiler=Join-Path ([IO.Path]::GetDirectoryName($msbuild)) 'Roslyn\csc.exe'
 & (Join-Path $PSScriptRoot 'Sync-ScrcpyRuntime.ps1') -DestinationRoot (Join-Path $repo 'DexManager\bin\Release\tools\scrcpy')
 if(!$SkipBuild) {
-    & $msbuild (Join-Path $repo 'DexManager.sln') /t:Build /p:Configuration=Release ("/p:TargetFrameworkRootPath="+(Join-Path $repo '.build-tools\net462\build')) /m:1 /nodeReuse:false *> (Join-Path $validation 'build.log')
+    & $msbuild (Join-Path $repo 'DexManager.sln') /t:Build /p:Configuration=Release ("/p:TargetFrameworkRootPath="+$env:DXM_TARGET_FRAMEWORK_ROOT) /m:1 /nodeReuse:false *> (Join-Path $validation 'build.log')
     if($LASTEXITCODE -ne 0){Get-Content -LiteralPath (Join-Path $validation 'build.log') -Tail 20;throw 'Official build failed.'}
 }
 $product=Join-Path $repo 'DexManager\bin\Release\DXManager.exe'
@@ -24,16 +25,10 @@ foreach($test in @(
     @('ScrcpyRuntimeIntegrationTests','runtime-check'),
     @('DesktopNoticeIntegrationTests','desktop-ui'),
     @('OnboardingUiIntegrationTests','onboarding-ui'),
-    @('ExperimentalFrameRateIntegrationTests','experimental-fps'),
     @('LocalizationUiIntegrationTests','english-ui'))) {
     $name=$test[0]
     $root=Join-Path $validation $test[1]
     $recordRoot=$root
-    if($test[1] -in @('experimental-fps','english-ui')) {
-        # Keep generated fixture state in the OS temporary area. No product data is touched.
-        $root=Join-Path ([IO.Path]::GetTempPath()) ('DXManager-'+$test[1]+'-Verification')
-        New-Item -ItemType Directory -Path $recordRoot -Force | Out-Null
-    }
     [IO.Directory]::CreateDirectory((Join-Path $root 'ko')) | Out-Null
     Copy-Item -LiteralPath $product -Destination (Join-Path $root 'DXManager.exe') -Force
     Copy-Item -LiteralPath (Join-Path $repo 'DexManager\bin\Release\ko\DXManager.resources.dll') -Destination (Join-Path $root 'ko\DXManager.resources.dll') -Force
@@ -46,10 +41,15 @@ foreach($test in @(
     }
     if($test[1] -in @('phone-transfer','english-ui')) {
         [IO.Directory]::CreateDirectory((Join-Path $root 'tools\companion')) | Out-Null
-        Copy-Item -LiteralPath 'E:\vs\DX Companion Shared\release\DX-Companion.apk' -Destination (Join-Path $root 'tools\companion\DX-Companion.apk') -Force
+        Copy-Item -LiteralPath (Join-Path $repo 'companion\release\DX-Companion.apk') -Destination (Join-Path $root 'tools\companion\DX-Companion.apk') -Force
         if($test[1] -eq 'phone-transfer') {
-            Copy-Item -LiteralPath 'E:\vs\dex system-ai-keymap-test\DXDisplayCleanup\bundled\DX-Companion-AI-Keymap-Test.apk' -Destination (Join-Path $root 'foreign-signer.apk') -Force
+            if(!(Test-Path -LiteralPath $env:DXM_TEST_FOREIGN_APK -PathType Leaf)){throw 'Set DXM_TEST_FOREIGN_APK to the separately signed APK test fixture.'}
+            Copy-Item -LiteralPath $env:DXM_TEST_FOREIGN_APK -Destination (Join-Path $root 'foreign-signer.apk') -Force
         }
+    }
+    if($test[1] -eq 'english-ui') {
+        [IO.Directory]::CreateDirectory((Join-Path $root 'licenses')) | Out-Null
+        Copy-Item -LiteralPath (Join-Path $repo 'DexManager\licenses\ScrcpyDex-NOTICE.txt'),(Join-Path $repo 'DexManager\licenses\ScrcpyDex-APACHE-2.0.txt'),(Join-Path $repo 'DexManager\licenses\THIRD_PARTY_NOTICES.md'),(Join-Path $repo 'DexManager\licenses\scrcpy-LICENSE.txt') -Destination (Join-Path $root 'licenses') -Force
     }
     $target=Join-Path $root ($name+'.exe')
     Copy-Item -LiteralPath (Join-Path $repo 'DexManager\bin\Release\DXManager.exe.config') -Destination ($target+'.config') -Force
@@ -88,4 +88,9 @@ if($LiveUpdateCheck) {
     if($liveCode -ne 0){Write-Warning 'Live GitHub connectivity was unavailable; offline behavior remains verified.'}
 }
 [IO.File]::WriteAllText((Join-Path $validation 'verification-summary.json'),($results | ConvertTo-Json -Depth 4),[Text.UTF8Encoding]::new($true))
+foreach($suite in @('Verify-NativeDex','Verify-AutomaticLogs','Verify-NativeDexUi','Verify-LogColors','Verify-V3Policies')) {
+    $script = Join-Path $PSScriptRoot ($suite+'.ps1')
+    if($suite -eq 'Verify-NativeDex') { & $script -SkipBuild }
+    else { & $script }
+}
 Write-Host ('Update UI preview: '+(Join-Path $demo 'UpdateNoticePreview.exe'))

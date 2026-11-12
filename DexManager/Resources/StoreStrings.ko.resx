@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -17,8 +17,8 @@
   <data name="FirstRunDialogIntro" xml:space="preserve"><value>DX Manager는 연결한 Galaxy 휴대폰을 제어하기 위해 Android 개발자 옵션과 ADB(USB 또는 무선 디버깅)를 사용합니다.</value></data>
   <data name="FirstRunDialogDisplay" xml:space="preserve"><value>DeX 및 단일창 실행 시 개발자 옵션의 보조 디스플레이 시뮬레이션 설정을 변경하여 가상 화면을 만들고 제거합니다.</value></data>
   <data name="FirstRunDialogPower" xml:space="preserve"><value>선택한 실행 옵션에 따라 휴대폰 화면과 절전모드 설정도 일시적으로 변경될 수 있습니다.</value></data>
-  <data name="FirstRunDialogRecovery" xml:space="preserve"><value>연결 해제, 프로그램 강제 종료 또는 Windows 종료 과정에서 가상 화면이나 변경된 설정이 휴대폰에 남을 수 있습니다. 도움말 또는 DX Companion에서 정리 방법을 확인할 수 있습니다.</value></data>
-  <data name="FirstRunDialogCompanion" xml:space="preserve"><value>DX Companion은 선택 기능이며 사용자가 직접 요청할 때만 설치됩니다.</value></data>
+  <data name="FirstRunDialogRecovery" xml:space="preserve"><value>연결 해제, 프로그램 강제 종료 또는 Windows 종료 과정에서 가상 화면이나 변경된 설정이 휴대폰에 남을 수 있습니다. 도움말 또는 DX Companion 앱에서 정리 방법을 확인할 수 있습니다.</value></data>
+  <data name="FirstRunDialogCompanion" xml:space="preserve"><value>DX Companion 앱은 선택 기능이며 사용자가 직접 요청할 때만 설치됩니다.</value></data>
   <data name="FirstRunDialogIndependent" xml:space="preserve"><value>DX Manager는 독립적으로 개발된 프로그램이며 Samsung Electronics가 제작·후원·보증 또는 배포하는 공식 애플리케이션이 아닙니다.</value></data>
   <data name="FirstRunDialogLiability" xml:space="preserve"><value>사용자는 DX Manager를 사용할 때 관련 법률과 정책을 준수할 책임이 있습니다. 법률이 허용하는 범위에서 개발자는 이 프로그램의 사용 또는 오용으로 발생한 문제에 책임을 지지 않습니다.</value></data>
   <data name="FirstRunDialogCheck" xml:space="preserve"><value>위 내용을 확인했습니다.</value></data>
@@ -166,7 +166,7 @@
   <data name="InputEnterModeCard.Description" xml:space="preserve"><value>입력 방식을 선택합니다.</value></data>
   <data name="InputDiagnosticsCard.Header" xml:space="preserve"><value>키보드 진단 로그</value></data>
   <data name="InputDiagnosticsCard.Description" xml:space="preserve"><value>문제 분석이 필요할 때만 상세 키 이벤트를 세션 로그에 기록합니다.</value></data>
-  <data name="InputCompatibilityNote.Text" xml:space="preserve"><value>Scrcpy 4.1(SDL3)의 오른쪽 Shift 호환 보정은 실행 중인 Scrcpy 창에서 자동으로 적용됩니다.</value></data>
+  <data name="InputCompatibilityNote.Text" xml:space="preserve"><value>Scrcpy 5.0.1(SDL3)의 오른쪽 Shift 호환 보정은 실행 중인 Scrcpy 창에서 자동으로 적용됩니다.</value></data>
   <data name="CommonEnabledInputHangul.Text" xml:space="preserve"><value>사용</value></data>
   <data name="CommonEnabledInputRightWindows.Text" xml:space="preserve"><value>사용</value></data>
   <data name="CommonEnabledInputShiftSpace.Text" xml:space="preserve"><value>사용</value></data>
@@ -204,10 +204,10 @@
   <data name="ConnectionStatusCard.Header" xml:space="preserve"><value>현재 상태</value></data>
   <data name="ConnectionStatusCard.Description" xml:space="preserve"><value>현재 연결 상태와 저장된 Wi-Fi 주소입니다.</value></data>
   <data name="CompanionHeading.Text" xml:space="preserve"><value>DX Companion</value></data>
-  <data name="CompanionDescription.Text" xml:space="preserve"><value>선택한 휴대폰의 Companion 설치·권한 상태를 확인합니다.</value></data>
+  <data name="CompanionDescription.Text" xml:space="preserve"><value>선택한 휴대폰의 Companion 앱 설치·권한 상태를 확인합니다.</value></data>
   <data name="CompanionDeviceCard.Header" xml:space="preserve"><value>대상 휴대폰</value></data>
   <data name="CompanionDeviceCard.Description" xml:space="preserve"><value>관리할 휴대폰을 선택합니다.</value></data>
-  <data name="CompanionStatusExpanderText.Header" xml:space="preserve"><value>DX Companion 상태</value></data>
+  <data name="CompanionStatusExpanderText.Header" xml:space="preserve"><value>DX Companion 앱 상태</value></data>
   <data name="CompanionStatusExpanderText.Description" xml:space="preserve"><value>설치 및 권한 상태를 확인합니다.</value></data>
   <data name="CompanionBundleCard.Header" xml:space="preserve"><value>번들 검증</value></data>
   <data name="CompanionBundleCard.Description" xml:space="preserve"><value>APK 무결성과 서명을 확인합니다.</value></data>
@@ -215,13 +215,13 @@
   <data name="CompanionInstallStatusCard.Header" xml:space="preserve"><value>설치 상태</value></data>
   <data name="CompanionInstallStatusCard.Description" xml:space="preserve"><value>설치 버전과 서명을 확인합니다.</value></data>
   <data name="CompanionRefreshButton.Content" xml:space="preserve"><value>상태 새로고침</value></data>
-  <data name="CompanionManageCard.Header" xml:space="preserve"><value>Companion 관리</value></data>
+  <data name="CompanionManageCard.Header" xml:space="preserve"><value>Companion 앱 관리</value></data>
   <data name="CompanionManageCard.Description" xml:space="preserve"><value>설치, 업데이트 또는 권한을 설정합니다.</value></data>
   <data name="CompanionInstallButton.Content" xml:space="preserve"><value>설치·업데이트·권한 부여</value></data>
   <data name="CompanionGrantButton.Content" xml:space="preserve"><value>권한만 부여</value></data>
-  <data name="CompanionUninstallCard.Header" xml:space="preserve"><value>Companion 삭제</value></data>
-  <data name="CompanionUninstallCard.Description" xml:space="preserve"><value>현재 선택한 휴대폰에서 DX Companion을 제거합니다.</value></data>
-  <data name="CompanionUninstallButton.Content" xml:space="preserve"><value>Companion 삭제</value></data>
+  <data name="CompanionUninstallCard.Header" xml:space="preserve"><value>Companion 앱 삭제</value></data>
+  <data name="CompanionUninstallCard.Description" xml:space="preserve"><value>현재 선택한 휴대폰에서 DX Companion 앱을 제거합니다.</value></data>
+  <data name="CompanionUninstallButton.Content" xml:space="preserve"><value>앱 삭제</value></data>
   <data name="CompanionNormalNote.Text" xml:space="preserve"><value>정상 설치·권한 상태에서는 관리 버튼을 강조하지 않습니다.</value></data>
   <data name="PathsHeading.Text" xml:space="preserve"><value>프로그램 경로</value></data>
   <data name="PathsDescription.Text" xml:space="preserve"><value>번들 프로그램과 저장 경로를 확인합니다.</value></data>
@@ -241,7 +241,7 @@
   <data name="PathsPhoneTargetBox.PlaceholderText" xml:space="preserve"><value>예: /sdcard/Download/</value></data>
   <data name="PathsChoosePhoneTargetButton.Content" xml:space="preserve"><value>휴대폰에서 선택</value></data>
   <data name="PathsPhoneToPcExpander.Header" xml:space="preserve"><value>휴대폰 → PC 파일 전송</value></data>
-  <data name="PathsPhoneToPcExpander.Description" xml:space="preserve"><value>DX Companion을 통해 휴대폰에서 PC로 파일을 받습니다.</value></data>
+  <data name="PathsPhoneToPcExpander.Description" xml:space="preserve"><value>DX Companion 앱을 통해 휴대폰에서 PC로 파일을 받습니다.</value></data>
   <data name="CommonEnabledPhoneToPc.Text" xml:space="preserve"><value>사용</value></data>
   <data name="PathsPcReceiveCard.Header" xml:space="preserve"><value>PC 수신 폴더</value></data>
   <data name="PathsPcReceiveCard.Description" xml:space="preserve"><value>수신된 파일을 저장할 PC 폴더입니다.</value></data>
@@ -272,7 +272,11 @@
   <data name="DiagnosticsReportFailed" xml:space="preserve"><value>보고서를 저장하지 못했습니다: {0}</value></data>
   <data name="DiagnosticsPackageInstalled" xml:space="preserve"><value>Store 패키지</value></data>
   <data name="DiagnosticsPackagePreview" xml:space="preserve"><value>개발용 프리뷰</value></data>
-  <data name="DiagnosticsEnvironmentSummary" xml:space="preserve"><value>실행 환경: {0}&#xA;ADB: {1}&#xA;Scrcpy: {2}&#xA;Companion: {3} {4}&#xA;승인된 휴대폰: {5}대</value></data>
+  <data name="DiagnosticsEnvironmentSummary" xml:space="preserve"><value>실행 환경: {0}
+ADB: {1}
+Scrcpy: {2}
+Companion 앱: {3} {4}
+승인된 휴대폰: {5}대</value></data>
   <data name="DiagnosticsNoDevice" xml:space="preserve"><value>연결된 휴대폰이 없습니다.</value></data>
   <data name="DiagnosticsDeviceFailed" xml:space="preserve"><value>기기 정보를 확인하지 못했습니다: {0}</value></data>
   <data name="DiagnosticsDeviceSummary" xml:space="preserve"><value>모델: {0}&#xA;연결: {1}&#xA;Android: {2}&#xA;One UI: {3}&#xA;보안 패치: {4}</value></data>
@@ -287,7 +291,7 @@
   <data name="AboutHeading.Text" xml:space="preserve"><value>정보</value></data>
   <data name="AboutProductCard.Description" xml:space="preserve"><value>Windows 10/11용 DX Manager Store Edition</value></data>
   <data name="AboutComponentsCard.Header" xml:space="preserve"><value>구성 요소 버전</value></data>
-  <data name="AboutComponentsCard.Description" xml:space="preserve"><value>Scrcpy, ADB, Windows App SDK와 DX Companion 번들 버전</value></data>
+  <data name="AboutComponentsCard.Description" xml:space="preserve"><value>Scrcpy, ADB, Windows App SDK와 DX Companion 앱 번들 버전</value></data>
   <data name="AboutNoticesCard.Header" xml:space="preserve"><value>라이선스 및 고지</value></data>
   <data name="AboutNoticesCard.Description" xml:space="preserve"><value>저작권, MIT license와 제3자 고지를 확인합니다.</value></data>
   <data name="AboutOpenNoticesButton.Content" xml:space="preserve"><value>제3자 라이선스 보기</value></data>
@@ -297,24 +301,24 @@
   <data name="SettingsCaptureAutoTransferOff" xml:space="preserve"><value>캡처 후 휴대폰으로 자동 전송: 끔</value></data>
   <data name="SettingsSaveFailed" xml:space="preserve"><value>설정을 저장하지 못했습니다: {0}</value></data>
   <data name="SettingsSelectAuthorizedPhone" xml:space="preserve"><value>먼저 승인된 ADB 휴대폰을 선택해 주세요.</value></data>
-  <data name="SettingsCompanionInstalling" xml:space="preserve"><value>DX Companion 설치·업데이트·권한 부여 중</value></data>
-  <data name="SettingsCompanionGranting" xml:space="preserve"><value>DX Companion 권한 부여 중</value></data>
-  <data name="SettingsCompanionUninstalling" xml:space="preserve"><value>DX Companion 삭제 중</value></data>
+  <data name="SettingsCompanionInstalling" xml:space="preserve"><value>DX Companion 앱 설치·업데이트·권한 부여 중</value></data>
+  <data name="SettingsCompanionGranting" xml:space="preserve"><value>DX Companion 앱 권한 부여 중</value></data>
+  <data name="SettingsCompanionUninstalling" xml:space="preserve"><value>DX Companion 앱 삭제 중</value></data>
   <data name="SettingsStatusCheckFailed" xml:space="preserve"><value>상태를 확인하지 못했습니다: {0}</value></data>
-  <data name="SettingsCompanionOperationFailed" xml:space="preserve"><value>Companion 작업에 실패했습니다: {0}</value></data>
+  <data name="SettingsCompanionOperationFailed" xml:space="preserve"><value>Companion 앱 작업에 실패했습니다: {0}</value></data>
   <data name="SettingsCompanionUpdateGrant" xml:space="preserve"><value>업데이트·권한 부여</value></data>
   <data name="SettingsCompanionInstallUpdateGrant" xml:space="preserve"><value>설치·업데이트·권한 부여</value></data>
   <data name="SettingsSelectedPhone" xml:space="preserve"><value>선택된 휴대폰</value></data>
-  <data name="SettingsCompanionBundleChecking" xml:space="preserve"><value>번들 Companion 상태를 확인하는 중입니다.</value></data>
-  <data name="SettingsCompanionBundleFailed" xml:space="preserve"><value>{0} · Companion 번들 확인 실패: {1}</value></data>
-  <data name="SettingsCompanionChecking" xml:space="preserve"><value>{0} · Companion 상태 확인 중...</value></data>
-  <data name="SettingsCompanionUpdateRequired" xml:space="preserve"><value>{0} · Companion 업데이트 필요 ({1} → {2})</value></data>
+  <data name="SettingsCompanionBundleChecking" xml:space="preserve"><value>번들 Companion 앱 상태를 확인하는 중입니다.</value></data>
+  <data name="SettingsCompanionBundleFailed" xml:space="preserve"><value>{0} · Companion 앱 번들 확인 실패: {1}</value></data>
+  <data name="SettingsCompanionChecking" xml:space="preserve"><value>{0} · Companion 앱 상태 확인 중...</value></data>
+  <data name="SettingsCompanionUpdateRequired" xml:space="preserve"><value>{0} · Companion 앱 업데이트 필요 ({1} → {2})</value></data>
   <data name="SettingsCompanionNoDevice" xml:space="preserve"><value>{0} · 승인된 ADB 휴대폰을 선택해 주세요.</value></data>
-  <data name="SettingsCompanionNotInstalled" xml:space="preserve"><value>{0} · Companion 미설치 · {1} 설치 필요</value></data>
-  <data name="SettingsCompanionPermissionRequired" xml:space="preserve"><value>{0} · Companion {1} 설치됨 · 권한 부여 필요</value></data>
-  <data name="SettingsCompanionReady" xml:space="preserve"><value>{0} · Companion {1} 설치·권한 확인 완료</value></data>
-  <data name="SettingsCompanionVerificationFailed" xml:space="preserve"><value>{0} · Companion 검증 실패: {1}</value></data>
-  <data name="SettingsCompanionStatusFailed" xml:space="preserve"><value>{0} · Companion 상태 확인 실패: {1}</value></data>
+  <data name="SettingsCompanionNotInstalled" xml:space="preserve"><value>{0} · Companion 앱 미설치 · {1} 설치 필요</value></data>
+  <data name="SettingsCompanionPermissionRequired" xml:space="preserve"><value>{0} · Companion 앱 {1} 설치됨 · 권한 부여 필요</value></data>
+  <data name="SettingsCompanionReady" xml:space="preserve"><value>{0} · Companion 앱 {1} 설치·권한 확인 완료</value></data>
+  <data name="SettingsCompanionVerificationFailed" xml:space="preserve"><value>{0} · Companion 앱 검증 실패: {1}</value></data>
+  <data name="SettingsCompanionStatusFailed" xml:space="preserve"><value>{0} · Companion 앱 상태 확인 실패: {1}</value></data>
   <data name="SettingsHotkeySaveFailed" xml:space="preserve"><value>단축키 설정을 저장하지 못했습니다: {0}</value></data>
   <data name="SettingsHotkeyPrompt" xml:space="preserve"><value>네모칸을 클릭한 후 원하는 키 조합을 누르세요. 일부 키 조합은 사용할 수 없습니다.</value></data>
   <data name="SettingsHotkeyCanceled" xml:space="preserve"><value>변경을 취소했습니다.</value></data>
@@ -501,20 +505,20 @@
   <data name="GeneralAutoStartToggle.AutomationProperties.Name" xml:space="preserve"><value>기기 연결 시 DeX 자동 실행</value></data>
   <data name="MainStoppingDex" xml:space="preserve"><value>DeX 종료 중</value></data>
   <data name="MainPreparingDex" xml:space="preserve"><value>DeX 준비 중</value></data>
-  <data name="CompanionBundleMissing" xml:space="preserve"><value>번들 DX Companion APK를 찾지 못했습니다.</value></data>
-  <data name="CompanionBundleHashMismatch" xml:space="preserve"><value>번들 DX Companion APK 해시가 일치하지 않습니다.</value></data>
-  <data name="CompanionBundleSignatureMismatch" xml:space="preserve"><value>번들 DX Companion 서명이 일치하지 않습니다.</value></data>
+  <data name="CompanionBundleMissing" xml:space="preserve"><value>번들 DX Companion 앱 APK를 찾지 못했습니다.</value></data>
+  <data name="CompanionBundleHashMismatch" xml:space="preserve"><value>번들 DX Companion 앱 APK 해시가 일치하지 않습니다.</value></data>
+  <data name="CompanionBundleSignatureMismatch" xml:space="preserve"><value>번들 DX Companion 앱 서명이 일치하지 않습니다.</value></data>
   <data name="CompanionInstalledPackageMismatch" xml:space="preserve"><value>설치된 패키지가 예상한 v2 서명 APK가 아닙니다.</value></data>
   <data name="CompanionInstalledSignatureMismatch" xml:space="preserve"><value>설치된 APK 서명 인증서가 일치하지 않습니다.</value></data>
-  <data name="CompanionNewerInstalled" xml:space="preserve"><value>더 최신 DX Companion이 이미 설치되어 있습니다.</value></data>
+  <data name="CompanionNewerInstalled" xml:space="preserve"><value>더 최신 DX Companion 앱이 이미 설치되어 있습니다.</value></data>
   <data name="CompanionPostInstallVerificationFailed" xml:space="preserve"><value>설치 후 패키지·버전·서명 검증에 실패했습니다.</value></data>
-  <data name="CompanionNoVerifiedInstall" xml:space="preserve"><value>검증된 DX Companion이 없습니다.</value></data>
+  <data name="CompanionNoVerifiedInstall" xml:space="preserve"><value>검증된 DX Companion 앱이 없습니다.</value></data>
   <data name="CompanionPermissionVerificationFailed" xml:space="preserve"><value>권한 부여 후 검증에 실패하여 권한을 되돌렸습니다.</value></data>
-  <data name="CompanionUninstallIncomplete" xml:space="preserve"><value>DX Companion 삭제 후에도 패키지가 남아 있습니다.</value></data>
+  <data name="CompanionUninstallIncomplete" xml:space="preserve"><value>DX Companion 앱 삭제 후에도 패키지가 남아 있습니다.</value></data>
   <data name="CompanionReadInstalledApkFailed" xml:space="preserve"><value>설치된 APK를 읽지 못했습니다: {0}</value></data>
-  <data name="PhoneReceiverReverseFailed" xml:space="preserve"><value>Companion reverse 연결을 만들지 못했습니다: {0}</value></data>
-  <data name="PhoneReceiverConfigureFailed" xml:space="preserve"><value>DX Companion 수신기를 구성하지 못했습니다: {0}</value></data>
-  <data name="PhoneReceiverProtocolUnsupported" xml:space="preserve"><value>지원하지 않는 Companion 전송 프로토콜입니다.</value></data>
+  <data name="PhoneReceiverReverseFailed" xml:space="preserve"><value>Companion 앱 reverse 연결을 만들지 못했습니다: {0}</value></data>
+  <data name="PhoneReceiverConfigureFailed" xml:space="preserve"><value>DX Companion 앱 수신기를 구성하지 못했습니다: {0}</value></data>
+  <data name="PhoneReceiverProtocolUnsupported" xml:space="preserve"><value>지원하지 않는 Companion 앱 전송 프로토콜입니다.</value></data>
   <data name="PhoneReceiverSessionExpired" xml:space="preserve"><value>DX Manager 전송 세션이 만료되었습니다.</value></data>
   <data name="PhoneReceiverInvalidItemCount" xml:space="preserve"><value>전송 항목 수가 올바르지 않습니다.</value></data>
   <data name="PhoneReceiverInvalidItemType" xml:space="preserve"><value>전송 항목 종류가 올바르지 않습니다.</value></data>
@@ -594,9 +598,9 @@
   <data name="SessionLog.WirelessUsbPolicyDisconnected" xml:space="preserve"><value>USB 정책에 따라 무선 ADB 연결을 해제했습니다: {0}</value></data>
   <data name="SessionLog.WirelessPairFailed" xml:space="preserve"><value>무선 ADB 페어링에 실패했습니다: {0}</value></data>
   <data name="SessionLog.WirelessPaired" xml:space="preserve"><value>무선 ADB 페어링이 완료되었습니다: {0}</value></data>
-  <data name="SessionLog.CompanionShutdownDispatched" xml:space="preserve"><value>Windows 종료 정리 패킷을 Companion에 전달했습니다: 연결 {0}대, 전송 {1}대</value></data>
-  <data name="SessionLog.CompanionShutdownSent" xml:space="preserve"><value>Companion Windows 종료 정리 요청을 전달했습니다.</value></data>
-  <data name="SessionLog.CompanionShutdownFailed" xml:space="preserve"><value>Companion Windows 종료 정리 요청에 실패했습니다.</value></data>
+  <data name="SessionLog.CompanionShutdownDispatched" xml:space="preserve"><value>Windows 종료 정리 패킷을 Companion 앱에 전달했습니다: 연결 {0}대, 전송 {1}대</value></data>
+  <data name="SessionLog.CompanionShutdownSent" xml:space="preserve"><value>Companion 앱 Windows 종료 정리 요청을 전달했습니다.</value></data>
+  <data name="SessionLog.CompanionShutdownFailed" xml:space="preserve"><value>Companion 앱 Windows 종료 정리 요청에 실패했습니다.</value></data>
   <data name="SessionLog.Trimmed" xml:space="preserve"><value>오래된 로그를 정리했습니다. {0}</value></data>
   <data name="SessionLog.FileTransferChanged" xml:space="preserve"><value>파일 전송 상태가 변경되었습니다.</value></data>
   <data name="SessionLog.FileTransferError" xml:space="preserve"><value>파일 전송 중 오류가 발생했습니다.</value></data>
@@ -622,7 +626,7 @@
   <data name="AboutDeveloperText.Text" xml:space="preserve"><value>개발자: maze</value></data>
   <data name="AboutCopyrightText.Text" xml:space="preserve"><value>Copyright © 2026 maze</value></data>
   <data name="AboutLicenseText.Text" xml:space="preserve"><value>DX Manager는 MIT License 조건으로 제공됩니다.</value></data>
-  <data name="AboutScrcpyText.Text" xml:space="preserve"><value>이 프로그램은 scrcpy 5.0.1을 포함하고 사용합니다. scrcpy는 Genymobile과 Romain Vimont가 Apache License 2.0으로 배포하는 오픈소스 소프트웨어입니다.</value></data>
+  <data name="AboutScrcpyText.Text" xml:space="preserve"><value>이 프로그램은 scrcpy 5.0.1을 포함하고 사용합니다. scrcpy는 Genymobile과 Romain Vimont가 Apache License 2.0으로 배포하는 오픈소스 소프트웨어입니다. 네이티브 DeX 헬퍼에 포함된 ScrcpyDeX v1.1 코드에도 같은 라이선스가 적용됩니다.</value></data>
   <data name="AboutLibrariesText.Text" xml:space="preserve"><value>동봉된 FFmpeg 라이브러리는 LGPL v2.1 이상, SDL3는 zlib, libusb는 LGPL v2.1 이상에 따라 배포됩니다. 자세한 내용은 제3자 라이선스를 확인하십시오.</value></data>
   <data name="AboutSamsungText.Text" xml:space="preserve"><value>이 프로그램은 호환되는 Samsung 장치에서 Samsung DeX 기능과 함께 동작하지만 Samsung Electronics가 제작, 후원, 보증 또는 배포하는 제품이 아닙니다. Samsung 및 Samsung DeX는 각 권리자의 상표입니다.</value></data>
   <data name="AboutDisclaimerText.Text" xml:space="preserve"><value>사용자는 DX Manager를 통해 Android 개발자 옵션과 ADB를 사용하거나 장치 설정을 변경할 때 관련 법률, 기기 보증 조건 및 소속 조직의 정책을 준수할 책임이 있습니다. 법률이 허용하는 범위에서 개발자는 이 프로그램의 사용 또는 오용으로 발생한 데이터 손실, 설정 변경, 기기 오작동 및 기타 직접·간접 손해에 책임을 지지 않습니다.</value></data>
@@ -639,22 +643,35 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <data name="ExperimentalFpsWarningTitle" xml:space="preserve"><value>120 FPS 사용 경고</value></data>
-  <data name="ExperimentalFpsWarningAccept" xml:space="preserve"><value>확인하고 120 FPS 사용</value></data>
-  <data name="ExperimentalFpsScreenWarning" xml:space="preserve"><value>120 FPS 모드는 휴대폰 화면을 반드시 켜두어야 합니다. ‘폰 화면 끄기’ 옵션은 자동으로 해제되며, 이 모드에서는 사용할 수 없습니다.</value></data>
-  <data name="ExperimentalFpsRiskWarning" xml:space="preserve"><value>발열과 배터리 소모가 증가합니다. OLED 화면에 고정 이미지를 장시간 표시하면 영구적인 잔상인 번인이 발생할 수 있습니다.</value></data>
-  <data name="ExperimentalFpsCareWarning" xml:space="preserve"><value>장시간 사용하거나 켜둔 채 방치하지 마세요. 휴대폰이 과열되면 사용을 중단하세요.</value></data>
-  <data name="ExperimentalFpsLimitWarning" xml:space="preserve"><value>실험적 최대 FPS 설정입니다. 실제 FPS는 기기·앱·입력 상태에 따라 낮아질 수 있으며, 120 FPS 고정 동작을 보장하지 않습니다.</value></data>
+  <data name="InputAiEnterCard.Header" xml:space="preserve"><value>AI 앱 자동 줄바꿈</value></data>
+  <data name="InputAiEnterCard.Description" xml:space="preserve"><value>지원하는 앱에서 Enter를 Shift+Enter로 전환합니다.</value></data>
+  <data name="ConnectionDexDisplayMode.Header" xml:space="preserve"><value>네이티브 DeX</value></data>
+  <data name="ConnectionDexDisplayMode.Description" xml:space="preserve"><value>휴대폰별 DeX 실행 방식을 설정합니다.</value></data>
+  <data name="ConnectionNativeBluetoothAudio.Header" xml:space="preserve"><value>네이티브 DeX 연결 시 Bluetooth 사운드 유지</value></data>
+  <data name="ConnectionNativeBluetoothAudio.Description" xml:space="preserve"><value>DeX 연결 후 사용하던 Bluetooth 오디오 장치로 되돌립니다.</value></data>
+<data name="ExperimentalFpsWarningTitle" xml:space="preserve"><value>120 FPS 사용 경고</value></data>
+<data name="ExperimentalFpsWarningAccept" xml:space="preserve"><value>확인하고 120 FPS 사용</value></data>
+<data name="ExperimentalFpsScreenWarning" xml:space="preserve"><value>120 FPS 모드는 휴대폰 화면을 반드시 켜두어야 합니다. ‘폰 화면 끄기’ 옵션은 자동으로 해제되며, 이 모드에서는 사용할 수 없습니다.</value></data>
+<data name="ExperimentalFpsRiskWarning" xml:space="preserve"><value>발열과 배터리 소모가 증가합니다. OLED 화면에 고정 이미지를 장시간 표시하면 영구적인 잔상인 번인이 발생할 수 있습니다.</value></data>
+<data name="ExperimentalFpsCareWarning" xml:space="preserve"><value>장시간 사용하거나 켜둔 채 방치하지 마세요. 휴대폰이 과열되면 사용을 중단하세요.</value></data>
+<data name="ExperimentalFpsLimitWarning" xml:space="preserve"><value>실험적 최대 FPS 설정입니다. 실제 FPS는 기기·앱·입력 상태에 따라 낮아질 수 있으며, 120 FPS 고정 동작을 보장하지 않습니다.</value></data>
+<data name="ExperimentalFpsOption" xml:space="preserve"><value>120 (실험적)</value></data>
+<data name="ConnectionNative120AutoSwitch.Header" xml:space="preserve"><value>120 FPS 실행 시 보조 방식으로 자동 전환</value></data>
+<data name="ConnectionNative120AutoSwitch.Description" xml:space="preserve"><value>실행 방식 안내를 생략합니다. 매 실행의 120 FPS 사용 경고는 계속 표시합니다.</value></data>
+<data name="DiagnosticsAutoSaveLogs.Header" xml:space="preserve"><value>세션 로그 자동 저장</value></data>
+<data name="DiagnosticsAutoSaveLogs.Description" xml:space="preserve"><value>프로그램의 logs 폴더에 세션·진단 로그를 저장합니다. 기본값은 꺼짐입니다.</value></data>
+<data name="DiagnosticsEnvironmentText.Text" xml:space="preserve"><value>검사를 시작하지 않았습니다.</value></data>
+  <data name="InputHotkeyHint.Text" xml:space="preserve"><value>보조키가 아닌 키를 함께 눌러 단축키를 지정하세요.</value></data>
+  <data name="CommonToggleOn.Text" xml:space="preserve"><value>켬</value></data>
+  <data name="CommonToggleOff.Text" xml:space="preserve"><value>끔</value></data>
   <data name="UpdateNoticeTitle" xml:space="preserve"><value>DX Manager {0} 변경사항</value></data>
-  <data name="UpdateNoticeIntro" xml:space="preserve"><value>이번 버전의 주요 변경사항입니다. 기존 설정은 그대로 유지됩니다.</value></data>
-  <data name="UpdateNoticeFps" xml:space="preserve"><value>• 최대 120 FPS 실험적 옵션을 추가했습니다. 기본값은 60 FPS이며, 120 FPS 실행 전마다 발열·배터리·번인 주의사항을 확인합니다.</value></data>
-  <data name="UpdateNoticeScreenOff" xml:space="preserve"><value>• 120 FPS에서는 폰 화면 끄기를 자동 해제하고, 30/60 FPS로 돌아오면 이전 설정을 복원합니다. 실제 FPS는 기기·앱·입력 상태에 따라 달라집니다.</value></data>
-  <data name="UpdateNoticeScrcpy" xml:space="preserve"><value>• scrcpy를 5.0.1로 업데이트했습니다. Windows H.265 하드웨어 디코딩 등 공식 수정사항이 포함됩니다.</value></data>
-  <data name="UpdateNoticeCompanion" xml:space="preserve"><value>• 포함된 DX Companion: {0}. 휴대폰 설치·업데이트는 설정에서 직접 진행해주세요.</value></data>
+  <data name="UpdateNoticeIntro" xml:space="preserve"><value>DX Manager 3.0.0의 주요 변경사항입니다.</value></data>
+  <data name="UpdateNoticeFps" xml:space="preserve"><value>• 네이티브 DeX를 기본 실행 방식으로 사용합니다. 연결이 끊기면 약 30초 동안 같은 휴대폰의 재연결을 기다립니다.</value></data>
+  <data name="UpdateNoticeScreenOff" xml:space="preserve"><value>• 120 FPS DeX는 동의한 실행에 보조 디스플레이 방식을 사용합니다.</value></data>
+  <data name="UpdateNoticeScrcpy" xml:space="preserve"><value>• 새 설정에서는 수동 Enter / Shift+Enter 전환이 켜집니다. AI 앱 자동 줄바꿈은 설정에서 켤 수 있습니다.</value></data>
+  <data name="UpdateNoticeCompanion" xml:space="preserve"><value>• 공용 DX Companion {0}을 포함합니다. 설정 → Companion에서 설치하거나 업데이트하세요.</value></data>
   <data name="UpdateNoticeConfirm" xml:space="preserve"><value>확인</value></data>
-  <data name="ExperimentalFpsOption" xml:space="preserve"><value>120 (실험적)</value></data>
   <data name="ConnectionUsb.Content" xml:space="preserve"><value>USB</value></data>
   <data name="ConnectionWireless.Content" xml:space="preserve"><value>Wi-Fi</value></data>
-  <data name="DiagnosticsEnvironmentText.Text" xml:space="preserve"><value>검사를 시작하지 않았습니다.</value></data>
   <data name="DiagnosticsReportStatusText.Text" xml:space="preserve"><value>민감한 값을 가린 보고서를 저장합니다.</value></data>
 </root>

@@ -15,6 +15,7 @@ final class OverlayDisplayRepository {
     enum Status {
         ACTIVE,
         INACTIVE,
+        UNKNOWN,
         PERMISSION_REQUIRED,
         ERROR
     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 using DexManager.Services;
@@ -36,16 +36,11 @@ namespace DexManager.Forms
     internal sealed class DesktopDialog : Form
     {
         private readonly RoundedPanel _surface;
-        public void SetPrimaryButtonText(string text)
-        {
-            foreach (Control section in _surface.Controls)
-                foreach (Control control in section.Controls)
-                {
-                    var button = control as Button;
-                    if (button != null && button.DialogResult == DialogResult.OK) button.Text = text;
-                }
-        }
-        public DesktopDialog(string title,string text,bool acknowledgment,MessageBoxButtons buttons,MessageBoxDefaultButton defaultButton)
+        private readonly Button _primaryButton;
+        private CheckBox _option;
+        public bool OptionChecked {get{return _option!=null&&_option.Checked;}}
+        public void SetPrimaryButtonText(string text){_primaryButton.Text=text;}
+        public DesktopDialog(string title,string text,bool acknowledgment,MessageBoxButtons buttons,MessageBoxDefaultButton defaultButton,string optionalChoice=null)
         {
             Font=UiFonts.Pixels(14);Icon=AppIconProvider.Current;Text=title;
             StartPosition=FormStartPosition.CenterParent;FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;MinimizeBox=false;ShowInTaskbar=false;
@@ -55,13 +50,14 @@ namespace DexManager.Forms
             var body=new UiLabel {Text=text,AutoSize=true,MaximumSize=new Size(width-48,0),Font=UiFonts.Pixels(14),ForeColor=ThemeColors.Current.TextPrimary,BackColor=Color.Transparent};
             var preferred=body.GetPreferredSize(new Size(width-48,0));
             int contentHeight=Math.Min(preferred.Height+8,Math.Max(140,area.Height-240));
-            ClientSize=new Size(width,Math.Max(230,80+contentHeight+(acknowledgment?64:0)+76));
+            ClientSize=new Size(width,Math.Max(230,80+contentHeight+(acknowledgment||optionalChoice!=null?64:0)+76));
             _surface=new RoundedPanel {Dock=DockStyle.Fill,Radius=10,FillColor=ThemeColors.Current.CardBackground,BorderColor=ThemeColors.Current.CardBorder};
             var scroll=new Panel {AutoScroll=true,BackColor=ThemeColors.Current.CardBackground,Bounds=new Rectangle(24,76,width-48,contentHeight)};
             body.Location=Point.Empty;scroll.Controls.Add(body);
             var footer=new Panel {BackColor=ThemeColors.Current.CardSoft,Bounds=new Rectangle(0,ClientSize.Height-76,width,76)};
             string primaryText=acknowledgment?StoreUiText.Get("FirstRunDialogPrimary","Confirm and start"):buttons==MessageBoxButtons.YesNo||buttons==MessageBoxButtons.YesNoCancel?(LocalizationService.IsKorean?"확인":"Yes"):(LocalizationService.IsKorean?"확인":"OK");
             var primary=new ThemedButton {Text=primaryText,Primary=true,Font=UiFonts.Pixels(14,true),Bounds=new Rectangle(24,18,(width-56)/2,40)};
+            _primaryButton=primary;
             bool cancel=buttons!=MessageBoxButtons.OK;
             var secondary=new ThemedButton {Text=acknowledgment?StoreUiText.Get("FirstRunDialogExit","Exit"):LocalizationService.Get("Common.Cancel"),Bounds=new Rectangle(32+(width-56)/2,18,(width-56)/2,40)};
             var yes=buttons==MessageBoxButtons.YesNo||buttons==MessageBoxButtons.YesNoCancel;
@@ -73,13 +69,17 @@ namespace DexManager.Forms
             ThemedScrollBar.Attach(scroll);
             CancelButton=secondary;
             AcceptButton=defaultButton==MessageBoxDefaultButton.Button2?secondary:primary;
-            if(acknowledgment)
+            if(acknowledgment||optionalChoice!=null)
             {
-                var check=new UiCheckBox {Text=StoreUiText.Get("FirstRunDialogCheck","I have read the above."),Font=UiFonts.Pixels(14),Bounds=new Rectangle(24,80+contentHeight,width-48,40),ForeColor=ThemeColors.Current.TextPrimary,BackColor=ThemeColors.Current.CardBackground};
-                primary.Enabled=false;check.CheckedChanged+=delegate {primary.Enabled=check.Checked;};_surface.Controls.Add(check);
+                var check=new UiCheckBox {Text=optionalChoice??StoreUiText.Get("FirstRunDialogCheck","I have read the above."),Font=UiFonts.Pixels(14),Bounds=new Rectangle(24,80+contentHeight,width-48,40),ForeColor=ThemeColors.Current.TextPrimary,BackColor=ThemeColors.Current.CardBackground};
+                _option=check;
+                if(acknowledgment){primary.Enabled=false;check.CheckedChanged+=delegate {primary.Enabled=check.Checked;};}
+                _surface.Controls.Add(check);
             }
-            // The parent is still hidden during construction. Focus the default after showing.
-            if(defaultButton==MessageBoxDefaultButton.Button2 && cancel)Shown+=delegate {secondary.Focus();};
+            if(defaultButton==MessageBoxDefaultButton.Button2 && cancel){
+                primary.TabIndex=1;secondary.TabIndex=0;
+                Shown+=delegate {ActiveControl=secondary;BeginInvoke((Action)delegate {if(!IsDisposed&&secondary.Visible){ActiveControl=secondary;secondary.Focus();}});};
+            }
         }
     }
 }

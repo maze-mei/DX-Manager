@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -35,6 +35,21 @@ namespace DexManager.Forms {
    };
   }
   private void AttachStoreBindings() {
+   BindStoreToggle(_native120AutoSwitchBox,(s,v)=>s.Features.AutoSwitchToLegacyFor120Fps=v);
+   BindStoreToggle(_autoSaveLogsBox,(s,v)=>s.Features.AutoSaveSessionLogs=v);
+   Activated+=delegate {if(_storeUiReady&&!IsDisposed)LoadDexDisplayMode();};
+   _dexDisplayModeBox.SelectionChangeCommitted+=delegate {
+    if(!_storeUiReady||_loadingStoreValues||_loadingWirelessDevice)return;
+    var identity=ResolveStoreTargetIdentity();var mode=_dexDisplayModeBox.SelectedIndex==1?DexDisplayMode.LegacyOverlay:DexDisplayMode.Native;
+    SaveStoreScope(settings=>{if(string.IsNullOrWhiteSpace(identity))settings.VirtualDisplay.ActivationMode=mode;else settings.GetOrCreateDeviceRunSettings(identity).VirtualDisplay.ActivationMode=mode;},false);
+    _nativeBluetoothAudioBox.Enabled=mode==DexDisplayMode.Native;
+    _native120AutoSwitchBox.Enabled=_nativeBluetoothAudioBox.Enabled;
+   };
+   _nativeBluetoothAudioBox.CheckedChanged+=delegate {
+    if(!_storeUiReady||_loadingStoreValues||_loadingWirelessDevice)return;
+    var identity=ResolveStoreTargetIdentity();bool enabled=_nativeBluetoothAudioBox.Checked;
+    SaveStoreScope(settings=>{if(string.IsNullOrWhiteSpace(identity))settings.VirtualDisplay.KeepBluetoothAudioOnDexStart=enabled;else settings.GetOrCreateDeviceRunSettings(identity).VirtualDisplay.KeepBluetoothAudioOnDexStart=enabled;},false);
+   };
    BindStoreToggle(_startWithWindowsBox,(s,v)=>s.Features.StartWithWindows=v);
    BindStoreToggle(_startMinimizedBox,(s,v)=>s.Features.StartMinimizedToTray=v);
    BindStoreToggle(_miniControlBarBox,(s,v)=>s.Features.MiniControlBarEnabled=v,"GeneralMiniBarExpander");
@@ -44,7 +59,27 @@ namespace DexManager.Forms {
    BindStoreToggle(_convertHangulBox,(s,v)=>s.KeyMappings.ConvertKoreanEnglishKey=v,"InputHangulExpander");
    BindStoreToggle(_rightWindowsBox,(s,v)=>s.KeyMappings.HandleRightWindowsKey=v);
    BindStoreToggle(_ignoreShiftSpaceBox,(s,v)=>s.KeyMappings.IgnoreShiftSpace=v);
-   BindStoreToggle(_convertEnterBox,(s,v)=>s.KeyMappings.ConvertEnterToShiftEnter=v,"InputEnterExpander");
+   _autoAppEnterBox.CheckedChanged += delegate {
+    if (!_storeUiReady || _loadingStoreValues) return;
+    var enabled = _autoAppEnterBox.Checked;
+    SaveStoreScope(s => { s.KeyMappings.AutoAppEnterEnabled = enabled; if (enabled) s.KeyMappings.ConvertEnterToShiftEnter = false; });
+    _loadingStoreValues = true;
+    try { _convertEnterBox.Checked = _settings.KeyMappings.ConvertEnterToShiftEnter; }
+    finally { _loadingStoreValues = false; }
+    RestoreStoreExpansion();
+    if (enabled && _settings.KeyMappings.AutoAppEnterEnabled)
+     DesktopDialogs.Show(this, LocalizationService.Get("Settings.AiEnterSetupBody"),
+      LocalizationService.Get("Settings.AiEnterSetupTitle"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+   };
+   _convertEnterBox.CheckedChanged += delegate {
+    if (!_storeUiReady || _loadingStoreValues) return;
+    var enabled = _convertEnterBox.Checked;
+    SaveStoreScope(s => { s.KeyMappings.ConvertEnterToShiftEnter = enabled; if (enabled) s.KeyMappings.AutoAppEnterEnabled = false; });
+    _loadingStoreValues = true;
+    try { _autoAppEnterBox.Checked = _settings.KeyMappings.AutoAppEnterEnabled; }
+    finally { _loadingStoreValues = false; }
+    RestoreStoreExpansion();
+   };
    BindStoreToggle(_keyboardDiagnosticsBox,(s,v)=>s.KeyMappings.LogKeyboardDiagnostics=v);
    _languageBox.SelectionChangeCommitted+=delegate {var item=_languageBox.SelectedItem as LanguageOption;if(item!=null)SaveStoreScope(s=>s.Language=item.Value,false);};
    _themeBox.SelectionChangeCommitted+=delegate {var item=_themeBox.SelectedItem as ThemeOption;if(item==null)return;SaveStoreScope(s=>s.Theme=item.Value,false);if(_settings.Theme==item.Value && _applyTheme!=null)_applyTheme(item.Value);};
@@ -83,34 +118,40 @@ namespace DexManager.Forms {
   }
   private void UpdateStoreDependencies() {
    _miniControlBarSideBox.Enabled=_miniControlBarBox.Checked;_autoHideSecondsBox.Enabled=_autoHideBox.Checked;_connectedStartDelayBox.Enabled=_autoStartDexBox.Checked;
+   foreach(var toggle in _aiProfileToggles.Keys) toggle.Enabled=_autoAppEnterBox.Checked;
    _keyInputModeBox.Enabled=_convertHangulBox.Checked;_rightWindowsBox.Enabled=_convertHangulBox.Checked;_ignoreShiftSpaceBox.Enabled=_convertHangulBox.Checked;_enterInputModeBox.Enabled=_convertEnterBox.Checked;
   }
   private async void RefreshStoreEnvironment() {
-   var text=_storeEditors["DiagnosticEnvironmentText"] as Label;
-   if(text!=null)text.Text=LocalizationService.IsKorean?"검사 중…":"Checking…";
+   if(_runStoreEnvironment==null) {
+    if(_showEnvironmentCheck!=null)_showEnvironmentCheck();
+    return;
+   }
+
+   var text=(Label)_storeEditors["DiagnosticEnvironmentText"];
+   text.Text=LocalizationService.IsKorean?"검사 중…":"Checking…";
    try {
-    if(_runStoreEnvironment==null){if(_showEnvironmentCheck!=null)_showEnvironmentCheck();return;}
     var entries=await Task.Run(_runStoreEnvironment).ConfigureAwait(false);
-    Action apply=delegate {
+    var result=string.Join("\n",System.Linq.Enumerable.Select(entries,item=>item.Name+": "+item.Message));
+    if(IsDisposed || !IsHandleCreated)return;
+    BeginInvoke((Action)delegate {
      if(IsDisposed || Disposing)return;
-     if(text!=null)text.Text=string.Join("\n",System.Linq.Enumerable.Select(entries,item=>item.Name+": "+item.Message));
-     StoreSettingCard card;if(text!=null && _storeCards.TryGetValue("DiagnosticsEnvironmentCard",out card)) {
-      var refresh=_storeEditors["RefreshDiagnosticsButton"];refresh.Parent=card.HeaderSurface;refresh.Anchor=AnchorStyles.Top|AnchorStyles.Right;refresh.Bounds=new Rectangle(card.Width-178,14,160,40);
-      card.WideContent=true;text.Location=Point.Empty;card.Reflow();
-     }
-    };
-    if(!IsDisposed && IsHandleCreated) {if(InvokeRequired)BeginInvoke(apply);else apply();}
-   }catch(Exception ex){
-    if(!IsDisposed && IsHandleCreated) {
-     Action failure=delegate {if(!IsDisposed)ShowStoreFailure(ex.Message);};
-     try {if(InvokeRequired)BeginInvoke(failure);else failure();}catch(InvalidOperationException){}
-    }
+     text.Text=result;
+     StoreSettingCard card;
+     if(_storeCards.TryGetValue("DiagnosticsEnvironmentCard",out card))card.Reflow();
+    });
+   } catch(Exception error) {
+    if(IsDisposed || !IsHandleCreated)return;
+    try {BeginInvoke((Action)delegate {if(!IsDisposed)ShowStoreFailure(error.Message);});}
+    catch(InvalidOperationException) { }
    }
   }
   internal string GetSettingsSelectedSerial() {return ResolveStoreTargetSerial();}
   private void RestoreStoreExpansion() {
+   LoadDexDisplayMode();
+   LoadAiProfileControls();
    SetStoreExpansion("GeneralMiniBarExpander",_miniControlBarBox.Checked);SetStoreExpansion("GeneralAutoHideExpander",_autoHideBox.Checked);SetStoreExpansion("GeneralAutoStartDexExpander",_autoStartDexBox.Checked);
    SetStoreExpansion("InputHangulExpander",_convertHangulBox.Checked);SetStoreExpansion("InputEnterExpander",_convertEnterBox.Checked);SetStoreExpansion("ConnectionWirelessExpander",_wirelessConnectionBox.Checked);SetStoreExpansion("PathsPhoneToPcExpander",_phoneToPcTransferBox.Checked);
+   SetStoreExpansion("InputAiEnterCard",_autoAppEnterBox.Checked);
    SetStoreExpansion("CompanionStatusExpanderText",true);
    UpdateStoreDependencies();SynchronizeStoreSelectors();
   }

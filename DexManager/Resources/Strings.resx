@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
@@ -124,9 +124,7 @@
   <data name="Error.StartSingle" xml:space="preserve"><value>Could not start window {0}.</value></data>
   <data name="Error.StopSingle" xml:space="preserve"><value>Could not stop window {0}.</value></data>
   <data name="Status.ShuttingDown" xml:space="preserve"><value>Cleaning up before exit</value></data>
-  <data name="Capture.Hint" xml:space="preserve"><value>Press F8 again: capture the Scrcpy window
-Drag the mouse: capture a region
-ESC: cancel</value></data>
+  <data name="Capture.Hint" xml:space="preserve"><value>Press F8 again: capture the Scrcpy window&#xD;&#xA;Drag the mouse: capture a region&#xD;&#xA;ESC: cancel</value></data>
   <data name="Capture.Saved" xml:space="preserve"><value>✓ Screenshot saved</value></data>
   <data name="Settings.SavedInline" xml:space="preserve"><value>Settings saved. Restart to apply language, program path, device monitor, or process timeout changes.</value></data>
   <data name="Settings.SaveFailedInline" xml:space="preserve"><value>Save failed: {0}</value></data>
@@ -145,7 +143,7 @@ ESC: cancel</value></data>
   <data name="Settings.AboutCopyright" xml:space="preserve"><value>Copyright © 2026 maze</value></data>
   <data name="Settings.AboutLicense" xml:space="preserve"><value>DX Manager source code is licensed under the MIT License.</value></data>
   <data name="Settings.OpenProjectFailed" xml:space="preserve"><value>Could not open the project page: {0}</value></data>
-  <data name="Settings.AboutScrcpy" xml:space="preserve"><value>This program includes and uses scrcpy 4.1, open-source software distributed by Genymobile and Romain Vimont under the Apache License 2.0.</value></data>
+  <data name="Settings.AboutScrcpy" xml:space="preserve"><value>This program includes and uses scrcpy 5.0.1, open-source software distributed by Genymobile and Romain Vimont under the Apache License 2.0. The Native DeX helper includes code from ScrcpyDeX v1.1 under the same license.</value></data>
   <data name="Settings.AboutComponents" xml:space="preserve"><value>Bundled FFmpeg libraries are distributed under LGPL v2.1 or later, SDL3 under the zlib license, and libusb under LGPL v2.1 or later. See the third-party notices for details.</value></data>
   <data name="Settings.AboutSamsung" xml:space="preserve"><value>This program works with Samsung DeX features on compatible Samsung devices, but is not produced, sponsored, endorsed, or distributed by Samsung Electronics. Samsung and Samsung DeX are trademarks of their respective owner.</value></data>
   <data name="Settings.OpenNotices" xml:space="preserve"><value>View third-party notices</value></data>
@@ -445,11 +443,8 @@ ESC: cancel</value></data>
   <data name="Settings.DeviceDiagnosticsNoActiveTransport" xml:space="preserve"><value>No active authorized transport is available for this phone.</value></data>
   <data name="Settings.DeviceDiagnosticsNotConnected" xml:space="preserve"><value>The selected phone is not in the connected-device snapshot.</value></data>
   <data name="Settings.RefreshDeviceDiagnostics" xml:space="preserve"><value>Refresh all connected phones</value></data>
-  <data name="Settings.DeviceDiagnosticsFailed" xml:space="preserve"><value>Device version information could not be read.
-{0}</value></data>
-  <data name="Settings.DeviceDiagnosticsSummary" xml:space="preserve"><value>{0}
-Android {1} · One UI {2} · security patch {3}
-{4}</value></data>
+  <data name="Settings.DeviceDiagnosticsFailed" xml:space="preserve"><value>Device version information could not be read.&#x0A;{0}</value></data>
+  <data name="Settings.DeviceDiagnosticsSummary" xml:space="preserve"><value>{0}&#x0A;Android {1} · One UI {2} · security patch {3}&#x0A;{4}</value></data>
   <data name="Settings.Transport.Unknown" xml:space="preserve"><value>unknown connection</value></data>
   <data name="Settings.Transport.Usb" xml:space="preserve"><value>USB</value></data>
   <data name="Settings.Transport.Wireless" xml:space="preserve"><value>Wi-Fi ADB</value></data>
@@ -460,8 +455,7 @@ Android {1} · One UI {2} · security patch {3}
   <data name="Settings.Compatibility.NewerUnverified" xml:space="preserve"><value>This newer software version has not yet been fully verified. Launch remains available.</value></data>
   <data name="Settings.DiagnosticReportFilter" xml:space="preserve"><value>Text files (*.txt)|*.txt|All files (*.*)|*.*</value></data>
   <data name="Settings.DiagnosticReportSaved" xml:space="preserve"><value>The diagnostic report was saved. Its folder will now open.</value></data>
-  <data name="Settings.DiagnosticReportFailed" xml:space="preserve"><value>The diagnostic report could not be saved.
-{0}</value></data>
+  <data name="Settings.DiagnosticReportFailed" xml:space="preserve"><value>The diagnostic report could not be saved.&#x0A;{0}</value></data>
   <data name="Settings.StartWithWindows" xml:space="preserve"><value>Start with Windows</value></data>
   <data name="Settings.StartMinimized" xml:space="preserve"><value>Start minimized to the tray</value></data>
   <data name="Settings.WakeUpMode" xml:space="preserve"><value>ADB wake-up mode</value></data>
@@ -637,9 +631,9 @@ Android {1} · One UI {2} · security patch {3}
   <data name="Settings.ManagedFileTransfer" xml:space="preserve"><value>Use DX Manager file transfer (Unicode-compatible)</value></data>
   <data name="Settings.ManagedFileTransferHint" xml:space="preserve"><value>When enabled, DX Manager handles file transfer and preserves complete folders and Unicode names. Turn it off to use scrcpy's original file-drop behavior. Changes apply to newly opened DeX and single-app windows.</value></data>
   <data name="Settings.FileTransferTargetFolder" xml:space="preserve"><value>Dropped files destination on phone</value></data>
-  <data name="Settings.PhoneToPcTransfer" xml:space="preserve"><value>Receive shared files from DX Companion</value></data>
+  <data name="Settings.PhoneToPcTransfer" xml:space="preserve"><value>Receive shared files from DX Companion app</value></data>
   <data name="Settings.PhoneToPcReceiveFolder" xml:space="preserve"><value>Phone-to-PC destination folder</value></data>
-  <data name="Settings.PhoneToPcTransferHint" xml:space="preserve"><value>When the verified DX Companion is installed, files and folders shared to DX Manager are streamed directly to this PC through the current ADB connection. No temporary copy is created on the phone.</value></data>
+  <data name="Settings.PhoneToPcTransferHint" xml:space="preserve"><value>When the verified DX Companion app is installed, files and folders shared to DX Manager are streamed directly to this PC through the current ADB connection. No temporary copy is created on the phone.</value></data>
   <data name="Settings.PhoneToPcReceiveFolderRequired" xml:space="preserve"><value>Select a PC folder for files received from the phone.</value></data>
   <data name="PhoneTransfer.WindowTitle" xml:space="preserve"><value>DX Manager · Receiving from phone</value></data>
   <data name="PhoneTransfer.Receiving" xml:space="preserve"><value>Receiving from the phone</value></data>
@@ -650,35 +644,35 @@ Android {1} · One UI {2} · security patch {3}
   <data name="PhoneTransfer.BytesUnknown" xml:space="preserve"><value>{0} received</value></data>
   <data name="PhoneTransfer.OpenFolder" xml:space="preserve"><value>Open folder</value></data>
   <data name="Settings.GroupDisplayCleanup" xml:space="preserve"><value>DX Companion</value></data>
-  <data name="Settings.DisplayCleanupGuide" xml:space="preserve"><value>Install, update, or remove the bundled DX Companion on the currently selected phone. DX Manager verifies the bundled APK and the installed app before granting its restricted Android settings permission. Nothing is installed automatically.</value></data>
-  <data name="Settings.InstallCompanion" xml:space="preserve"><value>Install Companion</value></data>
-  <data name="Settings.UpdateCompanion" xml:space="preserve"><value>Update Companion</value></data>
-  <data name="Settings.ReinstallCompanion" xml:space="preserve"><value>Reinstall Companion</value></data>
+  <data name="Settings.DisplayCleanupGuide" xml:space="preserve"><value>Install, update, or remove the bundled DX Companion app on the currently selected phone. DX Manager verifies the bundled APK and the installed app before granting its restricted Android settings permission. Nothing is installed automatically.</value></data>
+  <data name="Settings.InstallCompanion" xml:space="preserve"><value>Install app</value></data>
+  <data name="Settings.UpdateCompanion" xml:space="preserve"><value>Update app</value></data>
+  <data name="Settings.ReinstallCompanion" xml:space="preserve"><value>Reinstall app</value></data>
   <data name="Settings.CompanionNewerInstalled" xml:space="preserve"><value>Newer version installed</value></data>
-  <data name="Settings.UninstallCompanion" xml:space="preserve"><value>Uninstall Companion</value></data>
+  <data name="Settings.UninstallCompanion" xml:space="preserve"><value>Uninstall app</value></data>
   <data name="Settings.GrantDisplayCleanupPermission" xml:space="preserve"><value>Grant permission</value></data>
-  <data name="Settings.DisplayCleanupChecking" xml:space="preserve"><value>Checking the selected phone and DX Companion…</value></data>
-  <data name="Settings.DisplayCleanupNoDevice" xml:space="preserve"><value>Connect and authorize a phone to manage DX Companion.</value></data>
-  <data name="Settings.DisplayCleanupNotInstalled" xml:space="preserve"><value>DX Companion is not installed on the selected phone.</value></data>
-  <data name="Settings.DisplayCleanupVerificationFailed" xml:space="preserve"><value>The installed app could not be verified as the official DX Companion. Permission was not granted. Remove it before installing the bundled app.</value></data>
-  <data name="Settings.DisplayCleanupReady" xml:space="preserve"><value>The installed DX Companion and its signing certificate were verified. Permission can now be granted.</value></data>
-  <data name="Settings.DisplayCleanupGranted" xml:space="preserve"><value>DX Companion is verified and already has the required permission.</value></data>
-  <data name="Settings.DisplayCleanupFailed" xml:space="preserve"><value>DX Companion or its permission status could not be checked.</value></data>
-  <data name="Settings.DisplayCleanupGrantConfirm" xml:space="preserve"><value>Grant the verified DX Companion permission to change only the Android settings needed for its cleanup functions? The app does not receive arbitrary ADB command access.</value></data>
+  <data name="Settings.DisplayCleanupChecking" xml:space="preserve"><value>Checking the selected phone and DX Companion app…</value></data>
+  <data name="Settings.DisplayCleanupNoDevice" xml:space="preserve"><value>Connect and authorize a phone to manage DX Companion app.</value></data>
+  <data name="Settings.DisplayCleanupNotInstalled" xml:space="preserve"><value>DX Companion app is not installed on the selected phone.</value></data>
+  <data name="Settings.DisplayCleanupVerificationFailed" xml:space="preserve"><value>The installed app could not be verified as the official DX Companion app. Permission was not granted. Remove it before installing the bundled app.</value></data>
+  <data name="Settings.DisplayCleanupReady" xml:space="preserve"><value>The installed DX Companion app and its signing certificate were verified. Permission can now be granted.</value></data>
+  <data name="Settings.DisplayCleanupGranted" xml:space="preserve"><value>DX Companion app is verified and already has the required permission.</value></data>
+  <data name="Settings.DisplayCleanupFailed" xml:space="preserve"><value>DX Companion app or its permission status could not be checked.</value></data>
+  <data name="Settings.DisplayCleanupGrantConfirm" xml:space="preserve"><value>Grant the verified DX Companion app permission to change only the Android settings needed for its cleanup functions? The app does not receive arbitrary ADB command access.</value></data>
   <data name="Settings.DisplayCleanupGranting" xml:space="preserve"><value>Re-verifying the installed app and granting permission…</value></data>
-  <data name="Settings.DisplayCleanupGrantSucceeded" xml:space="preserve"><value>Permission was granted successfully. DX Companion cleanup and phone-to-PC transfer features are now ready.</value></data>
+  <data name="Settings.DisplayCleanupGrantSucceeded" xml:space="preserve"><value>Permission was granted successfully. DX Companion app cleanup and phone-to-PC transfer features are now ready.</value></data>
   <data name="Settings.DisplayCleanupPermissionGrantedButton" xml:space="preserve"><value>Permission granted</value></data>
   <data name="Settings.CompanionInstalledVersion" xml:space="preserve"><value>Installed version code: {0}</value></data>
   <data name="Settings.CompanionBundledVersion" xml:space="preserve"><value>Verified bundled version: {0}</value></data>
   <data name="Settings.CompanionBundledMissing" xml:space="preserve"><value>The bundled APK is missing. Install and update are unavailable.</value></data>
   <data name="Settings.CompanionBundledInvalid" xml:space="preserve"><value>The bundled APK failed integrity or signature verification. It will not be installed.</value></data>
-  <data name="Settings.CompanionInstallConfirm" xml:space="preserve"><value>Install the verified bundled DX Companion on the selected phone and grant its required restricted permission?</value></data>
-  <data name="Settings.CompanionUpdateConfirm" xml:space="preserve"><value>Update or reinstall DX Companion on the selected phone, verify it again, and grant its required restricted permission?</value></data>
-  <data name="Settings.CompanionInstalling" xml:space="preserve"><value>Verifying and installing DX Companion on the selected phone…</value></data>
-  <data name="Settings.CompanionInstallSucceeded" xml:space="preserve"><value>DX Companion was installed, verified, and granted permission successfully.</value></data>
-  <data name="Settings.CompanionUninstallConfirm" xml:space="preserve"><value>Uninstall DX Companion from the selected phone? Active phone-to-PC transfer will stop, and the app's settings, home widget, and Quick Settings tile will be removed.</value></data>
-  <data name="Settings.CompanionUninstalling" xml:space="preserve"><value>Stopping the selected phone's transfer session and uninstalling DX Companion…</value></data>
-  <data name="Settings.CompanionUninstallSucceeded" xml:space="preserve"><value>DX Companion was uninstalled from the selected phone.</value></data>
+  <data name="Settings.CompanionInstallConfirm" xml:space="preserve"><value>Install the verified bundled DX Companion app on the selected phone and grant its required restricted permission?</value></data>
+  <data name="Settings.CompanionUpdateConfirm" xml:space="preserve"><value>Update or reinstall DX Companion app on the selected phone, verify it again, and grant its required restricted permission?</value></data>
+  <data name="Settings.CompanionInstalling" xml:space="preserve"><value>Verifying and installing DX Companion app on the selected phone…</value></data>
+  <data name="Settings.CompanionInstallSucceeded" xml:space="preserve"><value>DX Companion app was installed, verified, and granted permission successfully.</value></data>
+  <data name="Settings.CompanionUninstallConfirm" xml:space="preserve"><value>Uninstall DX Companion app from the selected phone? Active phone-to-PC transfer will stop, and the app's settings, home widget, and Quick Settings tile will be removed.</value></data>
+  <data name="Settings.CompanionUninstalling" xml:space="preserve"><value>Stopping the selected phone's transfer session and uninstalling DX Companion app…</value></data>
+  <data name="Settings.CompanionUninstallSucceeded" xml:space="preserve"><value>DX Companion app was uninstalled from the selected phone.</value></data>
   <data name="DeviceFolder.Title" xml:space="preserve"><value>Browse phone folders</value></data>
   <data name="DeviceFolder.Heading" xml:space="preserve"><value>Select a folder on the phone</value></data>
   <data name="DeviceFolder.Up" xml:space="preserve"><value>Up</value></data>
@@ -774,32 +768,67 @@ Android {1} · One UI {2} · security patch {3}
 
 3. Choose your phone from the device list at the top of DX Manager.
 
-Keep each phone authorized. Switching the selected phone preserves the other phone's running sessions.</value></data>
-  <data name="Help.Body1" xml:space="preserve"><value>Use DeX for a desktop session or one of the three single-window slots for individual apps.
+Keep each phone authorized. Switching the selected phone preserves the other phone&apos;s running sessions.</value></data>
+  <data name="Help.Body1" xml:space="preserve"><value>DeX mode opens the Samsung DeX desktop environment. Single-window modes 1–3 each open the selected app in a separate window. Resolution, DPI, start app and launch options are saved for each phone and slot.
 
-Display size, DPI, input options and the start app are saved separately for each phone and mode. Select the intended phone before changing settings.
+DeX display mode
+Choose Settings → Connection → DeX display mode. Native DeX is the default and uses the phone’s Samsung DeX environment. Simulated secondary display remains available. Stop and start DeX to apply a different mode.
 
-App lists and recent apps belong to the selected phone. Advanced options provide additional scrcpy arguments; existing keyboard compatibility corrections remain enabled.</value></data>
-  <data name="Help.Body2" xml:space="preserve"><value>If a phone is missing, check its cable, USB debugging authorization, and the device's USB/Wi-Fi policy under Settings &gt; Connection.
+Start DeX or a single window
+1. Select the phone and the desired mode.
+2. Select a start app for a single window. The DeX start app is optional.
+3. Choose display and launch options, then press Start.
 
-Wireless pairing and connection use different ports. Select the intended phone and use the pairing code shown on that phone.
+120 FPS is experimental
+Native DeX currently runs at up to 60 FPS. With Native DeX selected in Settings, choose 120 under Display settings → Max FPS in DeX mode to use simulated display for this launch after confirming. Your saved DeX mode stays unchanged. The remember checkbox is linked to the matching option in Settings. The experimental warning appears before each start, and the phone screen must stay on. Actual FPS depends on the phone and app.
 
-If DeX is black on an older One UI release, use single-window mode. Settings &gt; Diagnostics opens logs and lets you save a diagnostic report.</value></data>
-  <data name="Help.Body3" xml:space="preserve"><value>PC to phone: drag files or folders onto the appropriate scrcpy window. Managed transfer is configured under Settings &gt; Paths.
+Single windows alongside Native DeX
+On the same phone, single windows are limited to 60 FPS while Native DeX is active, even when 120 is selected. After stopping Native DeX, a running single window can use its configured maximum of 120 FPS.
 
-Phone to PC: select files or a folder in DX Companion. Each phone has its own transfer session and receive folder.
+When Native DeX loses connection
+Native DeX is cleaned up about 30 seconds after a USB or Wi-Fi disconnection is detected. Reconnecting within 30 seconds cancels cleanup and reuses the existing DeX display. If the internal display has already gone, a new one is created. The Companion app’s automatic cleanup time does not apply to Native DeX.</value></data>
+  <data name="Help.Body2" xml:space="preserve"><value>When the phone is not listed
+1. Check the USB cable and the phone's USB connection mode.
+2. Unlock the phone and check for the USB debugging approval prompt.
+3. Use Refresh on the main page, then choose the phone again.
 
-DX Companion is optional and installed only on the phone you select. Android 13 or newer is required. Installation and permission actions are under Settings &gt; Companion.</value></data>
-  <data name="Help.Body4" xml:space="preserve"><value>The Close button hides DX Manager in the system tray. Use the tray Exit action or your configured exit hotkey for a normal exit.
+Connect the phone and PC to the same network for Wi-Fi ADB. Check the selected connection mode and current status on the Connection page in Settings.
 
-If a cable disconnects or the program ends unexpectedly, a virtual display or modified stay-awake setting may remain. DX Companion can remove the simulated display and restore the stay-awake setting.
+When a session fails to launch
+Some apps restrict launching or mirroring because of USB debugging, DRM or security policies.</value></data>
+  <data name="Help.Body3" xml:space="preserve"><value>PC → phone: drag files or folders onto that phone’s scrcpy window.
+Phone → PC: select files or folders in the DX Companion app, or use the Share menu in Gallery or another app.
+Check destinations and transfer readiness in Settings → Paths and Settings → Companion.
 
-Normal exit tries to restore each managed phone independently. Recovery cannot be guaranteed while the phone is disconnected.</value></data>
+The Companion app is optional
+Basic DeX and single windows work without the Companion app. To use phone-to-PC transfer, phone cleanup or app switch detection, install the matching Companion app and grant the permissions shown in Settings → Companion. App installation and accessibility activation are not automatic.
+
+AI app Enter rules and accessibility
+Automatic line breaks for AI apps are off by default. In DX Manager, open Settings → Keyboard and enable the AI app Enter option, then enable app switch detection in the Companion app. Accessibility is optional for app detection and is not required for file transfer. Enter keeps its default behavior when app detection information is unavailable.
+
+Enable app switch detection on the phone
+1. Open DX Companion app → Settings → App switch detection card.
+2. Choose Open Accessibility settings → Installed apps.
+3. Select DX Companion app and turn it On.
+
+Cleanup timing after disconnection
+Companion app’s cleanup preference applies to simulated-display cleanup. Native DeX has its separate grace of about 30 seconds. Audio return to the phone and stay-awake release happen on disconnection, during that grace, while existing Bluetooth exceptions remain.</value></data>
+  <data name="Help.Body4" xml:space="preserve"><value>Native and simulated-display cleanup
+Native DeX is cleaned up about 30 seconds after disconnection is detected, independently of the Companion app’s timing setting. Simulated display uses the time set in the Companion app. The phone OS may end the Native DeX display earlier.
+
+Keep the phone connected, right-click the DX Manager icon in the system tray, and choose Exit. The main window's close button hides DX Manager in the tray; it does not exit the program.
+
+If a small virtual display remains on the phone
+1. Open Simulate secondary displays in Developer options on the phone.
+2. Even if None is already selected, select any resolution once.
+3. Open the menu again and select None.
+
+With the DX Companion app installed, open its Phone cleanup tab and select Clean all to remove the display. You can also add its widget to the phone’s home screen for cleanup.</value></data>
   <data name="Help.Body5" xml:space="preserve"><value>The portable package includes USER_GUIDE_EN.md / USER_GUIDE_KO.md and FAQ_EN.md / FAQ_KO.md under docs.
 
 The guides explain setup, keyboard and mouse behavior, USB/Wi-Fi selection, capture, transfer and recovery.
 
-DX Manager is independently developed and is not an official Samsung application. It uses ADB and developer options to create virtual displays and temporarily change selected phone settings. DX Companion is installed only when requested.</value></data>
+DX Manager is independently developed and is not an official Samsung application. It uses ADB and developer options to create virtual displays and temporarily change selected phone settings. DX Companion app is installed only when requested.</value></data>
   <data name="Help.Topic0" xml:space="preserve"><value>Getting started</value></data>
   <data name="Help.Topic1" xml:space="preserve"><value>DeX and single windows</value></data>
   <data name="Help.Topic2" xml:space="preserve"><value>Connection and startup issues</value></data>
@@ -809,6 +838,42 @@ DX Manager is independently developed and is not an official Samsung application
   <data name="Main.DexReady" xml:space="preserve"><value>DeX ready to start</value></data>
   <data name="Main.SingleWaiting" xml:space="preserve"><value>Window {0} waiting for an app</value></data>
   <data name="Settings.Compatibility.UserVerifiedEnvironment" xml:space="preserve"><value>Normal operation has been confirmed in this environment.</value></data>
+  <data name="Log.Native.CheckExisting" xml:space="preserve"><value>Checking for an existing internal DeX session.</value></data>
+  <data name="Log.Native.Creating" xml:space="preserve"><value>Creating internal DeX: {0}x{1} @ {2} DPI.</value></data>
+  <data name="Log.Native.Reuse" xml:space="preserve"><value>Reusing connected internal DeX: display={0}, {1}x{2} @ {3} DPI.</value></data>
+  <data name="Log.Native.Reattached" xml:space="preserve"><value>Found retained internal DeX and restored its control connection: display={0}, {1}x{2} @ {3} DPI.</value></data>
+  <data name="Log.Native.Ready" xml:space="preserve"><value>Internal DeX ready: display={0}, {1}x{2} @ {3} DPI.</value></data>
+  <data name="Log.Native.WaitForAwake" xml:space="preserve"><value>[{0}] Phone is asleep. Wake the phone to continue starting DeX.</value></data>
+  <data name="Log.Native.PhoneAwake" xml:space="preserve"><value>[{0}] Phone is awake. Continuing DeX creation and DPI verification.</value></data>
+  <data name="Log.Native.WakeUnknown" xml:space="preserve"><value>[{0}] Phone wake state is unavailable; continuing with strict DPI verification.</value></data>
+  <data name="Error.Native.WakeQueryFailed" xml:space="preserve"><value>Could not read the phone power state. Check its connection and start DeX again.</value></data>
+  <data name="Log.Native.InitialCompatibility" xml:space="preserve"><value>Initial-metrics preparation is unavailable for this combination; the compatible post-creation adjustment path will be used. Companion app code9 and a supported mode/DPI are required for creation without later resizing.</value></data>
+  <data name="Log.Native.InitialPrepared" xml:space="preserve"><value>Prepared initial DeX configuration: {0}x{1}, DPI {2}. Verifying the created display metrics.</value></data>
+  <data name="Error.Native.InitialPreparation" xml:space="preserve"><value>Could not prepare the initial DeX configuration. The display was not launched; check Companion app permission and other active displays.</value></data>
+  <data name="Log.Native.InitialLowerDpi" xml:space="preserve"><value>After confirming initial DPI {0}, apply the selected DPI {1}. The selected resolution and saved DPI setting are preserved.</value></data>
+<data name="Fps.NativeTransitionTitle" xml:space="preserve"><value>120 FPS requires simulated-display mode</value></data>
+<data name="Fps.NativeTransitionBody" xml:space="preserve"><value>Native DeX currently supports up to 60 FPS. To use 120 FPS, use simulated secondary-display mode for this run only. Your saved DeX mode will stay unchanged. Continue?</value></data>
+<data name="Fps.NativeTransitionRemember" xml:space="preserve"><value>Use simulated display for 120 FPS without asking again</value></data>
+<data name="Fps.NativeTransitionAccept" xml:space="preserve"><value>Use simulated display this time</value></data>
+<data name="Error.Native.Fps120RequiresLegacy" xml:space="preserve"><value>120 FPS in DeX mode requires simulated secondary-display mode.</value></data>
+<data name="Log.Fps.TemporaryLegacy" xml:space="preserve"><value>Using simulated secondary-display mode for this 120 FPS launch only. The saved Native DeX mode is unchanged.</value></data>
+<data name="Fps.SingleNativeLimitTitle" xml:space="preserve"><value>Single-window FPS while Native DeX is active</value></data>
+<data name="Fps.SingleNativeLimitBody" xml:space="preserve"><value>DeX is running in Native DeX mode.
+
+While Native DeX is active, a single window runs at up to 60 FPS even when 120 FPS is selected.
+
+If you keep the single window running at its 120 FPS setting and stop Native DeX, it can automatically run at up to 120 FPS. Actual FPS depends on the phone and app.</value></data>
+<data name="Settings.AiEnterSetupTitle" xml:space="preserve"><value>Set up automatic Enter for AI apps</value></data>
+<data name="Settings.AiEnterSetupBody" xml:space="preserve"><value>This feature requires DX Companion app on your phone with app switch detection enabled.
+
+On your phone:
+1. DX Companion app → Settings → App switch detection card
+2. Open Accessibility settings → Installed apps
+3. DX Companion app → turn On
+
+If app switch information is unavailable, Enter keeps its default behavior.</value></data>
+<data name="Log.Native.ReconnectGrace" xml:space="preserve"><value>Native DeX connection lost. Its display waits about 30 seconds for reconnection, then cleans up automatically. Companion app cleanup timing does not apply.</value></data>
+<data name="Error.Native.OlderOwner" xml:space="preserve"><value>The existing Native DeX owner does not support the new 30-second cleanup policy. Clean up that display in Companion app, then start DeX again.</value></data>
 <data name="Update.BusyTitle" xml:space="preserve"><value>An update check is in progress</value></data>
 <data name="Update.OpenRelease" xml:space="preserve"><value>Open GitHub release</value></data>
 <data name="Update.FailedTitle" xml:space="preserve"><value>Could not check for updates</value></data>
@@ -830,4 +895,5 @@ DX Manager is independently developed and is not an official Samsung application
 <data name="Update.NewVersion" xml:space="preserve"><value>Version {0}</value></data>
 <data name="Update.AvailableTitle" xml:space="preserve"><value>A new version is available</value></data>
   <data name="Log.Wireless.DeviceMismatch" xml:space="preserve"><value>The wireless ADB address does not match the selected phone: {0}</value></data>
+  <data name="Licenses.ScrcpyDexTab" xml:space="preserve"><value>ScrcpyDeX · Apache 2.0</value></data>
 </root>

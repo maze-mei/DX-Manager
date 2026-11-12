@@ -77,13 +77,13 @@ namespace DexManager.Services
                 existingOverlay = FindExistingOverlayDisplay(current, before);
                 if (existingOverlay != null)
                 {
-                    _logService.Info(LocalizationService.Format(
+                    _logService.Progress(LocalizationService.Format(
                         "Log.Display.ExistingFound",
                         existingOverlay.Id,
                         existingOverlay.Width,
                         existingOverlay.Height,
                         existingOverlay.Dpi));
-                    _logService.Info(LocalizationService.Format(
+                    _logService.Progress(LocalizationService.Format(
                         "Log.Display.RequestedValues",
                         settings.Width,
                         settings.Height,
@@ -91,9 +91,9 @@ namespace DexManager.Services
 
                     if (MatchesDisplaySettings(settings, existingOverlay))
                     {
-                        _logService.Info(LocalizationService.Get(
+                        _logService.Progress(LocalizationService.Get(
                             "Log.Display.ReuseMatched"));
-                        _logService.Info(LocalizationService.Format(
+                        _logService.Progress(LocalizationService.Format(
                             "Log.Display.ExistingSelected",
                             existingOverlay.Id));
                         return new VirtualDisplayLease
@@ -107,7 +107,7 @@ namespace DexManager.Services
                         };
                     }
 
-                    _logService.Info(LocalizationService.Format(
+                    _logService.Progress(LocalizationService.Format(
                         "Log.Display.RecreateMismatch",
                         GetMismatchDescription(settings, existingOverlay)));
                 }
@@ -117,7 +117,7 @@ namespace DexManager.Services
                         "Log.Display.ExistingNotResolved",
                         current));
                 }
-                _logService.Info(LocalizationService.Format(
+                _logService.Progress(LocalizationService.Format(
                     "Log.Display.ReplacingSetting",
                     current,
                     value));
@@ -138,7 +138,7 @@ namespace DexManager.Services
                         "Error.Display.ApplyFailed",
                         result.StandardError));
 
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.Display.SettingApplied",
                 value));
             var lease = new VirtualDisplayLease
@@ -193,7 +193,7 @@ namespace DexManager.Services
                 DeleteOverlaySettingCommand);
             if (result.IsSuccess)
             {
-                _logService.Info(LocalizationService.Get(
+                _logService.Progress(LocalizationService.Get(
                     "Log.Display.Reset"));
             }
             else
@@ -224,7 +224,7 @@ namespace DexManager.Services
                     return false;
                 }
 
-                _logService.Info(LocalizationService.Get(
+                _logService.Progress(LocalizationService.Get(
                     "Log.Display.Restored"));
                 lease.OwnsOverlaySetting = false;
                 return true;
@@ -300,7 +300,7 @@ namespace DexManager.Services
                         result.StandardError));
             }
 
-            _logService.Info(LocalizationService.Get("Log.Display.Reset"));
+            _logService.Progress(LocalizationService.Get("Log.Display.Reset"));
             var deadline = DateTime.UtcNow.AddMilliseconds(
                 Math.Max(1000, Math.Min(waitMs, 3000)));
             IList<DisplayInfo> after = before;
@@ -451,7 +451,7 @@ namespace DexManager.Services
                 {
                     LogDisplaySnapshot("after", after);
                     LogDisplaySnapshot("new candidates", candidates);
-                    _logService.Info(LocalizationService.Format(
+                    _logService.Progress(LocalizationService.Format(
                         "Log.Display.NewSelected",
                         matches[0].Id));
                     return matches[0].Id;
@@ -476,7 +476,7 @@ namespace DexManager.Services
                 LogDisplaySnapshot("matched candidates", matches);
                 if (matches.Count == 1)
                 {
-                    _logService.Info(LocalizationService.Format(
+                    _logService.Progress(LocalizationService.Format(
                         "Log.Display.NewSelected",
                         matches[0].Id));
                     return matches[0].Id;

@@ -29,7 +29,7 @@ namespace DexManager.Services
         {
             if (settings == null) throw new ArgumentNullException("settings");
 
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.Path.WindowsDetected",
                 WindowsVersionHelper.GetDisplayName(),
                 WindowsVersionHelper.CurrentVersion));
@@ -112,7 +112,7 @@ namespace DexManager.Services
                 key.SetValue("Path", updated, RegistryValueKind.ExpandString);
             }
 
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.Path.SystemPathRegistered",
                 adbDirectory));
             return true;
@@ -247,14 +247,14 @@ namespace DexManager.Services
 
         private void LogSelection(AdbPathCandidate candidate, string settingsModeLabel)
         {
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.Path.Selection",
                 settingsModeLabel,
                 candidate.Description));
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.Path.SelectedAdbPath",
                 candidate.Path));
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.Path.AdbVersion",
                 candidate.VersionText));
         }

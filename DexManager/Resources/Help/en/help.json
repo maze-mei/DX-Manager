@@ -4,7 +4,7 @@
       "id": "getting-started",
       "title": "Getting started",
       "summary": "USB debugging and first connection",
-      "iconGlyph": "\uE8B7",
+      "iconGlyph": "",
       "blocks": [
         {
           "type": "paragraph",
@@ -29,25 +29,41 @@
     {
       "id": "modes",
       "title": "DeX and single windows",
-      "summary": "Run modes and start apps",
-      "iconGlyph": "\uE7F4",
+      "summary": "Native/simulated modes and 120 FPS",
+      "iconGlyph": "",
       "blocks": [
         {
           "type": "paragraph",
-          "text": "DeX opens the phone's Samsung DeX virtual display in a Windows window. A single window runs one selected app on its own virtual display."
-        },
-        {
-          "type": "steps",
-          "heading": "How to start",
-          "items": [
-            "Choose the connected phone at the top of the main page.",
-            "Review the resolution, DPI, and run options.",
-            "DeX can start without a start app. A single window requires one selected start app."
-          ]
+          "text": "DeX mode opens the Samsung DeX desktop environment. Single-window modes 1–3 each open the selected app in a separate window. Resolution, DPI, start app and launch options are saved for each phone and slot."
         },
         {
           "type": "paragraph",
-          "text": "The last DeX and single-window 1–3 options and selected apps are saved separately for each phone."
+          "heading": "DeX display mode",
+          "text": "Choose Settings → Connection → DeX display mode. Native DeX is the default and uses the phone’s Samsung DeX environment. Simulated secondary display remains available. Stop and start DeX to apply a different mode."
+        },
+        {
+          "type": "steps",
+          "heading": "Start DeX or a single window",
+          "items": [
+            "Select the phone and the desired mode.",
+            "Select a start app for a single window. The DeX start app is optional.",
+            "Choose display and launch options, then press Start."
+          ]
+        },
+        {
+          "type": "warning",
+          "heading": "120 FPS is experimental",
+          "text": "Native DeX currently runs at up to 60 FPS. With Native DeX selected in Settings, choose 120 under Display settings → Max FPS in DeX mode to use simulated display for this launch after confirming. Your saved DeX mode stays unchanged. The remember checkbox is linked to the matching option in Settings. The experimental warning appears before each start, and the phone screen must stay on. Actual FPS depends on the phone and app."
+        },
+        {
+          "type": "warning",
+          "heading": "Single windows alongside Native DeX",
+          "text": "On the same phone, single windows are limited to 60 FPS while Native DeX is active, even when 120 is selected. After stopping Native DeX, a running single window can use its configured maximum of 120 FPS."
+        },
+        {
+          "type": "paragraph",
+          "heading": "When Native DeX loses connection",
+          "text": "Native DeX is cleaned up about 30 seconds after a USB or Wi-Fi disconnection is detected. Reconnecting within 30 seconds cancels cleanup and reuses the existing DeX display. If the internal display has already gone, a new one is created. The Companion app’s automatic cleanup time does not apply to Native DeX."
         }
       ]
     },
@@ -55,7 +71,7 @@
       "id": "connection",
       "title": "Connection problems",
       "summary": "Device detection and launch issues",
-      "iconGlyph": "\uE8F1",
+      "iconGlyph": "",
       "blocks": [
         {
           "type": "steps",
@@ -68,33 +84,48 @@
         },
         {
           "type": "paragraph",
-          "text": "For Wi-Fi ADB, the phone and PC must be on the same network. The saved connection policy and the live connection can differ, so check status on the Connection page in Settings."
+          "text": "Connect the phone and PC to the same network for Wi-Fi ADB. Check the selected connection mode and current status on the Connection page in Settings."
         },
         {
           "type": "warning",
           "heading": "When a session fails to launch",
-          "text": "Some apps restrict launching or mirroring while USB debugging is enabled, or because of DRM or security policies. Check the phone approval prompt and the session log first."
+          "text": "Some apps restrict launching or mirroring because of USB debugging, DRM or security policies."
         }
       ]
     },
     {
       "id": "transfer",
       "title": "Files and DX Companion",
-      "summary": "Transfer files in both directions",
-      "iconGlyph": "\uE898",
+      "summary": "Two-way transfer and optional app detection",
+      "iconGlyph": "",
       "blocks": [
         {
           "type": "paragraph",
-          "text": "To send from the PC to the phone, drag files or folders onto a Scrcpy window. Set the destination folder on the Paths page in Settings."
+          "text": "PC → phone: drag files or folders onto that phone’s scrcpy window.\nPhone → PC: select files or folders in the DX Companion app, or use the Share menu in Gallery or another app.\nCheck destinations and transfer readiness in Settings → Paths and Settings → Companion."
         },
         {
           "type": "paragraph",
-          "text": "The optional DX Companion supports phone-to-PC transfer and phone-side display cleanup. It is installed only when you explicitly request installation and permission from the Companion page in Settings."
+          "heading": "The Companion app is optional",
+          "text": "Basic DeX and single windows work without the Companion app. To use phone-to-PC transfer, phone cleanup or app switch detection, install the matching Companion app and grant the permissions shown in Settings → Companion. App installation and accessibility activation are not automatic."
         },
         {
           "type": "warning",
-          "heading": "When a transfer does not start",
-          "text": "Check that the phone is authorized for ADB and is currently connected. Do not disconnect that phone while a transfer is active."
+          "heading": "AI app Enter rules and accessibility",
+          "text": "Automatic line breaks for AI apps are off by default. In DX Manager, open Settings → Keyboard and enable the AI app Enter option, then enable app switch detection in the Companion app. Accessibility is optional for app detection and is not required for file transfer. Enter keeps its default behavior when app detection information is unavailable."
+        },
+        {
+          "type": "steps",
+          "heading": "Enable app switch detection on the phone",
+          "items": [
+            "Open DX Companion app → Settings → App switch detection card.",
+            "Choose Open Accessibility settings → Installed apps.",
+            "Select DX Companion app and turn it On."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "heading": "Cleanup timing after disconnection",
+          "text": "Companion app’s cleanup preference applies to simulated-display cleanup. Native DeX has its separate grace of about 30 seconds. Audio return to the phone and stay-awake release happen on disconnection, during that grace, while existing Bluetooth exceptions remain."
         }
       ]
     },
@@ -102,8 +133,13 @@
       "id": "recovery",
       "title": "Exit and display recovery",
       "summary": "Safe exit and phone cleanup",
-      "iconGlyph": "\uE7E8",
+      "iconGlyph": "",
       "blocks": [
+        {
+          "type": "paragraph",
+          "heading": "Native and simulated-display cleanup",
+          "text": "Native DeX is cleaned up about 30 seconds after disconnection is detected, independently of the Companion app’s timing setting. Simulated display uses the time set in the Companion app. The phone OS may end the Native DeX display earlier."
+        },
         {
           "type": "paragraph",
           "text": "Keep the phone connected, right-click the DX Manager icon in the system tray, and choose Exit. The main window's close button hides DX Manager in the tray; it does not exit the program."
@@ -114,14 +150,12 @@
           "items": [
             "Open Simulate secondary displays in Developer options on the phone.",
             "Even if None is already selected, select any resolution once.",
-            "Open the menu again and select None.",
-            "If DX Companion is installed, you can also use Clean all on its Phone cleanup screen."
+            "Open the menu again and select None."
           ]
         },
         {
-          "type": "warning",
-          "heading": "Important",
-          "text": "A virtual display or a stay-awake setting can remain after disconnection, a forced exit, or Windows shutdown. Use the steps above to clean up the phone."
+          "type": "paragraph",
+          "text": "With the DX Companion app installed, open its Phone cleanup tab and select Clean all to remove the display. You can also add its widget to the phone’s home screen for cleanup."
         }
       ]
     }

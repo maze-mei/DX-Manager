@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.IO;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -13,8 +14,9 @@ namespace DexManager.Services
     public sealed class CompanionGuardianService : IDisposable
     {
         private const int DevicePort = 37124;
+        public ForegroundAppCache ForegroundApps { get; private set; }
         private const string ServiceComponent =
-            "io.github.mazemei.dxdisplaycleanup/.SessionGuardianService";
+            "io.github.mazemei.dxdisplaycleanup/io.github.mazemei.dxdisplaycleanup.SessionGuardianService";
         private const string StartAction =
             "io.github.mazemei.dxdisplaycleanup.START_SESSION_GUARDIAN";
 
@@ -44,6 +46,7 @@ namespace DexManager.Services
             _logService = logService ??
                 throw new ArgumentNullException("logService");
             _verifier = new DisplayCleanupPermissionService(adbService);
+            ForegroundApps = new ForegroundAppCache();
         }
 
         public bool IsConnected
@@ -96,7 +99,7 @@ namespace DexManager.Services
                 _logService.Info(DeviceLogFormatter.ForSerial(
                     serial,
                     "Companion shutdown protection is unavailable. " +
-                    "DX Companion " + DisplayCleanupPermissionService.BundledVersionName + " with cleanup permission is required."));
+                    "DX Companion 3.0.0 or later with cleanup permission is required."));
                 return;
             }
 
@@ -145,13 +148,27 @@ namespace DexManager.Services
                     " --ei port " + DevicePort +
                     " --es token " + token +
                     " --es transport " +
-                    GetTransportArgument(transportKind);
+                    GetTransportArgument(transportKind) +
+                    " --ei protocol_version " + CompanionGuardianProtocol.Version;
+                // Publish the token before starting Android: its first connection
+                // must not race am start-foreground-service's return.
+                lock (_sync)
+                {
+                    _serial = serial;
+                    _token = token;
+                }
                 var start = _adbService.ShellForSerial(
                     serial,
                     command,
                     false);
                 if (!start.IsSuccess)
                 {
+                    lock (_sync)
+                    {
+                        _serial = null;
+                        _token = null;
+                        CloseGuardianClientLocked();
+                    }
                     _adbService.RemoveReverseForSerial(
                         serial,
                         DevicePort,
@@ -161,11 +178,6 @@ namespace DexManager.Services
                         CombineOutput(start));
                 }
 
-                lock (_sync)
-                {
-                    _serial = serial;
-                    _token = token;
-                }
             }).ConfigureAwait(false);
 
             _logService.Info(DeviceLogFormatter.ForSerial(
@@ -313,69 +325,139 @@ namespace DexManager.Services
 
         private void HandleGuardian(TcpClient client)
         {
+            long generation = -1;
+            string serial = null;
             try
             {
                 client.NoDelay = true;
                 var stream = client.GetStream();
                 stream.ReadTimeout = 10000;
                 stream.WriteTimeout = 3000;
-                if (CompanionGuardianProtocol.ReadInt32(stream) !=
-                        CompanionGuardianProtocol.Magic ||
-                    CompanionGuardianProtocol.ReadInt32(stream) !=
-                        CompanionGuardianProtocol.Version)
-                {
-                    throw new InvalidDataException(
-                        "Unsupported Companion guardian protocol.");
-                }
-                var suppliedToken =
-                    CompanionGuardianProtocol.ReadString(stream);
+                if (CompanionGuardianProtocol.ReadInt32(stream) != CompanionGuardianProtocol.Magic ||
+                    CompanionGuardianProtocol.ReadInt32(stream) != CompanionGuardianProtocol.Version)
+                    throw new InvalidDataException("Unsupported Companion guardian protocol.");
+                var suppliedToken = CompanionGuardianProtocol.ReadString(stream);
                 if (!IsCurrentToken(suppliedToken)) return;
-
-                stream.WriteByte(1);
-                stream.Flush();
                 lock (_sync)
                 {
+                    if (!IsCurrentToken(suppliedToken)) return;
                     CloseGuardianClientLocked();
+                    generation = ForegroundApps.BeginConnection();
+                    serial = _serial;
                     _guardianClient = client;
                     _guardianStream = stream;
                 }
-
-                while (!_shutdown.IsCancellationRequested &&
-                    IsCurrentClient(client))
+                lock (_sendSync)
                 {
-                    lock (_sendSync)
+                    stream.WriteByte(1);
+                    stream.Flush();
+                }
+                var ignored = Task.Run(delegate { SendHeartbeatLoop(client, stream); });
+                bool loggedRtt = false;
+                while (!_shutdown.IsCancellationRequested && IsCurrentClient(client))
+                {
+                    int message = stream.ReadByte();
+                    if (message < 0) throw new EndOfStreamException();
+                    if (message == CompanionGuardianProtocol.AccessibilityStatus)
                     {
-                        stream.WriteByte(CompanionGuardianProtocol.Ping);
-                        stream.Flush();
+                        long sequence = CompanionGuardianProtocol.ReadInt64(stream);
+                        int available = stream.ReadByte();
+                        if (sequence < 0 || available < 0 || available > 1)
+                            throw new InvalidDataException("Invalid accessibility status.");
+                        if (ForegroundApps.SetAvailable(generation, sequence, available == 1))
+                            _logService.Info(DeviceLogFormatter.ForSerial(serial,
+                                "AI keymap: accessibility " + (available == 1
+                                ? "connected; app snapshot is starting."
+                                : "unavailable; using default Enter.")));
                     }
-                    if (_shutdown.Token.WaitHandle.WaitOne(3000)) break;
+                    else if (message == CompanionGuardianProtocol.ForegroundApp)
+                    {
+                        long sequence = CompanionGuardianProtocol.ReadInt64(stream);
+                        int displayId = CompanionGuardianProtocol.ReadInt32(stream);
+                        int ageMs = CompanionGuardianProtocol.ReadInt32(stream);
+                        var package = CompanionGuardianProtocol.ReadString(stream);
+                        if (sequence < 0 || displayId < 0 || ageMs < 0 ||
+                            (package.Length != 0 && !AppKeyRuleResolver.IsPackageName(package)))
+                            throw new InvalidDataException("Invalid foreground app frame.");
+                        // Android can stall a root/window query: do not apply an old AI rule.
+                        bool stale = ageMs > 1500;
+                        if (stale) package = string.Empty;
+                        var previous = ForegroundApps.GetPackage(displayId);
+                        if (ForegroundApps.Update(generation, sequence, displayId, package) &&
+                            (previous != package || stale))
+                            _logService.Info(DeviceLogFormatter.ForSerial(serial,
+                                "AI keymap: display=" + displayId + " " +
+                                (string.IsNullOrEmpty(previous) ? "<unknown>" : previous) + " -> " +
+                                (string.IsNullOrEmpty(package) ? "<unknown/default>" : package) +
+                                "; Android event age=" + ageMs + "ms" +
+                                (stale ? " (stale update discarded)" : "")));
+                    }
+                    else if (message == CompanionGuardianProtocol.ForegroundWindow)
+                    {
+                        var window = ForegroundWindowDiagnostic.Read(stream);
+                        if (ForegroundApps.UpdateWindow(generation, window))
+                            _logService.Info(DeviceLogFormatter.ForSerial(serial,
+                                "AI keymap: web context updated; display=" + window.DisplayId +
+                                " window=" + window.WindowId));
+                        _logService.Info(DeviceLogFormatter.ForSerial(serial, window.FormatLog()));
+                    }
+                    else if (message == CompanionGuardianProtocol.Pong)
+                    {
+                        var probe = CompanionGuardianProtocol.ReadInt64(stream);
+                        var now = Stopwatch.GetTimestamp();
+                        if (probe < 0 || probe > now)
+                            throw new InvalidDataException("Invalid guardian probe.");
+                        ForegroundApps.Heartbeat(generation);
+                        if (!loggedRtt)
+                        {
+                            loggedRtt = true;
+                            var rtt = (now - probe) * 1000.0 / Stopwatch.Frequency;
+                            _logService.Info(DeviceLogFormatter.ForSerial(serial,
+                                "AI keymap: tunnel RTT=" + rtt.ToString("F1",
+                                System.Globalization.CultureInfo.InvariantCulture) +
+                                "ms (round trip, not full app-switch latency)."));
+                        }
+                    }
+                    else throw new InvalidDataException("Unknown Companion guardian message.");
                 }
             }
-            catch (IOException)
-            {
-                // A broken guardian socket is expected after USB/Wi-Fi loss.
-            }
-            catch (ObjectDisposedException)
-            {
-            }
+            catch (IOException) { }
+            catch (ObjectDisposedException) { }
             catch (Exception ex)
             {
                 if (!_shutdown.IsCancellationRequested)
-                    _logService.Error(
-                        "DX Companion guardian connection failed.", ex);
+                    _logService.Error("Companion guardian connection failed.", ex);
             }
             finally
             {
+                if (generation >= 0) ForegroundApps.Disconnect(generation);
                 lock (_sync)
                 {
                     if (ReferenceEquals(client, _guardianClient))
                         CloseGuardianClientLocked();
                 }
-                try { client.Dispose(); }
-                catch (ObjectDisposedException) { }
+                try { client.Dispose(); } catch (ObjectDisposedException) { }
             }
         }
 
+        private void SendHeartbeatLoop(TcpClient client, NetworkStream stream)
+        {
+            try
+            {
+                while (!_shutdown.IsCancellationRequested && IsCurrentClient(client))
+                {
+                    lock (_sendSync)
+                    {
+                        stream.WriteByte(CompanionGuardianProtocol.Ping);
+                        CompanionGuardianProtocol.WriteInt64(stream, Stopwatch.GetTimestamp());
+                        stream.Flush();
+                    }
+                    if (_shutdown.Token.WaitHandle.WaitOne(3000)) break;
+                }
+            }
+            catch (IOException) { try { client.Close(); } catch (Exception) { } }
+            catch (ObjectDisposedException) { }
+        }
         private void TrySendStopMonitoring()
         {
             lock (_sendSync)
@@ -451,6 +533,7 @@ namespace DexManager.Services
 
         private void CloseGuardianClientLocked()
         {
+            ForegroundApps.Invalidate();
             var stream = _guardianStream;
             var client = _guardianClient;
             _guardianStream = null;

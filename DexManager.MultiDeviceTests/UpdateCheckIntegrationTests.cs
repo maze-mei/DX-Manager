@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -66,7 +66,7 @@ internal static class UpdateCheckIntegrationTests
             if (args.Length == 1 && args[0] == "--live")
             {
                 var watch = Stopwatch.StartNew();
-                using (var service = new UpdateCheckService("2.5.0",
+                using (var service = new UpdateCheckService(typeof(UpdateCheckService).Assembly.GetName().Version.ToString(3),
                     new GitHubReleaseSource(), new MemoryStore()))
                 {
                     var result = Run(service, false);
@@ -264,16 +264,15 @@ internal static class UpdateCheckIntegrationTests
             Check(!File.Exists(diskPath + ".tmp"), "successful state writes leave no temporary file");
 
             var product = typeof(UpdateCheckService).Assembly;
-            Check(product.GetType("DexManager.Services.ForegroundAppCache") == null &&
-                product.GetType("DexManager.Services.AppKeyRuleResolver") == null &&
-                product.GetType("DexManager.Models.AppKeyProfile") == null,
-                "official assembly excludes automatic app tracking and AI keymaps");
+            var settings = DexManager.Models.AppSettings.CreateDefault();
+            Check(settings.KeyMappings.ConvertEnterToShiftEnter && !settings.KeyMappings.AutoAppEnterEnabled,
+                "v3 uses manual Enter switching for fresh settings with AI opt-in");
             var protocol = product.GetType("DexManager.Services.CompanionGuardianProtocol");
-            Check((int)protocol.GetField("Version").GetRawConstantValue() == 1,
-                "official Companion guardian protocol remains version 1");
-            Check((int)product.GetType("DexManager.Services.DisplayCleanupPermissionService").GetField("BundledVersionCode").GetRawConstantValue() == 13 &&
-                (string)product.GetType("DexManager.Services.DisplayCleanupPermissionService").GetField("BundledVersionName").GetRawConstantValue() == "2.1.6",
-                "official assembly uses shared Companion 2.1.6/code13");
+            Check((int)protocol.GetField("Version").GetRawConstantValue() == 3,
+                "Companion guardian uses the foreground event protocol");
+            Check((int)product.GetType("DexManager.Services.DisplayCleanupPermissionService").GetField("BundledVersionCode").GetRawConstantValue() == 16 &&
+                (string)product.GetType("DexManager.Services.DisplayCleanupPermissionService").GetField("BundledVersionName").GetRawConstantValue() == "3.0.0",
+                "official assembly uses shared Companion 3.0.0/code16");
 
             Console.WriteLine("PASS update integration: " + checks);
             return 0;

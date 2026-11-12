@@ -18,8 +18,8 @@ android {
         applicationId "io.github.mazemei.dxdisplaycleanup"
         minSdk 33
         targetSdk 36
-        versionCode 13
-        versionName "2.1.6"
+        versionCode 16
+        versionName "3.0.0"
     }
 
     signingConfigs {

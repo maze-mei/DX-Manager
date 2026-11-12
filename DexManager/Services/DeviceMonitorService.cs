@@ -79,7 +79,7 @@ namespace DexManager.Services
                 Interlocked.Exchange(ref _stopping, 0);
                 _missingSinceUtc = DateTime.MinValue;
                 _timer = new Timer(Poll, null, 0, _intervalMs);
-                _logService.Info(LocalizationService.Get(
+                _logService.Progress(LocalizationService.Get(
                     "Log.DeviceMonitor.Started"));
             }
         }
@@ -128,7 +128,7 @@ namespace DexManager.Services
             {
                 if (timer.Dispose(completed)) completed.WaitOne();
             }
-            _logService.Info(LocalizationService.Get(
+            _logService.Progress(LocalizationService.Get(
                 "Log.DeviceMonitor.Stopped"));
         }
 
@@ -254,7 +254,7 @@ namespace DexManager.Services
                 _currentState = next;
             }
 
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.DeviceMonitor.StateChanged",
                 previous.Status,
                 next.Status,
@@ -386,7 +386,7 @@ namespace DexManager.Services
                 var displayName = device.IsAuthorized
                     ? GetDeviceDisplayName(device.Serial)
                     : string.Empty;
-                _logService.Info(LocalizationService.Format(
+                _logService.Progress(LocalizationService.Format(
                     "Log.DeviceMonitor.DevicePinned",
                     string.IsNullOrWhiteSpace(displayName)
                         ? device.Serial
@@ -411,7 +411,7 @@ namespace DexManager.Services
 
             var previousSerial = _pinnedTransportSerial;
             _pinnedTransportSerial = device.Serial;
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.DeviceMonitor.PinnedTransportChanged",
                 previousSerial,
                 device.Serial));

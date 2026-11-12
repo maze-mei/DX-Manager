@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,7 +15,7 @@ using DexManager.Utils;
 
 namespace DexManager.MultiDeviceTests
 {
-    internal static class Program
+    internal static partial class Program
     {
         private static int _passed;
 
@@ -104,7 +104,30 @@ namespace DexManager.MultiDeviceTests
                 AppliesSavedSingleWindowAppProfile,
                 KeepsOnboardingAcknowledgementOutsideSettingsReset,
                 ShowsConsentOnlyUntilAccepted,
-                RejectsCorruptOrUnwritableOnboardingState
+                RejectsCorruptOrUnwritableOnboardingState,
+                AiProfilesTargetOnlyExplicitNativeApps,
+                AiProfilesKeepModifiedEnterUnchanged,
+                AiProfilesRespectDisabledAndDefaultRules,
+                AiCacheSeparatesDisplaysAndPhysicalDevices,
+                AiCacheRejectsOldConnectionMessages,
+                AiCacheClearsOnServiceAndTransportLoss,
+                AiCacheExpiresWithoutLiveness,
+                AiCacheKeepsUnchangedAppsWithHeartbeats,
+                AiCacheRejectsOutOfOrderMessages,
+                AiCacheRejectsInvalidPackages,
+                AiProfilesSurviveSettingsRoundTrip,
+                AiManualModeKeepsScrollLockPriority,
+                AiGeminiWebRuleRequiresVerifiedWindowIdentity,
+                AiWebProfilesKeepMultipleTargetsAndExplicitPriority,
+                AiGeminiWebProfileMigrationPreservesCustomSettings,
+                AiWebProfileSelectorsSurviveSettingsRoundTrip,
+                AiCacheTracksWindowSwitchesWithinChrome,
+                AiCacheUsesFocusedWindowInsteadOfEventSource,
+                AiCacheWindowDetailsNeverReviveStaleState,
+                AiWindowDiagnosticsPreserveBrowserIdentity,
+                AiWindowDiagnosticsStayOnOneLogLine,
+                AiWindowDiagnosticsRejectOversizedAndTruncatedFrames,
+                AiGuardianHandlesLongValuesAndTruncation
             };
 
             try
@@ -1371,6 +1394,8 @@ namespace DexManager.MultiDeviceTests
             var settings = AppSettings.CreateDefault();
             settings.GetOrCreateDeviceWirelessConnection("phone-a", false).Mode = AdbConnectionMode.Wireless;
             var service = new SettingsService(new LogService(), root);
+            // Prepare the fixture directory before workers test policy serialization.
+            Directory.CreateDirectory(Path.Combine(root, "config"));
             using (var saveEntered = new ManualResetEventSlim())
             using (var releaseSave = new ManualResetEventSlim())
             using (var editEntered = new ManualResetEventSlim())

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
   <resheader name="version"><value>2.0</value></resheader>
@@ -124,9 +124,7 @@
   <data name="Error.StartSingle" xml:space="preserve"><value>단일창 {0}을 시작하지 못했습니다.</value></data>
   <data name="Error.StopSingle" xml:space="preserve"><value>단일창 {0}을 중지하지 못했습니다.</value></data>
   <data name="Status.ShuttingDown" xml:space="preserve"><value>종료 정리 중</value></data>
-  <data name="Capture.Hint" xml:space="preserve"><value>F8 다시 누름: Scrcpy 전체 캡처
-마우스 드래그: 선택 영역 캡처
-ESC: 취소</value></data>
+  <data name="Capture.Hint" xml:space="preserve"><value>F8 다시 누름: Scrcpy 전체 캡처&#xD;&#xA;마우스 드래그: 선택 영역 캡처&#xD;&#xA;ESC: 취소</value></data>
   <data name="Capture.Saved" xml:space="preserve"><value>✓ 스크린샷 저장 완료</value></data>
   <data name="Settings.SavedInline" xml:space="preserve"><value>설정을 저장했습니다. 언어, 프로그램 경로, 장치 감시 주기 또는 프로세스 제한 시간 변경은 다시 시작한 뒤 적용됩니다.</value></data>
   <data name="Settings.SaveFailedInline" xml:space="preserve"><value>저장 실패: {0}</value></data>
@@ -145,7 +143,7 @@ ESC: 취소</value></data>
   <data name="Settings.AboutCopyright" xml:space="preserve"><value>Copyright © 2026 maze</value></data>
   <data name="Settings.AboutLicense" xml:space="preserve"><value>DX Manager 소스 코드는 MIT License로 배포됩니다.</value></data>
   <data name="Settings.OpenProjectFailed" xml:space="preserve"><value>프로젝트 페이지를 열지 못했습니다: {0}</value></data>
-  <data name="Settings.AboutScrcpy" xml:space="preserve"><value>이 프로그램은 scrcpy 4.1을 포함하고 사용합니다. scrcpy는 Genymobile과 Romain Vimont가 Apache License 2.0으로 배포하는 오픈소스 소프트웨어입니다.</value></data>
+  <data name="Settings.AboutScrcpy" xml:space="preserve"><value>이 프로그램은 scrcpy 5.0.1을 포함하고 사용합니다. scrcpy는 Genymobile과 Romain Vimont가 Apache License 2.0으로 배포하는 오픈소스 소프트웨어입니다. 네이티브 DeX 헬퍼에 포함된 ScrcpyDeX v1.1 코드에도 같은 라이선스가 적용됩니다.</value></data>
   <data name="Settings.AboutComponents" xml:space="preserve"><value>동봉된 FFmpeg 라이브러리는 LGPL v2.1 이상, SDL3는 zlib, libusb는 LGPL v2.1 이상에 따라 배포됩니다. 자세한 내용은 제3자 라이선스를 확인하십시오.</value></data>
   <data name="Settings.AboutSamsung" xml:space="preserve"><value>이 프로그램은 호환되는 Samsung 장치에서 Samsung DeX 기능과 함께 동작하지만 Samsung Electronics가 제작, 후원, 보증 또는 배포하는 제품이 아닙니다. Samsung 및 Samsung DeX는 각 권리자의 상표입니다.</value></data>
   <data name="Settings.OpenNotices" xml:space="preserve"><value>제3자 라이선스 보기</value></data>
@@ -445,11 +443,8 @@ ESC: 취소</value></data>
   <data name="Settings.DeviceDiagnosticsNoActiveTransport" xml:space="preserve"><value>현재 활성화된 인증 연결 경로를 찾을 수 없습니다.</value></data>
   <data name="Settings.DeviceDiagnosticsNotConnected" xml:space="preserve"><value>선택한 휴대폰이 연결 기기 목록에 없습니다.</value></data>
   <data name="Settings.RefreshDeviceDiagnostics" xml:space="preserve"><value>연결된 휴대폰 모두 새로 고침</value></data>
-  <data name="Settings.DeviceDiagnosticsFailed" xml:space="preserve"><value>기기 버전 정보를 읽지 못했습니다.
-{0}</value></data>
-  <data name="Settings.DeviceDiagnosticsSummary" xml:space="preserve"><value>{0}
-Android {1} · One UI {2} · 보안 패치 {3}
-{4}</value></data>
+  <data name="Settings.DeviceDiagnosticsFailed" xml:space="preserve"><value>기기 버전 정보를 읽지 못했습니다.&#x0A;{0}</value></data>
+  <data name="Settings.DeviceDiagnosticsSummary" xml:space="preserve"><value>{0}&#x0A;Android {1} · One UI {2} · 보안 패치 {3}&#x0A;{4}</value></data>
   <data name="Settings.Transport.Unknown" xml:space="preserve"><value>연결 방식 확인 안 됨</value></data>
   <data name="Settings.Transport.Usb" xml:space="preserve"><value>USB</value></data>
   <data name="Settings.Transport.Wireless" xml:space="preserve"><value>Wi-Fi ADB</value></data>
@@ -460,8 +455,7 @@ Android {1} · One UI {2} · 보안 패치 {3}
   <data name="Settings.Compatibility.NewerUnverified" xml:space="preserve"><value>더 새로운 소프트웨어 버전은 아직 충분히 확인되지 않았습니다. 실행은 차단하지 않습니다.</value></data>
   <data name="Settings.DiagnosticReportFilter" xml:space="preserve"><value>텍스트 파일 (*.txt)|*.txt|모든 파일 (*.*)|*.*</value></data>
   <data name="Settings.DiagnosticReportSaved" xml:space="preserve"><value>진단 보고서를 저장했습니다. 저장 폴더를 엽니다.</value></data>
-  <data name="Settings.DiagnosticReportFailed" xml:space="preserve"><value>진단 보고서를 저장하지 못했습니다.
-{0}</value></data>
+  <data name="Settings.DiagnosticReportFailed" xml:space="preserve"><value>진단 보고서를 저장하지 못했습니다.&#x0A;{0}</value></data>
   <data name="Settings.StartWithWindows" xml:space="preserve"><value>Windows 시작 시 자동 실행</value></data>
   <data name="Settings.StartMinimized" xml:space="preserve"><value>자동 실행 시 트레이로 시작</value></data>
   <data name="Settings.WakeUpMode" xml:space="preserve"><value>ADB Wake-up 방식</value></data>
@@ -637,9 +631,9 @@ Android {1} · One UI {2} · 보안 패치 {3}
   <data name="Settings.ManagedFileTransfer" xml:space="preserve"><value>DX Manager 파일 전송 사용 (한글/Unicode 호환)</value></data>
   <data name="Settings.ManagedFileTransferHint" xml:space="preserve"><value>켜면 DX Manager 파일 전송 기능을 사용합니다. 폴더 전체와 한글을 포함한 Unicode 이름을 깨짐 없이 전송할 수 있습니다. 끄면 scrcpy의 순정 파일 드롭 기능을 사용합니다. 변경은 새로 여는 DeX, 단일창부터 적용됩니다.</value></data>
   <data name="Settings.FileTransferTargetFolder" xml:space="preserve"><value>드롭 파일 휴대폰 저장 폴더</value></data>
-  <data name="Settings.PhoneToPcTransfer" xml:space="preserve"><value>DX Companion에서 공유한 파일 받기</value></data>
+  <data name="Settings.PhoneToPcTransfer" xml:space="preserve"><value>DX Companion 앱에서 공유한 파일 받기</value></data>
   <data name="Settings.PhoneToPcReceiveFolder" xml:space="preserve"><value>휴대폰→PC 저장 폴더</value></data>
-  <data name="Settings.PhoneToPcTransferHint" xml:space="preserve"><value>검증된 DX Companion이 설치되어 있으면 공유 메뉴로 보낸 파일과 폴더를 현재 ADB 연결을 통해 PC로 직접 전송합니다. 휴대폰에는 임시 복사본을 만들지 않습니다.</value></data>
+  <data name="Settings.PhoneToPcTransferHint" xml:space="preserve"><value>검증된 DX Companion 앱이 설치되어 있으면 공유 메뉴로 보낸 파일과 폴더를 현재 ADB 연결을 통해 PC로 직접 전송합니다. 휴대폰에는 임시 복사본을 만들지 않습니다.</value></data>
   <data name="Settings.PhoneToPcReceiveFolderRequired" xml:space="preserve"><value>휴대폰에서 받은 파일을 저장할 PC 폴더를 선택하십시오.</value></data>
   <data name="PhoneTransfer.WindowTitle" xml:space="preserve"><value>DX Manager · 휴대폰에서 받기</value></data>
   <data name="PhoneTransfer.Receiving" xml:space="preserve"><value>휴대폰에서 받는 중</value></data>
@@ -650,35 +644,35 @@ Android {1} · One UI {2} · 보안 패치 {3}
   <data name="PhoneTransfer.BytesUnknown" xml:space="preserve"><value>{0} 수신됨</value></data>
   <data name="PhoneTransfer.OpenFolder" xml:space="preserve"><value>폴더 열기</value></data>
   <data name="Settings.GroupDisplayCleanup" xml:space="preserve"><value>DX Companion</value></data>
-  <data name="Settings.DisplayCleanupGuide" xml:space="preserve"><value>내장된 DX Companion을 현재 선택한 휴대폰에 설치·업데이트·삭제합니다. DX Manager는 내장 APK와 설치된 앱을 모두 검증한 뒤 제한된 Android 설정 권한만 부여합니다. 사용자 동의 없이 자동으로 설치하지 않습니다.</value></data>
-  <data name="Settings.InstallCompanion" xml:space="preserve"><value>Companion 설치</value></data>
-  <data name="Settings.UpdateCompanion" xml:space="preserve"><value>Companion 업데이트</value></data>
-  <data name="Settings.ReinstallCompanion" xml:space="preserve"><value>Companion 재설치</value></data>
+  <data name="Settings.DisplayCleanupGuide" xml:space="preserve"><value>내장된 DX Companion 앱을 현재 선택한 휴대폰에 설치·업데이트·삭제합니다. DX Manager는 내장 APK와 설치된 앱을 모두 검증한 뒤 제한된 Android 설정 권한만 부여합니다. 사용자 동의 없이 자동으로 설치하지 않습니다.</value></data>
+  <data name="Settings.InstallCompanion" xml:space="preserve"><value>앱 설치</value></data>
+  <data name="Settings.UpdateCompanion" xml:space="preserve"><value>앱 업데이트</value></data>
+  <data name="Settings.ReinstallCompanion" xml:space="preserve"><value>앱 재설치</value></data>
   <data name="Settings.CompanionNewerInstalled" xml:space="preserve"><value>최신 버전 설치됨</value></data>
-  <data name="Settings.UninstallCompanion" xml:space="preserve"><value>Companion 삭제</value></data>
+  <data name="Settings.UninstallCompanion" xml:space="preserve"><value>앱 삭제</value></data>
   <data name="Settings.GrantDisplayCleanupPermission" xml:space="preserve"><value>권한 부여</value></data>
-  <data name="Settings.DisplayCleanupChecking" xml:space="preserve"><value>선택한 휴대폰과 DX Companion을 확인하는 중입니다…</value></data>
-  <data name="Settings.DisplayCleanupNoDevice" xml:space="preserve"><value>DX Companion을 관리하려면 승인된 휴대폰을 연결하십시오.</value></data>
-  <data name="Settings.DisplayCleanupNotInstalled" xml:space="preserve"><value>선택한 휴대폰에 DX Companion이 설치되어 있지 않습니다.</value></data>
-  <data name="Settings.DisplayCleanupVerificationFailed" xml:space="preserve"><value>설치된 앱을 공식 DX Companion으로 확인할 수 없어 권한을 부여하지 않았습니다. 내장 앱을 설치하려면 먼저 삭제하십시오.</value></data>
-  <data name="Settings.DisplayCleanupReady" xml:space="preserve"><value>설치된 DX Companion과 서명 인증서를 확인했습니다. 이제 권한을 부여할 수 있습니다.</value></data>
-  <data name="Settings.DisplayCleanupGranted" xml:space="preserve"><value>DX Companion이 확인되었으며 필요한 권한이 이미 부여되어 있습니다.</value></data>
-  <data name="Settings.DisplayCleanupFailed" xml:space="preserve"><value>DX Companion 또는 권한 상태를 확인하지 못했습니다.</value></data>
-  <data name="Settings.DisplayCleanupGrantConfirm" xml:space="preserve"><value>확인된 DX Companion에 정리 기능에 필요한 제한된 Android 설정 권한을 부여하시겠습니까? 임의의 ADB 명령 실행 권한은 제공되지 않습니다.</value></data>
+  <data name="Settings.DisplayCleanupChecking" xml:space="preserve"><value>선택한 휴대폰과 DX Companion 앱을 확인하는 중입니다…</value></data>
+  <data name="Settings.DisplayCleanupNoDevice" xml:space="preserve"><value>DX Companion 앱을 관리하려면 승인된 휴대폰을 연결하십시오.</value></data>
+  <data name="Settings.DisplayCleanupNotInstalled" xml:space="preserve"><value>선택한 휴대폰에 DX Companion 앱이 설치되어 있지 않습니다.</value></data>
+  <data name="Settings.DisplayCleanupVerificationFailed" xml:space="preserve"><value>설치된 앱을 공식 DX Companion 앱으로 확인할 수 없어 권한을 부여하지 않았습니다. 내장 앱을 설치하려면 먼저 삭제하십시오.</value></data>
+  <data name="Settings.DisplayCleanupReady" xml:space="preserve"><value>설치된 DX Companion 앱과 서명 인증서를 확인했습니다. 이제 권한을 부여할 수 있습니다.</value></data>
+  <data name="Settings.DisplayCleanupGranted" xml:space="preserve"><value>DX Companion 앱이 확인되었으며 필요한 권한이 이미 부여되어 있습니다.</value></data>
+  <data name="Settings.DisplayCleanupFailed" xml:space="preserve"><value>DX Companion 앱 또는 권한 상태를 확인하지 못했습니다.</value></data>
+  <data name="Settings.DisplayCleanupGrantConfirm" xml:space="preserve"><value>확인된 DX Companion 앱에 정리 기능에 필요한 제한된 Android 설정 권한을 부여하시겠습니까? 임의의 ADB 명령 실행 권한은 제공되지 않습니다.</value></data>
   <data name="Settings.DisplayCleanupGranting" xml:space="preserve"><value>설치된 앱을 다시 확인하고 권한을 부여하는 중입니다…</value></data>
-  <data name="Settings.DisplayCleanupGrantSucceeded" xml:space="preserve"><value>권한을 정상적으로 부여했습니다. 이제 DX Companion의 정리 및 휴대폰→PC 전송 기능을 사용할 수 있습니다.</value></data>
+  <data name="Settings.DisplayCleanupGrantSucceeded" xml:space="preserve"><value>권한을 정상적으로 부여했습니다. 이제 DX Companion 앱의 정리 및 휴대폰→PC 전송 기능을 사용할 수 있습니다.</value></data>
   <data name="Settings.DisplayCleanupPermissionGrantedButton" xml:space="preserve"><value>권한 부여됨</value></data>
   <data name="Settings.CompanionInstalledVersion" xml:space="preserve"><value>설치된 버전 코드: {0}</value></data>
   <data name="Settings.CompanionBundledVersion" xml:space="preserve"><value>검증된 내장 버전: {0}</value></data>
   <data name="Settings.CompanionBundledMissing" xml:space="preserve"><value>내장 APK가 없어 설치와 업데이트를 사용할 수 없습니다.</value></data>
   <data name="Settings.CompanionBundledInvalid" xml:space="preserve"><value>내장 APK의 무결성 또는 서명 검증에 실패해 설치하지 않습니다.</value></data>
-  <data name="Settings.CompanionInstallConfirm" xml:space="preserve"><value>검증된 내장 DX Companion을 선택한 휴대폰에 설치하고 필요한 제한 권한을 부여하시겠습니까?</value></data>
-  <data name="Settings.CompanionUpdateConfirm" xml:space="preserve"><value>선택한 휴대폰의 DX Companion을 업데이트 또는 재설치한 뒤 다시 검증하고 필요한 제한 권한을 부여하시겠습니까?</value></data>
-  <data name="Settings.CompanionInstalling" xml:space="preserve"><value>DX Companion을 검증하여 선택한 휴대폰에 설치하는 중입니다…</value></data>
-  <data name="Settings.CompanionInstallSucceeded" xml:space="preserve"><value>DX Companion 설치, 검증과 권한 부여를 완료했습니다.</value></data>
-  <data name="Settings.CompanionUninstallConfirm" xml:space="preserve"><value>선택한 휴대폰에서 DX Companion을 삭제하시겠습니까? 진행 중인 휴대폰→PC 전송이 중지되고 앱 설정, 홈 위젯과 빠른 설정 타일도 제거됩니다.</value></data>
-  <data name="Settings.CompanionUninstalling" xml:space="preserve"><value>선택한 휴대폰의 전송 세션을 정리하고 DX Companion을 삭제하는 중입니다…</value></data>
-  <data name="Settings.CompanionUninstallSucceeded" xml:space="preserve"><value>선택한 휴대폰에서 DX Companion을 삭제했습니다.</value></data>
+  <data name="Settings.CompanionInstallConfirm" xml:space="preserve"><value>검증된 내장 DX Companion 앱을 선택한 휴대폰에 설치하고 필요한 제한 권한을 부여하시겠습니까?</value></data>
+  <data name="Settings.CompanionUpdateConfirm" xml:space="preserve"><value>선택한 휴대폰의 DX Companion 앱을 업데이트 또는 재설치한 뒤 다시 검증하고 필요한 제한 권한을 부여하시겠습니까?</value></data>
+  <data name="Settings.CompanionInstalling" xml:space="preserve"><value>DX Companion 앱을 검증하여 선택한 휴대폰에 설치하는 중입니다…</value></data>
+  <data name="Settings.CompanionInstallSucceeded" xml:space="preserve"><value>DX Companion 앱 설치, 검증과 권한 부여를 완료했습니다.</value></data>
+  <data name="Settings.CompanionUninstallConfirm" xml:space="preserve"><value>선택한 휴대폰에서 DX Companion 앱을 삭제하시겠습니까? 진행 중인 휴대폰→PC 전송이 중지되고 앱 설정, 홈 위젯과 빠른 설정 타일도 제거됩니다.</value></data>
+  <data name="Settings.CompanionUninstalling" xml:space="preserve"><value>선택한 휴대폰의 전송 세션을 정리하고 DX Companion 앱을 삭제하는 중입니다…</value></data>
+  <data name="Settings.CompanionUninstallSucceeded" xml:space="preserve"><value>선택한 휴대폰에서 DX Companion 앱을 삭제했습니다.</value></data>
   <data name="DeviceFolder.Title" xml:space="preserve"><value>휴대폰 폴더 찾아보기</value></data>
   <data name="DeviceFolder.Heading" xml:space="preserve"><value>휴대폰 저장 폴더 선택</value></data>
   <data name="DeviceFolder.Up" xml:space="preserve"><value>위로</value></data>
@@ -779,35 +773,66 @@ Android {1} · One UI {2} · 보안 패치 {3}
 휴대폰이 승인되지 않은 경우
 
 잠금을 풀고 USB 디버깅 승인 창을 확인하세요. 여러 휴대폰은 각각 승인해야 합니다. 기기를 선택해도 다른 휴대폰의 실행 중인 세션은 유지됩니다.</value></data>
-  <data name="Help.Body1" xml:space="preserve"><value>DeX는 데스크톱 화면을, 단일창 1~3은 각각의 앱 창을 실행합니다.
+  <data name="Help.Body1" xml:space="preserve"><value>DeX 모드는 삼성 DeX 데스크톱 환경을, 단일창 모드 1~3은 각각 선택한 앱을 별도 창으로 실행합니다. 해상도·DPI·시작 앱·실행 옵션은 휴대폰과 슬롯별로 저장됩니다.
 
-해상도·DPI·입력 옵션·시작 앱은 휴대폰별, 모드별로 저장됩니다. 설정을 바꾸기 전에 대상 휴대폰을 확인하세요.
+DeX 실행 방식
+설정 → 연결 → DeX 실행 방식에서 선택합니다. 기본인 네이티브 DeX는 휴대폰의 삼성 DeX 환경을 사용합니다. 기존 보조 디스플레이 시뮬레이션 방식도 계속 사용할 수 있습니다. 방식을 바꾸면 DeX를 종료한 뒤 다시 시작하세요.
 
-앱 목록 불러오기는 선택한 휴대폰의 앱을 가져옵니다. 휴대폰을 바꾸면 해당 휴대폰의 앱 목록과 최근 앱을 표시합니다.
+DeX와 단일창 시작
+1. 휴대폰과 원하는 모드를 선택합니다.
+2. 단일창은 시작 앱을 반드시 선택하세요. DeX의 시작 앱은 선택 사항입니다.
+3. 화면·실행 옵션을 설정한 뒤 시작 버튼을 누릅니다.
 
-고급 옵션에서 추가 scrcpy 인수를 지정할 수 있습니다. 현장 환경을 위한 기존 키보드 보정은 유지됩니다.</value></data>
-  <data name="Help.Body2" xml:space="preserve"><value>휴대폰이 보이지 않으면 USB 케이블, 디버깅 승인, 설정 &gt; 연결의 기기별 USB·Wi-Fi 정책을 확인하세요.
+120프레임은 실험적 기능입니다
+네이티브 DeX는 현재 최대 60프레임으로 동작합니다. 설정에서 네이티브 DeX를 선택한 상태로 DeX 모드의 디스플레이 설정에서 최대 FPS를 120으로 선택하면, 동의 후 이번 실행에만 보조 방식을 사용합니다. 저장된 DeX 방식은 바꾸지 않습니다. ‘다음부터 안내 없이 실행’ 체크는 설정의 같은 항목과 연동됩니다. 실험적 사용 경고는 실행할 때마다 표시되며 휴대폰 화면을 켜둬야 합니다. 실제 FPS는 기기와 앱에 따라 달라집니다.
 
-무선 페어링 포트와 연결 포트는 서로 다릅니다. 대상 휴대폰을 선택하고 그 휴대폰에 표시된 페어링 코드를 사용하세요.
+네이티브 DeX와 단일창을 함께 사용할 때
+같은 휴대폰에서 네이티브 DeX가 실행 중이면 단일창을 120으로 설정해도 60프레임으로 동작합니다. 네이티브 DeX를 종료하면 실행 중인 단일창이 설정된 최대 120프레임으로 동작할 수 있습니다.
 
-이전 One UI 환경에서 DeX 화면이 검게 보이면 단일창 모드를 사용하세요.
+네이티브 DeX 연결이 끊기면
+USB 또는 Wi-Fi 연결 해제를 감지하면 약 30초 뒤 네이티브 DeX 화면을 자동 정리합니다. 30초 안에 재연결되면 정리를 취소하고 기존 DeX 화면을 재사용합니다. 내부 DeX 화면이 이미 사라졌다면 새로 생성합니다. 네이티브 DeX에는 Companion 앱의 자동 정리 시간을 적용하지 않습니다.</value></data>
+  <data name="Help.Body2" xml:space="preserve"><value>기기가 보이지 않을 때
+1. USB 케이블과 휴대폰의 USB 연결 모드를 확인합니다.
+2. 휴대폰 잠금을 풀고 USB 디버깅 승인 창을 확인합니다.
+3. 메인 화면의 새로 고침 버튼을 누른 뒤 다시 선택합니다.
 
-설정 &gt; 진단에서 세션 로그와 환경 검사를 열거나 진단 보고서를 저장할 수 있습니다.</value></data>
-  <data name="Help.Body3" xml:space="preserve"><value>PC → 휴대폰: 대상 휴대폰의 scrcpy 창으로 파일이나 폴더를 끌어다 놓습니다. 관리형 전송과 저장 경로는 설정 &gt; 경로에서 지정합니다.
+Wi-Fi ADB는 휴대폰과 PC를 같은 네트워크에 연결한 뒤 사용합니다. 설정의 연결 페이지에서 선택한 연결 방식과 현재 연결 상태를 확인하세요.
 
-휴대폰 → PC: DX Companion에서 파일이나 폴더를 선택해 전송합니다. 전송 세션과 PC 수신 경로는 휴대폰별로 분리됩니다.
+실행이 실패하는 경우
+일부 앱은 USB 디버깅, DRM 또는 보안 정책 때문에 실행·미러링이 제한될 수 있습니다.</value></data>
+  <data name="Help.Body3" xml:space="preserve"><value>PC → 휴대폰: 대상 휴대폰의 scrcpy 창에 파일이나 폴더를 끌어다 놓습니다.
+휴대폰 → PC: DX Companion 앱에서 파일·폴더를 선택하거나 갤러리 등의 공유 메뉴를 사용합니다.
+저장 경로와 전송 준비 상태는 설정 → 경로, Companion에서 확인하세요.
 
-DX Companion은 선택 기능이며 선택한 휴대폰에만 설치됩니다. Android 13 이상이 필요합니다. 설치·업데이트·권한은 설정 &gt; Companion에서 관리합니다.</value></data>
-  <data name="Help.Body4" xml:space="preserve"><value>창의 닫기 버튼은 DX Manager를 시스템 트레이로 숨깁니다. 정상 종료는 트레이 메뉴의 종료 또는 설정한 종료 단축키를 사용하세요.
+Companion 앱은 선택형입니다
+기본 DeX·단일창은 Companion 앱 없이 사용할 수 있습니다. 휴대폰 → PC 전송·휴대폰 정리·앱 전환 감지 등 연동 기능을 사용하려면 번들에 맞는 Companion 앱을 설치하고 설정 → Companion에서 안내하는 권한을 부여하세요. Companion 앱 설치와 접근성 활성화는 자동으로 진행되지 않습니다.
 
-케이블 분리나 비정상 종료 후 가상 화면 또는 변경된 절전모드 설정이 남을 수 있습니다. DX Companion의 정리 기능으로 보조 디스플레이와 절전모드 해제 설정을 복구할 수 있습니다.
+AI 앱 Enter 자동 줄바꿈과 접근성
+AI 앱 자동 줄바꿈의 기본 설정은 꺼짐입니다. DX Manager의 설정 → 입력에서 ‘AI 앱 Enter 자동 줄바꿈’을 켜고 Companion 앱의 앱 전환 감지도 켜세요. 접근성은 이 앱 감지 기능에 필요한 선택 권한이며 파일 전송의 필수 조건이 아닙니다. 앱 감지 정보를 받을 수 없으면 Enter는 기본 동작을 유지합니다.
 
-정상 종료에서는 관리 중인 각 휴대폰의 상태를 독립적으로 복원합니다. 연결이 끊긴 휴대폰은 즉시 복구되지 않을 수 있습니다.</value></data>
+휴대폰 접근성 설정 순서
+1. DX Companion 앱 → 설정 → 앱 전환 감지 카드를 엽니다.
+2. 접근성 설정 열기 → 설치된 앱으로 들어갑니다.
+3. DX Companion 앱을 선택하고 사용 중을 켭니다.
+
+연결 해제 후 정리 시간
+Companion 앱의 자동 정리 시간은 보조 디스플레이 방식의 정리에 적용됩니다. 네이티브 DeX는 별도로 약 30초 유예 후 정리합니다. 유예 중에도 연결이 끊기면 폰 사운드 전환과 잠자기 방지 해제는 바로 처리하며 Bluetooth 관련 예외는 유지합니다.</value></data>
+  <data name="Help.Body4" xml:space="preserve"><value>네이티브와 보조 방식의 정리
+네이티브 DeX는 연결 해제 감지 후 약 30초 뒤 정리하며 Companion 앱의 시간 설정을 따르지 않습니다. 보조 방식은 Companion 앱에 설정한 시간을 사용합니다. 휴대폰 운영체제가 네이티브 DeX 화면을 더 일찍 종료할 수 있습니다.
+
+휴대폰을 연결한 상태에서 시스템 트레이의 DX Manager 아이콘을 마우스 오른쪽 버튼으로 누르고 종료를 선택하세요. 프로그램 창의 닫기 버튼은 종료가 아니라 트레이로 숨깁니다.
+
+휴대폰에 작은 가상 화면이 남았을 때
+1. 휴대폰의 개발자 옵션에서 보조 디스플레이 시뮬레이션을 엽니다.
+2. 이미 없음으로 표시되어도 임의의 해상도를 한 번 선택합니다.
+3. 메뉴를 다시 열어 없음을 선택합니다.
+
+DX Companion 앱이 설치되어 있으면 ‘휴대폰 정리’ 탭에서 ‘모두 정리’를 눌러 화면을 정리할 수 있습니다. 휴대폰 홈 화면에 위젯을 추가해 정리할 수도 있습니다.</value></data>
   <data name="Help.Body5" xml:space="preserve"><value>포터블 배포 폴더의 docs 안에 USER_GUIDE_KO.md와 FAQ_KO.md가 있습니다. 영문 설명서와 FAQ도 함께 제공됩니다.
 
 연결 설정, 키보드·마우스 동작, USB·무선 선택, 캡처, 파일 전송과 복구 방법을 확인할 수 있습니다.
 
-DX Manager는 독립적으로 개발된 프로그램이며 Samsung의 공식 애플리케이션이 아닙니다. ADB와 개발자 옵션을 사용해 가상 화면을 만들고 선택한 휴대폰 설정을 일시적으로 변경합니다. DX Companion은 사용자가 요청한 경우에만 설치합니다.</value></data>
+DX Manager는 독립적으로 개발된 프로그램이며 Samsung의 공식 애플리케이션이 아닙니다. ADB와 개발자 옵션을 사용해 가상 화면을 만들고 선택한 휴대폰 설정을 일시적으로 변경합니다. DX Companion 앱은 사용자가 요청한 경우에만 설치합니다.</value></data>
   <data name="Help.Topic0" xml:space="preserve"><value>처음 사용하기</value></data>
   <data name="Help.Topic1" xml:space="preserve"><value>DeX와 단일창</value></data>
   <data name="Help.Topic2" xml:space="preserve"><value>연결과 실행 문제</value></data>
@@ -817,6 +842,42 @@ DX Manager는 독립적으로 개발된 프로그램이며 Samsung의 공식 애
   <data name="Main.DexReady" xml:space="preserve"><value>DeX 실행 준비됨</value></data>
   <data name="Main.SingleWaiting" xml:space="preserve"><value>단일창 {0} 대기중</value></data>
   <data name="Settings.Compatibility.UserVerifiedEnvironment" xml:space="preserve"><value>정상 동작이 확인된 환경입니다.</value></data>
+  <data name="Log.Native.CheckExisting" xml:space="preserve"><value>기존 내부 DeX 화면이 있는지 확인합니다.</value></data>
+  <data name="Log.Native.Creating" xml:space="preserve"><value>내부 DeX 화면을 새로 생성합니다: {0}x{1}, DPI {2}.</value></data>
+  <data name="Log.Native.Reuse" xml:space="preserve"><value>연결된 내부 DeX 화면을 그대로 사용합니다: display={0}, {1}x{2}, DPI {3}.</value></data>
+  <data name="Log.Native.Reattached" xml:space="preserve"><value>유지 중인 내부 DeX 화면을 찾아 제어 연결을 복원했습니다: display={0}, {1}x{2}, DPI {3}.</value></data>
+  <data name="Log.Native.Ready" xml:space="preserve"><value>내부 DeX 화면 준비 완료: display={0}, {1}x{2}, DPI {3}.</value></data>
+  <data name="Log.Native.WaitForAwake" xml:space="preserve"><value>[{0}] 휴대폰이 잠들어 있습니다. 휴대폰을 깨우면 DeX 시작을 계속합니다.</value></data>
+  <data name="Log.Native.PhoneAwake" xml:space="preserve"><value>[{0}] 휴대폰이 깨어났습니다. DeX 생성과 DPI 검증을 계속합니다.</value></data>
+  <data name="Log.Native.WakeUnknown" xml:space="preserve"><value>[{0}] 휴대폰 전원 상태를 확인할 수 없어 DPI 적용값을 엄격히 검증하며 진행합니다.</value></data>
+  <data name="Error.Native.WakeQueryFailed" xml:space="preserve"><value>휴대폰 전원 상태를 조회하지 못했습니다. 연결을 확인한 뒤 DeX를 다시 시작하세요.</value></data>
+  <data name="Log.Native.InitialCompatibility" xml:space="preserve"><value>이 구성에서는 기존 생성 후 적용 경로를 사용합니다. 생성 후 크기 변경 없이 시작하려면 Companion 앱 code9와 지원 해상도·DPI가 필요합니다.</value></data>
+  <data name="Log.Native.InitialPrepared" xml:space="preserve"><value>초기 DeX 설정 준비: {0}x{1}, DPI {2}. 생성된 화면의 적용값을 확인합니다.</value></data>
+  <data name="Error.Native.InitialPreparation" xml:space="preserve"><value>초기 DeX 설정을 준비하지 못해 화면을 시작하지 않았습니다. Companion 앱 권한과 다른 실행 중인 화면을 확인하세요.</value></data>
+  <data name="Log.Native.InitialLowerDpi" xml:space="preserve"><value>초기 DPI {0}을 확인한 뒤 선택한 DPI {1}을 적용합니다. 선택한 해상도와 저장된 DPI 설정은 유지합니다.</value></data>
+<data name="Fps.NativeTransitionTitle" xml:space="preserve"><value>120프레임은 보조 방식에서 사용할 수 있습니다</value></data>
+<data name="Fps.NativeTransitionBody" xml:space="preserve"><value>네이티브 DeX는 현재 최대 60프레임으로 동작합니다. 120프레임을 사용하려면 이번 실행에만 보조 디스플레이 시뮬레이션 방식을 사용합니다. 설정에 저장된 DeX 실행 방식은 바뀌지 않습니다. 계속할까요?</value></data>
+<data name="Fps.NativeTransitionRemember" xml:space="preserve"><value>다음부터 120프레임은 안내 없이 보조 방식으로 실행</value></data>
+<data name="Fps.NativeTransitionAccept" xml:space="preserve"><value>이번 실행만 보조 방식 사용</value></data>
+<data name="Error.Native.Fps120RequiresLegacy" xml:space="preserve"><value>DeX 모드의120프레임은 보조 디스플레이 시뮬레이션 방식에서 사용할 수 있습니다.</value></data>
+<data name="Log.Fps.TemporaryLegacy" xml:space="preserve"><value>120프레임을 위해 이번 DeX 실행만 보조 디스플레이 시뮬레이션 방식을 사용합니다. 저장된 네이티브 DeX 설정은 유지합니다.</value></data>
+<data name="Fps.SingleNativeLimitTitle" xml:space="preserve"><value>네이티브 DeX 실행 중 단일창 프레임 안내</value></data>
+<data name="Fps.SingleNativeLimitBody" xml:space="preserve"><value>DeX 모드가 네이티브 DeX로 실행 중입니다.
+
+네이티브 DeX가 실행 중일 때는 단일창을 120프레임으로 설정해도 60프레임으로 동작합니다.
+
+단일창을 120프레임으로 실행한 상태에서 네이티브 DeX를 종료하면 자동으로 120프레임 동작이 가능합니다. 실제 프레임은 기기와 앱 상태에 따라 달라질 수 있습니다.</value></data>
+<data name="Settings.AiEnterSetupTitle" xml:space="preserve"><value>AI 앱 자동 줄바꿈 설정</value></data>
+<data name="Settings.AiEnterSetupBody" xml:space="preserve"><value>이 기능을 사용하려면 휴대폰에 DX Companion 앱이 필요하며, Companion 앱의 앱 전환 감지를 켜야 합니다.
+
+휴대폰에서 다음 순서로 설정하세요.
+1. DX Companion 앱 → 설정 → 앱 전환 감지 카드
+2. 접근성 설정 열기 → 설치된 앱
+3. DX Companion 앱 → 사용 중 켜기
+
+앱 전환 정보를 받을 수 없으면 Enter는 기본 동작을 유지합니다.</value></data>
+<data name="Log.Native.ReconnectGrace" xml:space="preserve"><value>네이티브 DeX 연결이 끊겼습니다. 재연결을 위해 약 30초 대기한 뒤 화면을 자동 정리합니다. Companion 앱의 자동 정리 시간은 적용하지 않습니다.</value></data>
+<data name="Error.Native.OlderOwner" xml:space="preserve"><value>기존 네이티브 DeX 화면은 새 30초 정리 정책을 지원하지 않습니다. Companion 앱에서 해당 화면을 정리한 뒤 다시 시작하세요.</value></data>
 <data name="Update.BusyTitle" xml:space="preserve"><value>이미 업데이트를 확인 중입니다</value></data>
 <data name="Update.OpenRelease" xml:space="preserve"><value>GitHub 릴리스 열기</value></data>
 <data name="Update.FailedTitle" xml:space="preserve"><value>업데이트를 확인하지 못했습니다</value></data>
@@ -838,4 +899,5 @@ DX Manager는 독립적으로 개발된 프로그램이며 Samsung의 공식 애
 <data name="Update.NewVersion" xml:space="preserve"><value>새 버전 {0}</value></data>
 <data name="Update.AvailableTitle" xml:space="preserve"><value>새 버전이 있습니다</value></data>
   <data name="Log.Wireless.DeviceMismatch" xml:space="preserve"><value>무선 ADB 주소가 선택한 휴대폰과 일치하지 않습니다: {0}</value></data>
+  <data name="Licenses.ScrcpyDexTab" xml:space="preserve"><value>ScrcpyDeX · Apache 2.0</value></data>
 </root>

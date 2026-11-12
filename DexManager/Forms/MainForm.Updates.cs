@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Drawing;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DexManager.Services;
@@ -87,6 +88,33 @@ namespace DexManager.Forms
                 var dialog = form as UpdateCheckDialog;
                 if (dialog != null && !dialog.IsDisposed) dialog.ApplyCurrentTheme();
             }
+        }
+
+        private void ShowLocalUpdateNotice(bool existingInstallation, string directory)
+        {
+            try
+            {
+                var notices = new PortableUpdateNoticeService(directory);
+                if (notices.ShouldShowNotice(existingInstallation))
+                {
+                    var text = string.Join(Environment.NewLine + Environment.NewLine,
+                        new[] { "Intro", "Fps", "ScreenOff", "Scrcpy", "Companion" }
+                        .Select(key => string.Format(StoreUiText.Get("UpdateNotice" + key, ""),
+                            DisplayCleanupPermissionService.BundledVersionName)));
+                    using (var dialog = new DesktopDialog(
+                        string.Format(StoreUiText.Get("UpdateNoticeTitle", "What's new in DX Manager {0}"),
+                            typeof(MainForm).Assembly.GetName().Version.ToString(3)),
+                        text, false, MessageBoxButtons.OK, MessageBoxDefaultButton.Button1))
+                    {
+                        dialog.SetPrimaryButtonText(StoreUiText.Get("UpdateNoticeConfirm", "Got it"));
+                        if (dialog.ShowDialog(this) != DialogResult.OK || _exitInProgress || !Visible) return;
+                    }
+                }
+                string error;
+                if (!notices.TryMarkCurrentVersionSeen(out error))
+                    _logService.Warning("Update notice state could not be saved: " + error);
+            }
+            catch (Exception exception) { _logService.Error("Local update notice failed.", exception); }
         }
 
         private void ShowUpdateCheckDialog(Form owner)

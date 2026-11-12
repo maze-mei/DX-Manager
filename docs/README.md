@@ -1,5 +1,15 @@
 # DX Manager documentation
 
+
+## Windows v3.0.0
+
+- [릴리스 설명](RELEASE_NOTES_v3.0.0.md)
+- [빌드와 패키징](BUILDING.md)
+- [한국어 전체 사용설명서](USER_GUIDE_KO.md) · [FAQ](FAQ_KO.md)
+- [English guide](USER_GUIDE_EN.md) · [FAQ](FAQ_EN.md)
+- [네이티브 DeX 소스와 라이선스](../NativeDex/README.md)
+- [공용 Companion 소스와 APK](../companion/README.md) · [macOS](MACOS_GUIDE.md)
+
 ## English
 
 Current Windows documentation: **2.5.0 / scrcpy 5.0.1 / official Companion 2.1.6**.

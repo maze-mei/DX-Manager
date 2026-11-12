@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -95,6 +95,7 @@ namespace DexManager.Forms
         private ThemedSelectControl _keyInputModeBox;
         private CheckBox _rightWindowsBox;
         private CheckBox _convertEnterBox;
+        private CheckBox _autoAppEnterBox;
         private CheckBox _ignoreShiftSpaceBox;
         private RadioButton _usbConnectionBox;
         private RadioButton _wirelessConnectionBox;
@@ -179,7 +180,7 @@ namespace DexManager.Forms
             _companionInstalled = companionInstalled;
             _theme = ThemeColors.Current;
 
-            Text = "DX Manager · " + StoreUiText.Get("SettingsTitle.Text", LocalizationService.Get("Main.Settings"));
+            Text = LocalizationService.Get("App.Name") + " · " + StoreUiText.Get("SettingsTitle.Text", LocalizationService.Get("Main.Settings"));
             Icon = AppIconProvider.Current;
             StartPosition = FormStartPosition.CenterParent;
             Font = UiFonts.Pixels(14F);

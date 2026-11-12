@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -73,7 +73,8 @@ namespace DexManager.Forms
                     _adbService,
                     _settings,
                     _settings.KeyMappings,
-                    _logService)
+                    _logService,
+                    runtime.CompanionGuardian.ForegroundApps)
             };
             context.EnvironmentCheck = new EnvironmentCheckService(
                 _adbService,
@@ -89,7 +90,8 @@ namespace DexManager.Forms
                 runtime.SingleWindows,
                 capture,
                 ShowMainWindow,
-                _logService);
+                _logService,
+                _adbService);
             return context;
         }
 
@@ -213,7 +215,7 @@ namespace DexManager.Forms
             _connectionError = null;
             var serial = GetContextSerial(context);
             var transport = GetContextTransport(context);
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.DeviceContext.Selected",
                 GetContextDisplayName(context),
                 string.IsNullOrWhiteSpace(serial)
@@ -552,6 +554,7 @@ namespace DexManager.Forms
             {
                 context.Runtime.Scrcpy.RunningChanged -=
                     ScrcpyService_RunningChanged;
+                context.Runtime.Dex.NativeDisplayReleased -= NativeDisplayReleased;
                 context.Runtime.SingleWindows.RunningChanged -=
                     SingleWindowService_RunningChanged;
                 context.Capture.ExitHotkeyPressed -=

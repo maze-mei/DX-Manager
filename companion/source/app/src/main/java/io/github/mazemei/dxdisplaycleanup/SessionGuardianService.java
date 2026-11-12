@@ -39,7 +39,7 @@ public final class SessionGuardianService extends Service {
     private static final String CHANNEL_ID = "dx_manager_session_guardian";
     private static final int NOTIFICATION_ID = 1401;
     private static final int MAGIC = 0x44584744;
-    private static final int VERSION = 1;
+    private static final int VERSION = 3;
     private static final int COMMAND_PING = 1;
     private static final int COMMAND_WINDOWS_SHUTDOWN = 2;
     private static final int COMMAND_STOP_MONITORING = 3;
@@ -51,6 +51,7 @@ public final class SessionGuardianService extends Service {
             "android.hardware.usb.action.USB_STATE";
     private static final String EXTRA_USB_CONNECTED = "connected";
     private static volatile SessionGuardianService activeInstance;
+    static boolean isPcConnected(){SessionGuardianService current=activeInstance;return current!=null&&current.connected&&!current.stopRequested;}
 
     private final ExecutorService executor =
             Executors.newSingleThreadExecutor();
@@ -69,6 +70,7 @@ public final class SessionGuardianService extends Service {
     public void onCreate() {
         super.onCreate();
         activeInstance = this;
+        NativeSessionBridge.observeDisplayState(this);
         createNotificationChannel();
     }
 
@@ -79,10 +81,14 @@ public final class SessionGuardianService extends Service {
                     "port", GuardianSessionStore.DEFAULT_PORT);
             String token = intent.getStringExtra("token");
             String transport = intent.getStringExtra("transport");
+            int protocolVersion = intent.getIntExtra("protocol_version", 1);
+            if (!GuardianSessionStore.isSupportedProtocol(protocolVersion)) {
+                stopSelf(startId); return START_NOT_STICKY;
+            }
             if (port > 0 && port <= 65535 && token != null
                     && !token.isEmpty()) {
                 GuardianSessionStore.save(
-                        this, port, token, transport);
+                        this, port, token, transport, protocolVersion);
             }
         }
 
@@ -121,8 +127,7 @@ public final class SessionGuardianService extends Service {
     static void stopAfterManualCleanupIfIdle(
             android.content.Context context,
             CleanupCoordinator.Snapshot snapshot) {
-        if (context == null || !CleanupCoordinator.isCleanupComplete(
-                snapshot, true, true)) {
+        if (context == null || snapshot == null || snapshot.anyActive()) {
             return;
         }
         SessionGuardianService instance = activeInstance;
@@ -137,9 +142,9 @@ public final class SessionGuardianService extends Service {
     private void restartConnectionLoop(
             GuardianSessionStore.Session session) {
         int currentGeneration = generation.incrementAndGet();
-        connected = false;
         hadConnection = false;
         connectionStartedAtMs = SystemClock.elapsedRealtime();
+        cancelPendingCleanup();
         cancelPendingCleanup();
         closeCurrentSocket();
         executor.execute(() -> connectionLoop(
@@ -152,7 +157,6 @@ public final class SessionGuardianService extends Service {
         while (!stopRequested
                 && generation.get() == currentGeneration
                 && session.matches(GuardianSessionStore.load(this))) {
-            boolean terminalCommand = false;
             try (Socket socket = new Socket()) {
                 currentSocket = socket;
                 socket.connect(new InetSocketAddress(
@@ -164,7 +168,7 @@ public final class SessionGuardianService extends Service {
                      DataInputStream input = new DataInputStream(
                              new BufferedInputStream(socket.getInputStream()))) {
                     output.writeInt(MAGIC);
-                    output.writeInt(VERSION);
+                    output.writeInt(session.protocolVersion);
                     writeString(output, session.token);
                     output.flush();
                     if (input.read() != 1) {
@@ -172,32 +176,33 @@ public final class SessionGuardianService extends Service {
                                 "DX Manager rejected the guardian session.");
                     }
 
+                    try (ForegroundAppChannel foregroundChannel =
+                            session.protocolVersion == 3 ? new ForegroundAppChannel(socket, output) : null) {
                     markConnected(true, session, currentGeneration);
                     while (!stopRequested
                             && generation.get() == currentGeneration) {
                         int command = input.read();
                         if (command < 0) throw new EOFException();
                         if (command == COMMAND_PING) {
+                            Long probe = GuardianWireProtocol.readPingProbe(input, session.protocolVersion);
+                            if (probe != null && foregroundChannel != null) foregroundChannel.pong(probe);
                             continue;
                         }
                         if (command == COMMAND_WINDOWS_SHUTDOWN) {
                             boolean removeOverlay = input.read() == 1;
                             boolean restoreStayAwake = input.read() == 1;
                             String originalStayAwake = readString(input);
-                            terminalCommand = true;
-                            postForSession(session, currentGeneration,
-                                    () -> handleWindowsShutdown(removeOverlay,
-                                            restoreStayAwake, originalStayAwake));
+                            postForSession(session, currentGeneration, () -> handleWindowsShutdown(
+                                    removeOverlay, restoreStayAwake, originalStayAwake));
                             return;
                         }
                         if (command == COMMAND_STOP_MONITORING) {
-                            terminalCommand = true;
-                            postForSession(session, currentGeneration,
-                                    this::stopMonitoring);
+                            postForSession(session, currentGeneration, this::stopMonitoring);
                             return;
                         }
                         throw new IOException(
                                 "Unknown guardian command: " + command);
+                    }
                     }
                 }
             } catch (IOException | RuntimeException exception) {
@@ -208,7 +213,7 @@ public final class SessionGuardianService extends Service {
                 }
             } finally {
                 currentSocket = null;
-                if (!terminalCommand && !stopRequested
+                if (!stopRequested
                         && generation.get() == currentGeneration) {
                     markConnected(false, session, currentGeneration);
                 }
@@ -230,25 +235,25 @@ public final class SessionGuardianService extends Service {
                                 int currentGeneration, Runnable action) {
         mainHandler.post(() -> {
             if (stopRequested || generation.get() != currentGeneration
-                    || !session.matches(GuardianSessionStore.load(this))) {
-                return;
-            }
+                    || !session.matches(GuardianSessionStore.load(this))) return;
             action.run();
         });
     }
 
-    private void markConnected(boolean value,
-                               GuardianSessionStore.Session session,
+    private void markConnected(boolean value, GuardianSessionStore.Session session,
                                int currentGeneration) {
         postForSession(session, currentGeneration, () -> {
+            boolean changed = connected != value;
             connected = value;
+            if (changed) NativeSessionBridge.onGuardianConnectionChanged(this);
             if (value) {
                 hadConnection = true;
                 cancelPendingCleanup();
+            } else if (NativeSessionBridge.hasSession(this)) {
+                // Native owner applies its independent fixed thirty-second grace.
             } else if (stopIdleDisconnectedSession(session, currentGeneration)) {
                 return;
-            } else if (pendingCleanup == null
-                    && !isConfiguredTransportConnected(session)) {
+            } else if (pendingCleanup == null && !isConfiguredTransportConnected(session)) {
                 scheduleDisconnectCleanup(session);
             }
             getSystemService(NotificationManager.class).notify(
@@ -258,18 +263,13 @@ public final class SessionGuardianService extends Service {
 
     private boolean stopIdleDisconnectedSession(
             GuardianSessionStore.Session session, int currentGeneration) {
+        if (NativeSessionBridge.hasSession(this)) return false;
         CleanupCoordinator.Snapshot snapshot = CleanupCoordinator.inspect(this);
-        if (!CleanupCoordinator.isCleanupComplete(snapshot, true, true)) {
-            return false;
-        }
+        if (!CleanupCoordinator.isCleanupComplete(snapshot, true, true)) return false;
         long elapsed = SystemClock.elapsedRealtime() - connectionStartedAtMs;
-        if (GuardianIdleStopPolicy.shouldStop(
-                connected, hadConnection, elapsed, snapshot)) {
-            Log.i(TAG, "PC disconnected and recovery is complete; stopping guardian.");
-            completeAndStop();
-            return true;
+        if (GuardianIdleStopPolicy.shouldStop(connected, hadConnection, elapsed, snapshot)) {
+            completeAndStop(); return true;
         }
-        // A new ADB tunnel may start the service before its PC token is ready.
         if (!connected && pendingIdleStop == null) {
             pendingIdleStop = () -> {
                 pendingIdleStop = null;
@@ -301,6 +301,7 @@ public final class SessionGuardianService extends Service {
                     GuardianSessionStore.load(this))) {
                 return;
             }
+            if(NativeSessionBridge.hasSession(this)){NativeSessionBridge.updatePolicyAsync(this);return;}
             CleanupCoordinator.Snapshot snapshot =
                     CleanupCoordinator.cleanup(this, true, true);
             CleanupWidgetProvider.updateAll(this);
@@ -371,6 +372,7 @@ public final class SessionGuardianService extends Service {
         if (stopRequested) {
             return;
         }
+        boolean nativeClean=NativeSessionBridge.stop(this);
         if (removeOverlay) {
             OverlayDisplayRepository.cleanup(this);
         }
@@ -380,7 +382,7 @@ public final class SessionGuardianService extends Service {
         CleanupCoordinator.Snapshot snapshot = CleanupCoordinator.inspect(this);
         CleanupWidgetProvider.updateAll(this);
         CleanupTileService.requestRefresh(this);
-        if (CleanupCoordinator.isWindowsShutdownCleanupComplete(
+        if (nativeClean && CleanupCoordinator.isWindowsShutdownCleanupComplete(
                 snapshot,
                 removeOverlay,
                 restoreStayAwake,
@@ -439,6 +441,7 @@ public final class SessionGuardianService extends Service {
                     || !session.matches(GuardianSessionStore.load(this))) {
                 return;
             }
+            if(NativeSessionBridge.hasSession(this)){NativeSessionBridge.updatePolicyAsync(this);return;}
             CleanupCoordinator.Snapshot snapshot =
                     CleanupCoordinator.cleanup(this, true, true);
             CleanupWidgetProvider.updateAll(this);

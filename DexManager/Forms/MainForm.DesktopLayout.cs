@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using DexManager.Models;
 using System.Drawing;
 using System.Windows.Forms;

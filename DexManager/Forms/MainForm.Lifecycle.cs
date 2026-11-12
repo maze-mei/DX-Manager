@@ -163,6 +163,7 @@ namespace DexManager.Forms
             _physicalDeviceRegistry.SnapshotChanged -=
                 PhysicalDeviceRegistry_SnapshotChanged;
             _scrcpyService.RunningChanged -= ScrcpyService_RunningChanged;
+            _orchestrator.NativeDisplayReleased -= NativeDisplayReleased;
             _singleWindowService.RunningChanged -=
                 SingleWindowService_RunningChanged;
             _captureCoordinator.ExitHotkeyPressed -=
@@ -218,6 +219,8 @@ namespace DexManager.Forms
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            _logService.Diagnostic("Shutdown","FormClosing reason="+e.CloseReason+"; allowExit="+_allowExit+
+                "; exitInProgress="+_exitInProgress+"; windowsShutdown="+_systemShutdownInProgress);
             if (e.CloseReason == CloseReason.WindowsShutDown ||
                 _systemShutdownInProgress)
             {
@@ -247,6 +250,7 @@ namespace DexManager.Forms
             if (_exitCleanupTask == null)
             {
                 var wakeSerials = CaptureWakeSerials();
+                _logService.Diagnostic("Shutdown","FormClosing wake targets: count="+wakeSerials.Count+"; serials="+string.Join(",",wakeSerials));
                 var cleanupSerial = GetSelectedDeviceSerial();
                 _exitCleanupTask = RunExitCleanupAsync(
                     wakeSerials,
@@ -278,6 +282,7 @@ namespace DexManager.Forms
             if (_systemShutdownInProgress) return;
 
             _systemShutdownInProgress = true;
+            _logService.Diagnostic("Shutdown","Windows shutdown requested; existing-channel cleanup only, no new ADB process.");
             _exitInProgress = true;
             _allowExit = true;
             _logService.Info(LocalizationService.Get(
@@ -297,6 +302,7 @@ namespace DexManager.Forms
             // Windows is tearing down the desktop session.
             foreach (var target in cleanupTargets)
             {
+                if (target.NativeDex != null) target.NativeDex.SignalNativeStopWithoutAdb();
                 var sent = target.Guardian != null &&
                     target.Guardian.TrySendWindowsShutdown(
                         target.RemoveOverlay,
@@ -356,14 +362,14 @@ namespace DexManager.Forms
                 // who created it. Keep the same recovery guarantee here for
                 // every currently reachable phone, including a display left
                 // behind after its scrcpy window already closed.
-                var removeOverlay = !string.IsNullOrWhiteSpace(serial);
+                var removeOverlay = !context.Runtime.Dex.UsesNativeDisplay && !string.IsNullOrWhiteSpace(serial);
                 var restoreStayAwake =
                     _settings.Features.DisableStayAwakeOnStop &&
                     TryGetStayAwakeOriginalForContext(
                         context,
                         serial,
                         out original);
-                if (!removeOverlay && !restoreStayAwake) continue;
+                if (!removeOverlay && !restoreStayAwake && !context.Runtime.Dex.UsesNativeDisplay) continue;
                 if (string.IsNullOrWhiteSpace(serial) || !added.Add(serial))
                     continue;
 
@@ -371,6 +377,7 @@ namespace DexManager.Forms
                 {
                     Serial = serial,
                     Guardian = context.Runtime.CompanionGuardian,
+                    NativeDex = context.Runtime.Dex.UsesNativeDisplay ? context.Runtime.Dex : null,
                     RemoveOverlay = removeOverlay,
                     RestoreStayAwake = restoreStayAwake,
                     OriginalStayAwakeValue = restoreStayAwake &&
@@ -427,6 +434,7 @@ namespace DexManager.Forms
         {
             public string Serial;
             public CompanionGuardianService Guardian;
+            public DexOrchestrator NativeDex;
             public bool RemoveOverlay;
             public bool RestoreStayAwake;
             public string OriginalStayAwakeValue;

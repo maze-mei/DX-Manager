@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -102,23 +102,23 @@ internal static class PhoneTransferIntegrationTests
             var verifier = Activator.CreateInstance(verifierType, new object[] { adb });
             var bundle = verifierType.GetMethod("InspectBundledApk").Invoke(verifier, null);
             Check(bundle.GetType().GetProperty("State").GetValue(bundle, null).ToString() == "Ready",
-                "actual verifier accepts the signed official Companion bundle");
-            Check((int)verifierType.GetField("BundledVersionCode").GetRawConstantValue() == 13,
-                "official bundle uses code13 with the official2.1.6 base");
-            Check(Eligible("Granted", 13), "verified official Companion code13 is eligible for transfer registration");
-            Check(Eligible("Ready", 13), "file transfer can connect when cleanup permission has not been granted");
-            Check(Eligible("Granted", 14), "a newer verified official version remains eligible");
-            Check(!Eligible("Granted", 12) && !Eligible("Ready", 0), "older official versions stay rejected");
+                "actual verifier accepts the signed shared Companion bundle");
+            Check((int)verifierType.GetField("BundledVersionCode").GetRawConstantValue() == 16,
+                "release bundle uses official Companion code16");
+            Check(Eligible("Granted", 16), "verified shared Companion code16 is eligible for transfer registration");
+            Check(Eligible("Ready", 16), "file transfer can connect when cleanup permission has not been granted");
+            Check(Eligible("Granted", 17), "a newer verified official version remains eligible");
+            Check(!Eligible("Granted", 15) && !Eligible("Granted", 7) && !Eligible("Ready", 0), "older official versions stay rejected");
             foreach (var state in new[] { "NoDevice", "NotInstalled", "VerificationFailed", "Error" })
-                Check(!Eligible(state, 3), "untrusted or unavailable installation remains rejected: " + state);
-            Check(!Eligible("Granted", 13, "another-phone"), "another phone cannot configure the current transfer session");
+                Check(!Eligible(state, 16), "untrusted or unavailable installation remains rejected: " + state);
+            Check(!Eligible("Granted", 16, "another-phone"), "another phone cannot configure the current transfer session");
             var certificateReader = typeof(AdbService).Assembly.GetType("DexManager.Utils.ApkSigningCertificateReader");
             var foreignCertificate = (string)certificateReader.GetMethod("ReadSingleV2CertificateSha256",
                 BindingFlags.Public | BindingFlags.Static).Invoke(null, new object[] {
                     Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "foreign-signer.apk") });
             Check(foreignCertificate != (string)verifierType.GetField("ExpectedCertificateSha256",
                 BindingFlags.NonPublic | BindingFlags.Static).GetRawConstantValue(),
-                "production APK signer is separate from the accepted private identity");
+                "private APK signer is separate from the accepted official identity");
             var settings = AppSettings.CreateDefault(); settings.Features.PhoneToPcTransferEnabled = true;
             using (var receiver = Receiver(settings, log))
             {

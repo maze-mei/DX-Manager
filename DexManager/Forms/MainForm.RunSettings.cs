@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -157,6 +157,7 @@ namespace DexManager.Forms
 
             _widthBox.Value = Clamp(width, _widthBox);
             _heightBox.Value = Clamp(height, _heightBox);
+            _dpiBox.Minimum = 120;
             _dpiBox.Value = Clamp(dpi, _dpiBox);
             _bitRateBox.Value = Clamp(
                 ParseBitRateNumber(bitRate),
@@ -261,6 +262,8 @@ namespace DexManager.Forms
                 }
                 var launchOrchestrator = _orchestrator;
                 var launchSettings = CaptureSelectedRunSettings();
+                launchSettings = PrepareNative120Start(launchSettings);
+                if(launchSettings==null)return;
                 var serial = launchOrchestrator.CurrentSession == null ? GetSelectedDeviceSerial() : launchOrchestrator.CurrentSession.Serial;
                 if (launchOrchestrator.IsRunning && !await ConfirmExperimentalFrameRateAsync(launchSettings.Scrcpy.MaxFps)) return;
                 if (string.IsNullOrWhiteSpace(serial) ||
@@ -390,7 +393,7 @@ namespace DexManager.Forms
                 LocalizationService.Get("Main.SingleRestartDetail"));
             var settings = AppSettings.CloneSingleWindowSlot(GetSingleWindowSettings(slot));
             var launchService = _singleWindowService;
-            if (!await ConfirmExperimentalFrameRateAsync(settings.MaxFps)) return;
+            if (!await ConfirmSingleWindowFrameRateAsync(settings.MaxFps, _orchestrator)) return;
             BeginPhoneScreenWakeSuppression();
             try
             {

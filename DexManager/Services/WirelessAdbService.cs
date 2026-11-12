@@ -1422,7 +1422,7 @@ namespace DexManager.Services
 
             _selectedSerial = normalized;
             }
-            _logService.Info(
+            _logService.Progress(
                 normalized.Length == 0
                     ? LocalizationService.Get("Log.Adb.TargetCleared")
                     : LocalizationService.Format(

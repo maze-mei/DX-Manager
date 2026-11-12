@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -283,6 +283,22 @@ namespace DexManager.Services
             return false;
         }
 
+        public bool TryGetCachedDisplayForWindow(IntPtr window, out int displayId)
+        {
+            lock (_syncRoot)
+            {
+                displayId = 0;
+                foreach (var item in _windowHandles)
+                {
+                    if (item.Value == window && window != IntPtr.Zero &&
+                        _processes.ContainsKey(item.Key) &&
+                        _displayIds.TryGetValue(item.Key, out displayId) && displayId > 0)
+                        return true;
+                }
+                return false;
+            }
+        }
+
         public bool TryGetAdbTargetForWindow(
             IntPtr windowHandle,
             out string serial,
@@ -482,7 +498,7 @@ namespace DexManager.Services
                         _fileTransferSessionIds[slot] = transferSessionId;
                         _stoppingSlots.Remove(slot);
 
-                        _logService.Info(LocalizationService.Format(
+                        _logService.Progress(LocalizationService.Format(
                             "Log.SingleWindow.Start",
                             slot,
                             arguments));
@@ -818,7 +834,7 @@ namespace DexManager.Services
         {
             if (string.IsNullOrWhiteSpace(e.Data)) return;
             CaptureDisplayId(sender as Process, e.Data);
-            _logService.Info(DeviceLogFormatter.ForSerial(
+            _logService.ToolOutput("INFO",DeviceLogFormatter.ForSerial(
                 GetSerialForProcess(sender as Process),
                 "[single scrcpy] " + e.Data));
         }
@@ -832,10 +848,7 @@ namespace DexManager.Services
             var message = DeviceLogFormatter.ForSerial(
                 GetSerialForProcess(sender as Process),
                 "[single scrcpy] " + e.Data);
-            if (DeviceLogFormatter.IsInformationalScrcpyErrorLine(e.Data))
-                _logService.Info(message);
-            else
-                _logService.Warning(message);
+            _logService.ToolOutput(DeviceLogFormatter.IsInformationalScrcpyErrorLine(e.Data)?"INFO":"WARN",message);
         }
 
         private string GetSerialForProcess(Process process)

@@ -350,6 +350,7 @@ namespace DexManager.Forms
                 _loadingWirelessDevice = false;
             }
             SynchronizeStoreSelectors();
+            LoadDexDisplayMode();
             if (_storeUiReady && !_loadingStoreValues) SaveStoreScope(s => {}, false);
             if (updateStatus) UpdateWirelessStatus();
             UpdateWirelessControls();

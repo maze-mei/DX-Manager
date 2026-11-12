@@ -44,17 +44,14 @@ namespace DexManager.Services
 
     internal sealed class DisplayCleanupPermissionService
     {
-        public const string PackageName =
-            DXCompanionShared.CompanionRelease.PackageName;
+        public const string PackageName = DXCompanionShared.CompanionRelease.PackageName;
         public const string PermissionName =
             "android.permission.WRITE_SECURE_SETTINGS";
         public const int BundledVersionCode = DXCompanionShared.CompanionRelease.VersionCode;
         public const string BundledVersionName = DXCompanionShared.CompanionRelease.VersionName;
 
-        internal const string ExpectedCertificateSha256 =
-            DXCompanionShared.CompanionRelease.CertificateSha256;
-        private const string ExpectedBundledApkSha256 =
-            DXCompanionShared.CompanionRelease.ApkSha256;
+        internal const string ExpectedCertificateSha256 = DXCompanionShared.CompanionRelease.CertificateSha256;
+        private const string ExpectedBundledApkSha256 = DXCompanionShared.CompanionRelease.ApkSha256;
         private const string BundledApkRelativePath =
             @"tools\companion\DX-Companion.apk";
 

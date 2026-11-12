@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -169,7 +169,7 @@ namespace DexManager.Forms
                     transport.Serial,
                     runtime.InstanceId);
             }
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.DeviceContext.Registered",
                 GetContextDisplayName(context),
                 transport == null ? device.Identity : transport.Serial,
@@ -181,6 +181,7 @@ namespace DexManager.Forms
         {
             context.Runtime.Scrcpy.RunningChanged +=
                 ScrcpyService_RunningChanged;
+            context.Runtime.Dex.NativeDisplayReleased += NativeDisplayReleased;
             context.Runtime.SingleWindows.RunningChanged +=
                 SingleWindowService_RunningChanged;
             context.Capture.ExitHotkeyPressed +=
@@ -324,10 +325,12 @@ namespace DexManager.Forms
 
         private async void StopDisconnectedSerialAsync(DeviceUiContext context, string serial)
         {
+            var generation=context.ConnectionGeneration;
+            Func<bool> current=()=>context.ConnectionGeneration==generation&&IsSerialMarkedDisconnected(serial);
             try
             {
-                await context.Runtime.Dex.StopForSerialAsync(serial);
-                await Task.Run(delegate { context.Runtime.SingleWindows.StopForSerial(serial); });
+                await context.Runtime.Dex.SuspendForTransportLossAsync(serial,current);
+                await Task.Run(delegate { if(current())context.Runtime.SingleWindows.StopForSerial(serial); });
             }
             catch (Exception ex) { _logService.Error("Could not stop disconnected transport " + serial + ".", ex); }
         }
@@ -341,8 +344,9 @@ namespace DexManager.Forms
         {
             try
             {
-                await context.Runtime.Dex.StopForSerialAsync(previousSerial);
-                await Task.Run(delegate { context.Runtime.SingleWindows.StopForSerial(previousSerial); });
+                Func<bool> current=()=>context.ConnectionGeneration==generation&&string.Equals(context.ActiveSerial,serial,StringComparison.OrdinalIgnoreCase);
+                await context.Runtime.Dex.SuspendForTransportLossAsync(previousSerial,current);
+                await Task.Run(delegate { if(current())context.Runtime.SingleWindows.StopForSerial(previousSerial); });
             }
             catch (Exception ex)
             {
@@ -386,15 +390,36 @@ namespace DexManager.Forms
             string serial,
             bool allowAutoStart)
         {
+            await RetryContextCleanupCoreAsync(context, serial, allowAutoStart);
+        }
+
+        private async Task RetryContextCleanupCoreAsync(
+            DeviceUiContext context,
+            string serial,
+            bool allowAutoStart)
+        {
             var generation = context == null
                 ? -1
                 : context.ConnectionGeneration;
             try
             {
+                if (!IsContextConnectionCurrent(context, serial, generation)) return;
+                _logService.Diagnostic("Connection","Reconnect cleanup; identity="+context.Identity+"; serial="+serial+
+                    "; generation="+generation+"; allowAutoStart="+allowAutoStart+
+                    "; autoStartSetting="+_settings.Features.AutoStartDexOnDeviceConnected+
+                    "; requireManualStart="+context.RequireManualStartAfterTransportLoss);
                 var autoStartGeneration = _autoStartSettingsGeneration;
+                if(context.Runtime.Dex.HasRetainedNativeForSerial(serial)) {
+                    await context.Runtime.Dex.RestoreNativeControlAsync(serial,
+                        delegate { return IsContextConnectionCurrent(context, serial, generation); });
+                    if (!IsContextConnectionCurrent(context, serial, generation)) return;
+                    HandleScrcpyRunningChanged(ReferenceEquals(context,_selectedDeviceContext));
+                }
+                ScheduleReconnectPowerVerification(context,serial,generation);
                 var cleanupReady = await context.Runtime.Dex
                     .RetryDeferredCleanupAsync(serial);
-                if (cleanupReady && allowAutoStart && !context.RequireManualStartAfterTransportLoss &&
+                if (IsContextConnectionCurrent(context, serial, generation) && cleanupReady && allowAutoStart &&
+                    autoStartGeneration == _autoStartSettingsGeneration && !context.RequireManualStartAfterTransportLoss &&
                     _settings.Features.AutoStartDexOnDeviceConnected)
                 {
                     var launchTransport = context.Device == null ? null :
@@ -413,6 +438,13 @@ namespace DexManager.Forms
             }
         }
 
+        private async void ScheduleReconnectPowerVerification(DeviceUiContext context,string serial,int generation) {
+            foreach(var delay in new[]{500,1500,3000}) {
+                await Task.Delay(delay);
+                if(_exitInProgress||IsDisposed||context.ConnectionGeneration!=generation||!context.WasConnected)return;
+                if(IsStayAwakeRequestedNow(serial))await QueueDeviceStayAwakeUpdate();
+            }
+        }
         private async Task StartDexForContextAsync(
             DeviceUiContext context,
             string serial,
@@ -436,6 +468,8 @@ namespace DexManager.Forms
                     VirtualDisplay = AppSettings.CloneVirtualDisplay(runSettings.VirtualDisplay),
                     Scrcpy = AppSettings.CloneScrcpy(runSettings.Scrcpy)
                 };
+                runSettings = PrepareNative120Start(runSettings);
+                if(runSettings==null)return;
                 if (!await ConfirmExperimentalFrameRateAsync(runSettings.Scrcpy.MaxFps) ||
                     !IsContextLaunchCurrent(context, serial, generation) || context.Runtime.Dex.IsShutdownRequested) return;
                 if (runSettings.Scrcpy.TurnScreenOff)
@@ -553,14 +587,16 @@ namespace DexManager.Forms
             context.Runtime.FileTransfers.CancelSerial(serial);
             context.Runtime.CompanionGuardian.NotifyConnectionLost(serial);
             var detachTask = context.Runtime.PhoneTransfers.DetachAsync(serial);
+            var generation=context.ConnectionGeneration;
+            Func<bool> current=()=>context.ConnectionGeneration==generation&&IsSerialMarkedDisconnected(serial);
             Task.Run(async delegate
             {
                 try
                 {
                     if (context.Runtime.Dex.IsRunning)
-                        await context.Runtime.Dex.StopAsync()
+                        await context.Runtime.Dex.SuspendForTransportLossAsync(serial,current)
                             .ConfigureAwait(false);
-                    context.Runtime.SingleWindows.StopAll();
+                    if(current())context.Runtime.SingleWindows.StopForSerial(serial);
                 }
                 catch (Exception ex)
                 {

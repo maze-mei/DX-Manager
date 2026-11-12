@@ -1,4 +1,4 @@
-﻿# DX Manager v2.5.0 - Third-Party Notices
+# DX Manager v2.5.0 - Third-Party Notices
 
 DX Manager is an independently developed utility. The third-party binaries
 listed below are distributed without modification and remain under their
@@ -110,3 +110,19 @@ The Windows UI embeds static weight-400/600 instances derived from the Store Pre
 DX Manager embeds Regular icon alpha masks derived from Microsoft's Fluent UI System Icons, source commit a563cf9166f4f91aa617557ed272612b7f0a2f72. Copyright (c)2020 Microsoft Corporation; MIT License. The complete notice is included in Fluent-System-Icons-LICENSE.txt.
 https://github.com/microsoft/fluentui-system-icons
 The mouse asset is modified from Keyboard Mouse20Regular by retaining its mouse component only. Other assets retain the official geometry and are converted to transparent masks for theme coloring. Original SVGs/provenance are retained in the source repository.
+
+## ScrcpyDeX native activation
+
+The Native DeX helper includes adapted Java activation and context code from
+ScrcpyDeX v1.1 by Aureliano Peixoto and ScrcpyDeX contributors. The pinned source
+is commit eebbba903b73d54bbd13210096ea28fe31e51200.
+
+Source: https://github.com/Aureliano021/ScrcpyDex/tree/eebbba903b73d54bbd13210096ea28fe31e51200
+
+Apache License 2.0 and modification notices are included in
+ScrcpyDex-APACHE-2.0.txt, ScrcpyDex-NOTICE.txt, and the native helper JAR.
+The source inventory is in NativeDex/upstream.json. The imported code retains
+its Apache-2.0 license. DX Manager is licensed under MIT.
+
+네이티브 DeX 화면 생성에는 ScrcpyDeX v1.1의 Java 코드 일부를 수정해 사용합니다.
+원본 라이선스와 수정 고지는 위 두 파일과 네이티브 보조 프로그램 JAR에서 확인할 수 있습니다.

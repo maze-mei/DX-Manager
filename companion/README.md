@@ -2,14 +2,14 @@
 
 ## English
 
-This is the **2.1.6 / versionCode 13** release snapshot used by DX Manager Windows 2.5.0.
+This is the **3.0.0 / versionCode 16** release snapshot used by DX Manager Windows v3.0.0.
 It includes the Android source, generated PC constants, the exact official signed APK and its font license.
 The package ID is `io.github.mazemei.dxdisplaycleanup`; minimum Android version is 13 (API 33).
 
 Android code is maintained once in the canonical shared component used by the GitHub and Store editions.
 This directory is a generated public snapshot, not a second independently maintained Android project.
 Maintainers update the canonical component, then run `scripts/Export-CompanionSnapshot.ps1` and review the resulting diff.
-The release manifest pins all 105 source files and the APK; validate with:
+The release manifest pins all 130 source files and the APK; validate with:
 
 ~~~powershell
 ./scripts/Verify-CompanionSnapshot.ps1
@@ -36,7 +36,7 @@ The source project's older README/package notes are retained verbatim as histori
 
 ## 한국어
 
-정식 Companion 2.1.6/code13의 소스·PC 연동 상수·서명 APK를 함께 공개한 릴리스 스냅샷입니다.
+정식 Companion 3.0.0/code16의 소스·PC 연동 상수·서명 APK를 함께 공개한 릴리스 스냅샷입니다.
 원본은 공용 컴포넌트 한곳에서 관리하고 수정한 뒤 다시 내보냅니다. 여기서 별도의 Android 원본을 유지하지 않습니다.
 공개 저장소만 내려받아도 Windows를 빌드할 수 있으며 서명키·비밀번호·로컬 설정은 포함하지 않습니다.
 일반 사용자는 Windows ZIP에 들어 있는 APK를 설정 > Companion에서 설치하면 됩니다.

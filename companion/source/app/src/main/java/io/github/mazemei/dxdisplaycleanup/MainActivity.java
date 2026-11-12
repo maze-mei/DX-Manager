@@ -46,7 +46,8 @@ public final class MainActivity extends Activity {
     private ImageView statusIcon;
     private TextView statusTitle;
     private TextView statusDetail;
-    private View homeConnectionCard;
+    private View homeConnectionCard,homeNativeDexCard;
+    private TextView homeNativeDexTitle,homeNativeDexDetail;
     private TextView homeDeviceName;
     private TextView homeTransport;
     private TextView homeCleanupSummary;
@@ -54,6 +55,7 @@ public final class MainActivity extends Activity {
     private TextView homeActivityElapsed;
     private Button homeCleanupButton;
     private Button homeTransferButton;
+    private View cleanupOverlayCard,cleanupStayAwakeCard;
     private TextView overlayStatus;
     private TextView overlayValue;
     private TextView stayAwakeStatus;
@@ -162,7 +164,12 @@ public final class MainActivity extends Activity {
         statusIcon = findViewById(R.id.status_icon);
         statusTitle = findViewById(R.id.status_title);
         statusDetail = findViewById(R.id.status_detail);
+        cleanupOverlayCard = findViewById(R.id.cleanup_overlay_card);
+        cleanupStayAwakeCard = findViewById(R.id.cleanup_stay_awake_card);
         homeConnectionCard = findViewById(R.id.home_connection_card);
+        homeNativeDexCard = findViewById(R.id.home_native_dex_card);
+        homeNativeDexTitle = findViewById(R.id.home_native_dex_title);
+        homeNativeDexDetail = findViewById(R.id.home_native_dex_detail);
         homeDeviceName = findViewById(R.id.home_device_name);
         homeTransport = findViewById(R.id.home_transport);
         homeCleanupSummary = findViewById(R.id.home_cleanup_summary);
@@ -216,6 +223,9 @@ public final class MainActivity extends Activity {
         navFileTransferLabel = findViewById(R.id.nav_file_transfer_label);
         navSettingsLabel = findViewById(R.id.nav_settings_label);
         pageContainer = findViewById(R.id.page_container);
+        Button accessibilityButton = findViewById(R.id.foreground_accessibility_button);
+        accessibilityButton.setOnClickListener(view ->
+                startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
         Button refreshButton = findViewById(R.id.refresh_button);
         homeCleanupButton = findViewById(R.id.home_cleanup_button);
         homeTransferButton = findViewById(R.id.home_transfer_button);
@@ -268,6 +278,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
+        NativeSessionBridge.addStatusListener(nativeStatusUpdated);
         transferStatusMonitoring = true;
         setTransferSessionReady(false);
         getContentResolver().registerContentObserver(
@@ -320,6 +331,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onStop() {
+        NativeSessionBridge.removeStatusListener(nativeStatusUpdated);
         transferStatusMonitoring = false;
         transferProbeGeneration++;
         transferStatusHandler.removeCallbacks(transferStatusPoll);
@@ -334,9 +346,18 @@ public final class MainActivity extends Activity {
         super.onDestroy();
     }
 
+    private boolean cleanupInProgress;
     private void cleanup(boolean overlay, boolean stayAwake) {
-        CleanupCoordinator.Snapshot snapshot =
-                CleanupCoordinator.cleanup(this, overlay, stayAwake);
+        if(cleanupInProgress)return;
+        cleanupInProgress=true;cleanupBothButton.setEnabled(false);homeCleanupButton.setEnabled(false);
+        new Thread(()->{
+            CleanupCoordinator.Snapshot result=CleanupCoordinator.cleanup(this,overlay,stayAwake);
+            runOnUiThread(()->{cleanupInProgress=false;if(!isFinishing()&&!isDestroyed())showCleanupResult(result,overlay,stayAwake);});
+        },"DXM-Manual-Cleanup").start();
+    }
+    private void showCleanupResult(CleanupCoordinator.Snapshot snapshot, boolean overlay, boolean stayAwake) {
+        /* Cleanup has already run off the UI thread. */
+        /* snapshot is verified by the selected backend. */
         SessionGuardianService.stopAfterManualCleanupIfIdle(this, snapshot);
         render(snapshot);
         notifySurfaces();
@@ -358,7 +379,26 @@ public final class MainActivity extends Activity {
         }
     }
 
+    private final Runnable nativeStatusUpdated=()->{
+        if(!isFinishing()&&!isDestroyed())render(CleanupCoordinator.inspect(this));
+    };
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshForegroundStatus();
+    }
+
+    private void refreshForegroundStatus() {
+        TextView status = findViewById(R.id.foreground_accessibility_status);
+        if (status != null) status.setText(
+                ForegroundAppAccessibilityService.REGISTRY.isAvailable()
+                ? R.string.foreground_accessibility_enabled
+                : R.string.foreground_accessibility_disabled);
+    }
+
     private void refresh() {
+        refreshForegroundStatus();
         render(CleanupCoordinator.inspect(this));
         renderTransferSession();
         notifySurfaces();
@@ -767,7 +807,17 @@ public final class MainActivity extends Activity {
         CleanupTileService.requestRefresh(this);
     }
 
+    private void renderNativeDisplayCard() {
+        NativeSessionBridge.Snapshot snapshot=NativeSessionBridge.inspect(this);
+        NativeDisplayCard.Mode mode=NativeDisplayCard.mode(snapshot.active&&snapshot.confirmed,snapshot.inUse);
+        homeNativeDexCard.setVisibility(mode==NativeDisplayCard.Mode.HIDDEN?View.GONE:View.VISIBLE);
+        homeNativeDexTitle.setText(mode==NativeDisplayCard.Mode.RETAINED?R.string.home_native_dex_retained:R.string.home_native_dex_running);
+        homeNativeDexDetail.setText(mode==NativeDisplayCard.Mode.IN_USE?R.string.home_native_dex_in_use_detail:
+                mode==NativeDisplayCard.Mode.RETAINED?R.string.home_native_dex_retained_detail:R.string.home_native_dex_running_detail);
+    }
+
     private void render(CleanupCoordinator.Snapshot snapshot) {
+        renderNativeDisplayCard();
         overlayValue.setText(snapshot.overlay.rawValue == null
                 ? getString(R.string.setting_not_present)
                 : snapshot.overlay.rawValue);
@@ -775,13 +825,16 @@ public final class MainActivity extends Activity {
                 ? "0"
                 : snapshot.stayAwake.rawValue);
 
-        overlayStatus.setText(snapshot.overlay.overlayActive
-                ? R.string.target_status_active
-                : R.string.target_status_inactive);
+        overlayStatus.setText(snapshot.overlay.status==OverlayDisplayRepository.Status.UNKNOWN?R.string.target_status_unknown:
+                snapshot.overlay.overlayActive?R.string.target_status_active:R.string.target_status_inactive);
         stayAwakeStatus.setText(snapshot.stayAwake.stayAwakeActive
                 ? R.string.target_status_active
                 : R.string.target_status_inactive);
 
+        cleanupOverlayCard.setBackgroundResource(snapshot.overlay.overlayActive?R.drawable.bg_card:R.drawable.bg_connection_pending);
+        cleanupStayAwakeCard.setBackgroundResource(snapshot.stayAwake.stayAwakeActive?R.drawable.bg_card:R.drawable.bg_connection_pending);
+        overlayStatus.setTextColor(getColor(snapshot.overlay.overlayActive?R.color.success:R.color.text_secondary));
+        stayAwakeStatus.setTextColor(getColor(snapshot.stayAwake.stayAwakeActive?R.color.success:R.color.text_secondary));
         boolean permissionGranted = !snapshot.permissionRequired();
         boolean valid = permissionGranted && !snapshot.hasError();
         settingsPermissionCard.setBackgroundResource(valid
@@ -794,7 +847,7 @@ public final class MainActivity extends Activity {
         int activeCount = (snapshot.overlay.overlayActive ? 1 : 0)
                 + (snapshot.stayAwake.stayAwakeActive ? 1 : 0);
         if (activeCount == 0) {
-            homeCleanupSummary.setText(R.string.home_cleanup_none);
+            homeCleanupSummary.setText(snapshot.overlay.status==OverlayDisplayRepository.Status.UNKNOWN?R.string.home_cleanup_checking:R.string.home_cleanup_none);
         } else {
             homeCleanupSummary.setText(
                     getString(R.string.home_cleanup_count, activeCount));
@@ -933,14 +986,13 @@ public final class MainActivity extends Activity {
         Dialog dialog = new Dialog(this);
         dialog.setContentView(R.layout.dialog_about);
         TextView version = dialog.findViewById(R.id.about_version);
-        String versionName = "2.1.0";
         try {
-            versionName = getPackageManager().getPackageInfo(
+            String versionName = getPackageManager().getPackageInfo(
                     getPackageName(), 0).versionName;
+            version.setText(getString(R.string.about_version_format, versionName));
         } catch (PackageManager.NameNotFoundException ignored) {
+            version.setVisibility(View.GONE);
         }
-        version.setText(getString(R.string.about_version_format,
-                versionName));
         dialog.findViewById(R.id.about_close_button)
                 .setOnClickListener(view -> dialog.dismiss());
         dialog.setCanceledOnTouchOutside(true);

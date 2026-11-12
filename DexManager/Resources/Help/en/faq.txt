@@ -1,8 +1,13 @@
-﻿DX Manager Frequently Asked Questions
+DX Manager Frequently Asked Questions
+
+Windows v3.0.0
+Covers Native DeX,30-second grace,experimental 120 FPS and optional AI detection. Some pictures show the earlier UI.
 
 English user guide · Korean FAQ
 
 Q1. A small screen (secondary display) remains on the phone.
+
+This item describes simulated secondary-display mode. Native DeX and single windows use different display paths.
 
 Android's virtual-display setting may remain if DX Manager is terminated
 forcibly, or if the USB or wireless connection is completely lost before the
@@ -24,18 +29,14 @@ Selecting None first may not clear a stale display. The resolution-then-None
 sequence forces Android to refresh the overlay setting, after which the
 remaining virtual screen disappears.
 
-If the bundled official DX Companion is installed and verified under
-Settings > Diagnostics > DX Companion, the leftover display can also be
+If the bundled official DX Companion app is installed and verified under
+Settings > Companion, the leftover display can also be
 removed from the main app, Quick Settings tile, or home-screen widget. DX
-Companion can also
+Companion app can also
 turn off Developer options Stay awake after an interrupted session. See the
 English user guide for full
 installation and usage details.
 
-<p align="center">
-  <img src="images/en/simulate-secondary-display-en.png" width="45%" alt="Simulate secondary displays in Developer options">
-  <img src="images/en/simulate-secondary-display-options-en.png" width="45%" alt="Simulate secondary displays selection menu">
-</p>
 
 Q2. Why use Force-stop selected app when launching Samsung Internet automatically?
 
@@ -52,7 +53,7 @@ Q3. Which device is used when two or more phones are connected?
 
 DX Manager 2.0 manages multiple physical phones simultaneously. When two or
 more phones have been detected, select the target from the device list on the
-left. Each phone has independent DeX, Single-Window, connection, Companion,
+left. Each phone has independent DeX, Single-Window, connection, Companion app,
 and file-transfer state, so starting or disconnecting one phone does not
 replace another phone's active session.
 
@@ -86,6 +87,8 @@ the desktop under that combination.
 
 Q6. The Recents screen looks wrong and I cannot return to Desktop 1.
 
+This item describes simulated secondary-display mode. Native DeX and single windows use different display paths.
+
 With some resolution and DPI combinations, the desktop selector in Recents
 may be misaligned after DeX starts for the first time. To recover:
 
@@ -99,14 +102,9 @@ One UI version.
 
 Q7. Why can DPI not be set below 120?
 
-On the tested Samsung DeX environment, 120 is the lowest DPI at which a
-virtual display can be created. At 119 or below, the overlay is not created
-and no new display ID can be found.
+DX Manager keeps its input minimum of 120, based on the existing simulated-display creation boundary. This is not a claim that every internal Samsung native setting has that minimum.
 
-DX Manager restores the value that was present before editing and displays a
-notice when a value below 120 is entered. Very high DPI values may create a
-display successfully, but text and interface elements can become too large
-for practical use.
+For supported1600×900/1920×1080 and a verified matching Companion app, Native DeX prepares initial DPI of at least 160. A lower requested value such as 150 is then applied as density only, without a resolution change. The saved 150 request is preserved. Other combinations use the documented compatible path; an unconfirmed result stops startup with diagnostic evidence.
 
 Q8. The scrcpy-server transfer speed in the log is lower than usual.
 
@@ -185,14 +183,11 @@ ends.
 
 Q13. What happens if USB is unexpectedly disconnected during use?
 
-After confirming the disconnection, DX Manager cleans up the DeX and
-single-window sessions that were running on that phone. If the phone is no
-longer reachable, overlay, screen-state, and stay-awake restoration commands
-that cannot be sent immediately may be retried when the same phone reconnects.
+Native DeX waits about 30 seconds after connection loss is detected. The same phone reconnecting within the grace cancels cleanup and reuses a surviving display. At expiry, its owned display is removed. Companion app cleanup timing does not control this grace.
 
-When the original phone reconnects, DX Manager applies the configured start
-delay and restarts the session if automatic start is enabled. In v1, it does
-not switch to another connected phone.
+Disconnection returns audio to the phone and releases Stay awake. An actual PC DeX viewer resume reapplies audio and existing power demand, with Bluetooth exceptions preserved. PC auto-start still follows your preference.
+
+If the OS removes the owner/display first, it must be recreated. Simulated display keeps its existing Companion app delay; other single-window/transfer loss behavior remains. Another physical phone's session is isolated. Explicit Stop, application exit and Windows shutdown clean up immediately.
 
 Q14. What is the difference between Turn phone screen off and Stay awake?
 
@@ -253,13 +248,13 @@ correctly when copied by itself:
 Keep the folder structure from the release ZIP and run the program from a
 writable location where it can save settings, logs, and screenshots.
 
-Q17. How does drag-and-drop file transfer work, and can I disable it?
+Q17. How does drag-and-drop file transfer work?
 
 Drop one or more files, or a complete folder, onto a running DeX or single-app
 scrcpy window. With the default DX Manager file transfer enabled, content is
 copied through a Windows 7 SP1 through 11-compatible path that preserves Korean, Japanese,
 and other Unicode names. The default destination is /sdcard/Download/; it can
-be changed under Settings > Paths / ADB > Programs and storage paths. The
+be changed under Phone destination folder under Settings → Paths / ADB → File transfer paths → PC → phone file transfer. The
 destination must be below /sdcard/ or /storage/emulated/0/.
 
 Folders keep their top-level folder, subfolders, files, and empty folders.
@@ -278,25 +273,11 @@ Canceling stops the active and waiting transfers for that scrcpy window and
 also attempts to remove their temporary phone data. The button is briefly
 disabled while the final name is committed.
 
-To use scrcpy's original file-drop behavior, turn off Use DX Manager file
-transfer (Unicode-compatible) under Settings > Paths / ADB > Programs and
-storage paths. The change applies to newly opened DeX and single-app windows;
-already open windows keep the mode with which they were started. In original
-scrcpy mode, non-ASCII file names may not be preserved on every Windows
-environment.
-
 Q18. The DeX window is black on an older One UI version.
 
-The currently verified baseline is a DeX-capable Galaxy device running Android
-16 with One UI 8.x. One UI 7.x and earlier have not been confirmed to work
-reliably with the virtual-display method used by DX Manager and may open a
-black DeX window. This can depend on the device model, Samsung firmware, and
-whether the phone uses the older classic DeX implementation.
+Native and simulated displays use different paths. The simulated path has been used on Android 16/One UI 8.x; current Native DeX testing uses a Galaxy S26 Ultra with Android 17/One UI 9.0. Other devices/older firmware are not all verified.
 
-Single-app mode may still work because it uses scrcpy's own virtual display,
-but input support can differ by firmware. If HID keyboard or HID mouse causes
-instability, test again with those options disabled. This does not establish
-support for that device or One UI release.
+Choose another mode in Settings → Connection → DeX display mode, then stop/start DeX to compare. Results depend on device DeX support and firmware; a single window may be an alternative. Compare with HID keyboard/mouse disabled if those inputs are unstable. This is not a guarantee of support for that device.
 
 Q19. Why did ADB always show version 1.0.41, and what version is actually in use?
 
@@ -339,44 +320,67 @@ reopen the DeX or single-app window. In this mode the mouse behaves more like
 touch input than a regular hardware mouse. For example, a side button may open
 Recent Apps and holding the left button may act as a touchscreen long press.
 
-Q23. Why is the cleanup permission button under Diagnostics disabled?
+Q23. Why is the Companion install or permission button disabled?
 
-Grant permission is enabled only when the official DX Companion is
-installed on the selected phone and its APK signing certificate matches. If it
-is absent, use Install DX Companion; the button remains disabled when the
-bundled APK is missing or altered. DX Manager does not grant the permission
-when ADB is not authorized or another app uses the same package ID with a
-different signature. Check the status message below the buttons.
+Select the target phone in Settings → Companion and refresh the app status. Authorize USB debugging, then select Install app or Update app. The Grant permission button is disabled once the permission has been granted. The app status explains any problem verifying the APK.
 
-Select Grant cleanup permission to make DX Manager re-verify the app, grant
-WRITE_SECURE_SETTINGS, and confirm the resulting permission state. The button
-then displays Permission granted. The companion app has no arbitrary ADB
-command feature.
+DeX, single windows, HID input, manual Enter switching, screenshots and PC-to-phone transfer work without the Companion app. Install the shared DX Companion 3.0.0 for phone-to-PC transfers, cleanup on the phone and AI app detection. Use Grant permission after a manual installation or reinstall to set up cleanup permission.
 
-The permission survives a reboot and an update signed with the same official
-certificate. Uninstalling and reinstalling the app removes its permission, so
-grant it again after a fresh installation. Once granted, the main app can clean
-the virtual display, turn off Stay awake, or do both. The Quick Settings
-tile and compact 2 × 1 widget clean both by default; their targets can be
-changed in the app.
+To remove a leftover simulated display, select Developer options → Simulate secondary displays → None. Use the Companion app's phone cleanup for Native DeX.
 
-Without the companion app, open Developer options > Simulate secondary
-displays, select any resolution once, open the menu again, and select
-None.
+Q24. DX Companion app cannot send a file or folder to the PC.
 
-Q24. DX Companion cannot send a file or folder to the PC.
+Start DX Manager, connect the target phone and open the Companion app's File transfer tab. Check that the PC is ready to receive files. If the app is waiting for a connection, check its version and status under Settings → Companion.
 
-Start DX Manager first, connect the target phone through USB or wireless ADB,
-and check that DX Companion's File transfer tab reports that the PC receiver
-is ready. If it does not, open Settings > Diagnostics > DX Companion in DX
-Manager and verify the installed version, official signature, permission, and
-device connection before trying again.
+In Gallery or My Files, use Share and choose Send to DX Manager (DX Companion). To send a folder, use the Companion app's folder picker in its transfer tab. File transfer works without accessibility permission.
 
-For ordinary files, use Gallery or My Files and choose Send to DX Manager
-from Android's Share menu. Android does not pass folders through that menu, so
-use Send folder > Select folder inside DX Companion for a complete folder.
+The default destination is Downloads → DX Manager → phone name. To change it, expand Phone → PC file transfer under Settings → Paths / ADB → File transfer paths and set PC receive folder. Matching names receive (1), (2) and so on. If a connection drops during a transfer, reconnect and send the item again.
 
-The PC destination is configured under Settings > Paths / ADB > Phone-to-PC
-destination folder. Existing items are not overwritten; DX Manager adds
-(1), (2), and later suffixes. A disconnection during transfer is reported
-as a failure, and the transfer must be started again after reconnecting.
+Q25. What is the difference between Native and simulated DeX?
+
+Native uses the phone’s Samsung DeX environment and is the fresh default. Simulated display keeps the existing creation path and experimental 120 FPS. Choose in Settings → Connection, then stop/start DeX. App/device UI, bounds and compatibility may differ.
+
+Q26. Does selecting120 FPS change my saved DeX mode?
+
+Accepting the switch uses simulated display for that launch only. Starting at 30 or 60 FPS uses the saved DeX mode.
+
+Enable Automatically use simulated display for 120 FPS under Settings → Connection → Native DeX to skip the mode-switch notice. The 120 FPS usage warning still appears on each launch.
+120 FPS turns off Turn phone screen off. Selecting 30 or 60 FPS restores your previous choice. Single windows on the same phone are limited to 60 FPS while Native DeX is running or waiting to reconnect.
+
+Q27. How do I enable automatic Enter rules for AI apps?
+
+Turn on Settings → Keyboard → AI app automatic line breaks in DX Manager, then select the switches you want for ChatGPT, Claude, Gemini and Grok. The Gemini switch applies to the app and web app.
+
+On the phone, open DX Companion app → Settings → App switch detection card → Open Accessibility settings → Installed apps → DX Companion → On. Without app switch information, Enter works as usual.
+
+For manual switching, enable Switch Enter / Shift+Enter and press Scroll Lock in the scrcpy window. Each press switches between ordinary Enter and Shift+Enter. Only one of the two options can be on. New settings enable manual switching and leave AI app automatic line breaks off.
+
+Q28. Why does Native DeX disappear with Never selected in Companion app?
+
+Companion app timing controls simulated-display cleanup. Native DeX uses its separate grace of about 30 seconds after loss is detected. Android/Samsung lock or ADB-service handling can remove it earlier. A lost display is recreated on reconnect; indefinite retention or full-grace survival is not guaranteed.
+
+Q29. What happens to audio and Bluetooth after disconnection?
+
+When the Native DeX connection drops, sound returns to the phone and Stay awake is released. An active Bluetooth audio route is kept. Reopening the DeX window reapplies the session's audio and power settings.
+
+To restore the Bluetooth device used before DeX started, expand Settings → Connection → Native DeX and enable Keep Bluetooth audio when starting Native DeX. To stop scrcpy from forwarding sound to the PC, add --no-audio under Advanced options and restart the session.
+
+Q30. Are logs saved automatically?
+
+Enable automatic saving under Settings → Diagnostics → Open session log. Off for fresh settings, preserving an existing saved choice. Enabled logs go under the app logs folder. Disabling keeps existing files and current in-memory history. Review device/path/app-title metadata before sharing.
+
+Q31. Where can I see the actual FPS?
+
+Open Settings → Diagnostics → Open log window. Focus the scrcpy window and press left Alt+I to display FPS in the log. Press it again to turn the counter off.
+
+Q32. What happens if the start app is set to None in single-window mode?
+
+A single window needs an app to start. Select Load app list, then choose the app. Saved app profiles are shared by Window 1–3 on the same phone. DeX can start its desktop with None selected.
+
+Q33. Why is DX Manager still running after I close the window?
+
+Closing the window moves DX Manager to the system tray. Double-click the tray icon to reopen it. To exit completely, choose Exit in the tray menu or use the default exit shortcut, left Alt+F8.
+
+Q34. Can I use DX Manager offline?
+
+The extracted portable app can connect over USB without internet access. Wi-Fi ADB uses the local network connection between the PC and phone.

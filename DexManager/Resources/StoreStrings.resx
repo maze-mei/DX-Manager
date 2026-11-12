@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -17,8 +17,8 @@
   <data name="FirstRunDialogIntro" xml:space="preserve"><value>DX Manager uses Android Developer options and ADB (USB or wireless debugging) to control the connected Galaxy phone.</value></data>
   <data name="FirstRunDialogDisplay" xml:space="preserve"><value>When you start DeX or a single window, it changes Simulate secondary displays in Developer options to create and remove a virtual display.</value></data>
   <data name="FirstRunDialogPower" xml:space="preserve"><value>Depending on the selected run options, it can also temporarily change the phone screen and stay-awake settings.</value></data>
-  <data name="FirstRunDialogRecovery" xml:space="preserve"><value>A virtual display or changed setting can remain after disconnection, a forced exit, or Windows shutdown. The Help center and DX Companion explain how to clean up the phone.</value></data>
-  <data name="FirstRunDialogCompanion" xml:space="preserve"><value>DX Companion is optional and is installed only when you explicitly request it.</value></data>
+  <data name="FirstRunDialogRecovery" xml:space="preserve"><value>A virtual display or changed setting can remain after disconnection, a forced exit, or Windows shutdown. The Help center and DX Companion app explain how to clean up the phone.</value></data>
+  <data name="FirstRunDialogCompanion" xml:space="preserve"><value>DX Companion app is optional and is installed only when you explicitly request it.</value></data>
   <data name="FirstRunDialogIndependent" xml:space="preserve"><value>DX Manager is independently developed and is not an official application produced, sponsored, endorsed, or distributed by Samsung Electronics.</value></data>
   <data name="FirstRunDialogLiability" xml:space="preserve"><value>Users are responsible for complying with applicable laws and policies when using DX Manager. To the extent permitted by law, the developer is not liable for issues arising from the use or misuse of this application.</value></data>
   <data name="FirstRunDialogCheck" xml:space="preserve"><value>I have read and understood the information above.</value></data>
@@ -71,7 +71,7 @@
   <data name="StartupStatusError" xml:space="preserve"><value>Could not change the Windows startup status.</value></data>
   <data name="GeneralMiniBarExpander.Header" xml:space="preserve"><value>Mini control bar</value></data>
   <data name="GeneralMiniBarExpander.Description" xml:space="preserve"><value>Show a control bar beside each Scrcpy window.</value></data>
-  <data name="CommonEnabled.Text" xml:space="preserve"><value>On</value></data>
+  <data name="CommonEnabled.Text" xml:space="preserve"><value>Use</value></data>
   <data name="GeneralMiniBarSideCard.Header" xml:space="preserve"><value>Mini control bar position</value></data>
   <data name="GeneralMiniBarSideCard.Description" xml:space="preserve"><value>Choose where the control bar is attached.</value></data>
   <data name="CommonRight.Content" xml:space="preserve"><value>Right</value></data>
@@ -166,7 +166,7 @@
   <data name="InputEnterModeCard.Description" xml:space="preserve"><value>Choose the input method.</value></data>
   <data name="InputDiagnosticsCard.Header" xml:space="preserve"><value>Keyboard diagnostic logging</value></data>
   <data name="InputDiagnosticsCard.Description" xml:space="preserve"><value>Record detailed key events in the session log only when troubleshooting.</value></data>
-  <data name="InputCompatibilityNote.Text" xml:space="preserve"><value>Scrcpy 4.1 (SDL3) right Shift compatibility correction is applied automatically in running Scrcpy windows.</value></data>
+  <data name="InputCompatibilityNote.Text" xml:space="preserve"><value>Scrcpy 5.0.1 (SDL3) right Shift compatibility correction is applied automatically in running Scrcpy windows.</value></data>
   <data name="CommonEnabledInputHangul.Text" xml:space="preserve"><value>On</value></data>
   <data name="CommonEnabledInputRightWindows.Text" xml:space="preserve"><value>On</value></data>
   <data name="CommonEnabledInputShiftSpace.Text" xml:space="preserve"><value>On</value></data>
@@ -204,10 +204,10 @@
   <data name="ConnectionStatusCard.Header" xml:space="preserve"><value>Current status</value></data>
   <data name="ConnectionStatusCard.Description" xml:space="preserve"><value>Current connection state and saved Wi-Fi address.</value></data>
   <data name="CompanionHeading.Text" xml:space="preserve"><value>DX Companion</value></data>
-  <data name="CompanionDescription.Text" xml:space="preserve"><value>Check the selected phone's Companion installation and permission status.</value></data>
+  <data name="CompanionDescription.Text" xml:space="preserve"><value>Check the selected phone's Companion app installation and permission status.</value></data>
   <data name="CompanionDeviceCard.Header" xml:space="preserve"><value>Target phone</value></data>
   <data name="CompanionDeviceCard.Description" xml:space="preserve"><value>Choose the phone to manage.</value></data>
-  <data name="CompanionStatusExpanderText.Header" xml:space="preserve"><value>DX Companion status</value></data>
+  <data name="CompanionStatusExpanderText.Header" xml:space="preserve"><value>DX Companion app status</value></data>
   <data name="CompanionStatusExpanderText.Description" xml:space="preserve"><value>Check installation and permission status.</value></data>
   <data name="CompanionBundleCard.Header" xml:space="preserve"><value>Bundled APK verification</value></data>
   <data name="CompanionBundleCard.Description" xml:space="preserve"><value>Verify APK integrity and signature.</value></data>
@@ -215,13 +215,13 @@
   <data name="CompanionInstallStatusCard.Header" xml:space="preserve"><value>Installation status</value></data>
   <data name="CompanionInstallStatusCard.Description" xml:space="preserve"><value>Check the installed version and signature.</value></data>
   <data name="CompanionRefreshButton.Content" xml:space="preserve"><value>Refresh status</value></data>
-  <data name="CompanionManageCard.Header" xml:space="preserve"><value>Companion management</value></data>
+  <data name="CompanionManageCard.Header" xml:space="preserve"><value>Companion app management</value></data>
   <data name="CompanionManageCard.Description" xml:space="preserve"><value>Install, update, or configure permission.</value></data>
   <data name="CompanionInstallButton.Content" xml:space="preserve"><value>Install/update and grant permission</value></data>
   <data name="CompanionGrantButton.Content" xml:space="preserve"><value>Grant permission only</value></data>
-  <data name="CompanionUninstallCard.Header" xml:space="preserve"><value>Uninstall Companion</value></data>
-  <data name="CompanionUninstallCard.Description" xml:space="preserve"><value>Remove DX Companion from the selected phone.</value></data>
-  <data name="CompanionUninstallButton.Content" xml:space="preserve"><value>Uninstall Companion</value></data>
+  <data name="CompanionUninstallCard.Header" xml:space="preserve"><value>Uninstall Companion app</value></data>
+  <data name="CompanionUninstallCard.Description" xml:space="preserve"><value>Remove DX Companion app from the selected phone.</value></data>
+  <data name="CompanionUninstallButton.Content" xml:space="preserve"><value>Uninstall app</value></data>
   <data name="CompanionNormalNote.Text" xml:space="preserve"><value>Management buttons are not emphasized when installation and permission status are normal.</value></data>
   <data name="PathsHeading.Text" xml:space="preserve"><value>Program paths</value></data>
   <data name="PathsDescription.Text" xml:space="preserve"><value>View bundled programs and storage paths.</value></data>
@@ -241,7 +241,7 @@
   <data name="PathsPhoneTargetBox.PlaceholderText" xml:space="preserve"><value>Example: /sdcard/Download/</value></data>
   <data name="PathsChoosePhoneTargetButton.Content" xml:space="preserve"><value>Choose on phone</value></data>
   <data name="PathsPhoneToPcExpander.Header" xml:space="preserve"><value>Phone → PC file transfer</value></data>
-  <data name="PathsPhoneToPcExpander.Description" xml:space="preserve"><value>Receive files from the phone through DX Companion.</value></data>
+  <data name="PathsPhoneToPcExpander.Description" xml:space="preserve"><value>Receive files from the phone through DX Companion app.</value></data>
   <data name="CommonEnabledPhoneToPc.Text" xml:space="preserve"><value>On</value></data>
   <data name="PathsPcReceiveCard.Header" xml:space="preserve"><value>PC receive folder</value></data>
   <data name="PathsPcReceiveCard.Description" xml:space="preserve"><value>The PC folder where received files are saved.</value></data>
@@ -272,7 +272,11 @@
   <data name="DiagnosticsReportFailed" xml:space="preserve"><value>Could not save the report: {0}</value></data>
   <data name="DiagnosticsPackageInstalled" xml:space="preserve"><value>Store package</value></data>
   <data name="DiagnosticsPackagePreview" xml:space="preserve"><value>Development preview</value></data>
-  <data name="DiagnosticsEnvironmentSummary" xml:space="preserve"><value>Environment: {0}&#xA;ADB: {1}&#xA;Scrcpy: {2}&#xA;Companion: {3} {4}&#xA;Authorized phones: {5}</value></data>
+  <data name="DiagnosticsEnvironmentSummary" xml:space="preserve"><value>Environment: {0}
+ADB: {1}
+Scrcpy: {2}
+Companion app: {3} {4}
+Authorized phones: {5}</value></data>
   <data name="DiagnosticsNoDevice" xml:space="preserve"><value>No phones are connected.</value></data>
   <data name="DiagnosticsDeviceFailed" xml:space="preserve"><value>Could not inspect the device: {0}</value></data>
   <data name="DiagnosticsDeviceSummary" xml:space="preserve"><value>Model: {0}&#xA;Connection: {1}&#xA;Android: {2}&#xA;One UI: {3}&#xA;Security patch: {4}</value></data>
@@ -287,7 +291,7 @@
   <data name="AboutHeading.Text" xml:space="preserve"><value>About</value></data>
   <data name="AboutProductCard.Description" xml:space="preserve"><value>DX Manager Store Edition for Windows 10/11</value></data>
   <data name="AboutComponentsCard.Header" xml:space="preserve"><value>Component versions</value></data>
-  <data name="AboutComponentsCard.Description" xml:space="preserve"><value>Bundled Scrcpy, ADB, Windows App SDK, and DX Companion versions</value></data>
+  <data name="AboutComponentsCard.Description" xml:space="preserve"><value>Bundled Scrcpy, ADB, Windows App SDK, and DX Companion app versions</value></data>
   <data name="AboutNoticesCard.Header" xml:space="preserve"><value>Licenses and notices</value></data>
   <data name="AboutNoticesCard.Description" xml:space="preserve"><value>View copyright, the MIT License, and third-party notices.</value></data>
   <data name="AboutOpenNoticesButton.Content" xml:space="preserve"><value>View third-party licenses</value></data>
@@ -297,24 +301,24 @@
   <data name="SettingsCaptureAutoTransferOff" xml:space="preserve"><value>Automatically send captures to the phone: Off</value></data>
   <data name="SettingsSaveFailed" xml:space="preserve"><value>Could not save the settings: {0}</value></data>
   <data name="SettingsSelectAuthorizedPhone" xml:space="preserve"><value>Select an authorized ADB phone first.</value></data>
-  <data name="SettingsCompanionInstalling" xml:space="preserve"><value>Installing/updating DX Companion and granting permission</value></data>
-  <data name="SettingsCompanionGranting" xml:space="preserve"><value>Granting DX Companion permission</value></data>
-  <data name="SettingsCompanionUninstalling" xml:space="preserve"><value>Uninstalling DX Companion</value></data>
+  <data name="SettingsCompanionInstalling" xml:space="preserve"><value>Installing/updating DX Companion app and granting permission</value></data>
+  <data name="SettingsCompanionGranting" xml:space="preserve"><value>Granting DX Companion app permission</value></data>
+  <data name="SettingsCompanionUninstalling" xml:space="preserve"><value>Uninstalling DX Companion app</value></data>
   <data name="SettingsStatusCheckFailed" xml:space="preserve"><value>Could not check the status: {0}</value></data>
-  <data name="SettingsCompanionOperationFailed" xml:space="preserve"><value>Companion operation failed: {0}</value></data>
+  <data name="SettingsCompanionOperationFailed" xml:space="preserve"><value>Companion app operation failed: {0}</value></data>
   <data name="SettingsCompanionUpdateGrant" xml:space="preserve"><value>Update and grant permission</value></data>
   <data name="SettingsCompanionInstallUpdateGrant" xml:space="preserve"><value>Install/update and grant permission</value></data>
   <data name="SettingsSelectedPhone" xml:space="preserve"><value>Selected phone</value></data>
-  <data name="SettingsCompanionBundleChecking" xml:space="preserve"><value>Checking the bundled Companion.</value></data>
-  <data name="SettingsCompanionBundleFailed" xml:space="preserve"><value>{0} · Bundled Companion verification failed: {1}</value></data>
-  <data name="SettingsCompanionChecking" xml:space="preserve"><value>{0} · Checking Companion status...</value></data>
-  <data name="SettingsCompanionUpdateRequired" xml:space="preserve"><value>{0} · Companion update required ({1} → {2})</value></data>
+  <data name="SettingsCompanionBundleChecking" xml:space="preserve"><value>Checking the bundled Companion app.</value></data>
+  <data name="SettingsCompanionBundleFailed" xml:space="preserve"><value>{0} · Bundled Companion app verification failed: {1}</value></data>
+  <data name="SettingsCompanionChecking" xml:space="preserve"><value>{0} · Checking Companion app status...</value></data>
+  <data name="SettingsCompanionUpdateRequired" xml:space="preserve"><value>{0} · Companion app update required ({1} → {2})</value></data>
   <data name="SettingsCompanionNoDevice" xml:space="preserve"><value>{0} · Select an authorized ADB phone.</value></data>
-  <data name="SettingsCompanionNotInstalled" xml:space="preserve"><value>{0} · Companion is not installed · Install {1}</value></data>
-  <data name="SettingsCompanionPermissionRequired" xml:space="preserve"><value>{0} · Companion {1} is installed · Permission required</value></data>
-  <data name="SettingsCompanionReady" xml:space="preserve"><value>{0} · Companion {1} installation and permission verified</value></data>
-  <data name="SettingsCompanionVerificationFailed" xml:space="preserve"><value>{0} · Companion verification failed: {1}</value></data>
-  <data name="SettingsCompanionStatusFailed" xml:space="preserve"><value>{0} · Companion status check failed: {1}</value></data>
+  <data name="SettingsCompanionNotInstalled" xml:space="preserve"><value>{0} · Companion app is not installed · Install {1}</value></data>
+  <data name="SettingsCompanionPermissionRequired" xml:space="preserve"><value>{0} · Companion app {1} is installed · Permission required</value></data>
+  <data name="SettingsCompanionReady" xml:space="preserve"><value>{0} · Companion app {1} installation and permission verified</value></data>
+  <data name="SettingsCompanionVerificationFailed" xml:space="preserve"><value>{0} · Companion app verification failed: {1}</value></data>
+  <data name="SettingsCompanionStatusFailed" xml:space="preserve"><value>{0} · Companion app status check failed: {1}</value></data>
   <data name="SettingsHotkeySaveFailed" xml:space="preserve"><value>Could not save the shortcut settings: {0}</value></data>
   <data name="SettingsHotkeyPrompt" xml:space="preserve"><value>Click a shortcut field, then press the desired key combination. Some key combinations cannot be used.</value></data>
   <data name="SettingsHotkeyCanceled" xml:space="preserve"><value>Change canceled.</value></data>
@@ -501,20 +505,20 @@
   <data name="GeneralAutoStartToggle.AutomationProperties.Name" xml:space="preserve"><value>Start DeX when a device connects</value></data>
   <data name="MainStoppingDex" xml:space="preserve"><value>Stopping DeX</value></data>
   <data name="MainPreparingDex" xml:space="preserve"><value>Preparing DeX</value></data>
-  <data name="CompanionBundleMissing" xml:space="preserve"><value>Bundled DX Companion APK not found.</value></data>
-  <data name="CompanionBundleHashMismatch" xml:space="preserve"><value>The bundled DX Companion APK hash does not match.</value></data>
-  <data name="CompanionBundleSignatureMismatch" xml:space="preserve"><value>The bundled DX Companion signature does not match.</value></data>
+  <data name="CompanionBundleMissing" xml:space="preserve"><value>Bundled DX Companion app APK not found.</value></data>
+  <data name="CompanionBundleHashMismatch" xml:space="preserve"><value>The bundled DX Companion app APK hash does not match.</value></data>
+  <data name="CompanionBundleSignatureMismatch" xml:space="preserve"><value>The bundled DX Companion app signature does not match.</value></data>
   <data name="CompanionInstalledPackageMismatch" xml:space="preserve"><value>The installed package is not the expected v2-signed APK.</value></data>
   <data name="CompanionInstalledSignatureMismatch" xml:space="preserve"><value>The installed APK signing certificate does not match.</value></data>
-  <data name="CompanionNewerInstalled" xml:space="preserve"><value>A newer DX Companion version is already installed.</value></data>
+  <data name="CompanionNewerInstalled" xml:space="preserve"><value>A newer DX Companion app version is already installed.</value></data>
   <data name="CompanionPostInstallVerificationFailed" xml:space="preserve"><value>Package, version, and signature verification failed after installation.</value></data>
-  <data name="CompanionNoVerifiedInstall" xml:space="preserve"><value>No verified DX Companion installation is available.</value></data>
+  <data name="CompanionNoVerifiedInstall" xml:space="preserve"><value>No verified DX Companion app installation is available.</value></data>
   <data name="CompanionPermissionVerificationFailed" xml:space="preserve"><value>Permission verification failed, so the permission was revoked.</value></data>
-  <data name="CompanionUninstallIncomplete" xml:space="preserve"><value>The package remains after DX Companion was uninstalled.</value></data>
+  <data name="CompanionUninstallIncomplete" xml:space="preserve"><value>The package remains after DX Companion app was uninstalled.</value></data>
   <data name="CompanionReadInstalledApkFailed" xml:space="preserve"><value>Could not read the installed APK: {0}</value></data>
-  <data name="PhoneReceiverReverseFailed" xml:space="preserve"><value>Could not create the Companion reverse connection: {0}</value></data>
-  <data name="PhoneReceiverConfigureFailed" xml:space="preserve"><value>Could not configure the DX Companion receiver: {0}</value></data>
-  <data name="PhoneReceiverProtocolUnsupported" xml:space="preserve"><value>Unsupported Companion transfer protocol.</value></data>
+  <data name="PhoneReceiverReverseFailed" xml:space="preserve"><value>Could not create the Companion app reverse connection: {0}</value></data>
+  <data name="PhoneReceiverConfigureFailed" xml:space="preserve"><value>Could not configure the DX Companion app receiver: {0}</value></data>
+  <data name="PhoneReceiverProtocolUnsupported" xml:space="preserve"><value>Unsupported Companion app transfer protocol.</value></data>
   <data name="PhoneReceiverSessionExpired" xml:space="preserve"><value>The DX Manager transfer session has expired.</value></data>
   <data name="PhoneReceiverInvalidItemCount" xml:space="preserve"><value>The transfer item count is invalid.</value></data>
   <data name="PhoneReceiverInvalidItemType" xml:space="preserve"><value>The transfer item type is invalid.</value></data>
@@ -594,9 +598,9 @@
   <data name="SessionLog.WirelessUsbPolicyDisconnected" xml:space="preserve"><value>Disconnected wireless ADB due to the USB policy: {0}</value></data>
   <data name="SessionLog.WirelessPairFailed" xml:space="preserve"><value>Wireless ADB pairing failed: {0}</value></data>
   <data name="SessionLog.WirelessPaired" xml:space="preserve"><value>Wireless ADB pairing completed: {0}</value></data>
-  <data name="SessionLog.CompanionShutdownDispatched" xml:space="preserve"><value>Windows shutdown cleanup packet sent to Companion: {0} connected, {1} sent</value></data>
-  <data name="SessionLog.CompanionShutdownSent" xml:space="preserve"><value>Companion Windows shutdown cleanup request sent.</value></data>
-  <data name="SessionLog.CompanionShutdownFailed" xml:space="preserve"><value>Companion Windows shutdown cleanup request failed.</value></data>
+  <data name="SessionLog.CompanionShutdownDispatched" xml:space="preserve"><value>Windows shutdown cleanup packet sent to Companion app: {0} connected, {1} sent</value></data>
+  <data name="SessionLog.CompanionShutdownSent" xml:space="preserve"><value>Companion app Windows shutdown cleanup request sent.</value></data>
+  <data name="SessionLog.CompanionShutdownFailed" xml:space="preserve"><value>Companion app Windows shutdown cleanup request failed.</value></data>
   <data name="SessionLog.Trimmed" xml:space="preserve"><value>Old log entries were removed. {0}</value></data>
   <data name="SessionLog.FileTransferChanged" xml:space="preserve"><value>File transfer status changed.</value></data>
   <data name="SessionLog.FileTransferError" xml:space="preserve"><value>An error occurred during file transfer.</value></data>
@@ -622,7 +626,7 @@
   <data name="AboutDeveloperText.Text" xml:space="preserve"><value>Developer: maze</value></data>
   <data name="AboutCopyrightText.Text" xml:space="preserve"><value>Copyright © 2026 maze</value></data>
   <data name="AboutLicenseText.Text" xml:space="preserve"><value>DX Manager is provided under the MIT License.</value></data>
-  <data name="AboutScrcpyText.Text" xml:space="preserve"><value>This program includes and uses scrcpy 5.0.1, open-source software distributed by Genymobile and Romain Vimont under the Apache License 2.0.</value></data>
+  <data name="AboutScrcpyText.Text" xml:space="preserve"><value>This program includes and uses scrcpy 5.0.1, open-source software distributed by Genymobile and Romain Vimont under the Apache License 2.0. The Native DeX helper includes code from ScrcpyDeX v1.1 under the same license.</value></data>
   <data name="AboutLibrariesText.Text" xml:space="preserve"><value>Bundled FFmpeg libraries are distributed under LGPL v2.1 or later, SDL3 under the zlib license, and libusb under LGPL v2.1 or later. See the third-party licenses for details.</value></data>
   <data name="AboutSamsungText.Text" xml:space="preserve"><value>This program works with Samsung DeX features on compatible Samsung devices, but is not produced, sponsored, endorsed, or distributed by Samsung Electronics. Samsung and Samsung DeX are trademarks of their respective owner.</value></data>
   <data name="AboutDisclaimerText.Text" xml:space="preserve"><value>Users are responsible for complying with applicable laws, device warranty terms, and organizational policies when using Android Developer options or ADB or changing device settings through DX Manager. To the extent permitted by law, the developer is not liable for data loss, configuration changes, device malfunction, or other direct or indirect damages arising from the use or misuse of this application.</value></data>
@@ -639,22 +643,35 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <data name="ExperimentalFpsWarningTitle" xml:space="preserve"><value>120 FPS warning</value></data>
-  <data name="ExperimentalFpsWarningAccept" xml:space="preserve"><value>Use 120 FPS</value></data>
-  <data name="ExperimentalFpsScreenWarning" xml:space="preserve"><value>120 FPS mode requires the phone screen to stay on. “Turn phone screen off” is automatically disabled and cannot be used in this mode.</value></data>
-  <data name="ExperimentalFpsRiskWarning" xml:space="preserve"><value>This mode increases heat and battery consumption. Displaying static images on an OLED screen for extended periods can cause permanent burn-in.</value></data>
-  <data name="ExperimentalFpsCareWarning" xml:space="preserve"><value>Avoid prolonged use or leaving the screen on unattended. Stop using this mode if the phone overheats.</value></data>
-  <data name="ExperimentalFpsLimitWarning" xml:space="preserve"><value>This is an experimental maximum FPS setting. Actual FPS may be lower depending on the device, app and input activity. A constant 120 FPS is not guaranteed.</value></data>
+  <data name="InputAiEnterCard.Header" xml:space="preserve"><value>AI app automatic line breaks</value></data>
+  <data name="InputAiEnterCard.Description" xml:space="preserve"><value>Convert Enter to Shift+Enter in supported apps.</value></data>
+  <data name="ConnectionDexDisplayMode.Header" xml:space="preserve"><value>Native DeX</value></data>
+  <data name="ConnectionDexDisplayMode.Description" xml:space="preserve"><value>Choose the DeX activation method for each phone.</value></data>
+  <data name="ConnectionNativeBluetoothAudio.Header" xml:space="preserve"><value>Keep Bluetooth audio when starting Native DeX</value></data>
+  <data name="ConnectionNativeBluetoothAudio.Description" xml:space="preserve"><value>Restore the Bluetooth audio output used before DeX started.</value></data>
+<data name="ExperimentalFpsWarningTitle" xml:space="preserve"><value>120 FPS warning</value></data>
+<data name="ExperimentalFpsWarningAccept" xml:space="preserve"><value>Use 120 FPS</value></data>
+<data name="ExperimentalFpsScreenWarning" xml:space="preserve"><value>120 FPS mode requires the phone screen to stay on. “Turn phone screen off” is automatically disabled and cannot be used in this mode.</value></data>
+<data name="ExperimentalFpsRiskWarning" xml:space="preserve"><value>This mode increases heat and battery consumption. Displaying static images on an OLED screen for extended periods can cause permanent burn-in.</value></data>
+<data name="ExperimentalFpsCareWarning" xml:space="preserve"><value>Avoid prolonged use or leaving the screen on unattended. Stop using this mode if the phone overheats.</value></data>
+<data name="ExperimentalFpsLimitWarning" xml:space="preserve"><value>This is an experimental maximum FPS setting. Actual FPS may be lower depending on the device, app and input activity. A constant 120 FPS is not guaranteed.</value></data>
+<data name="ExperimentalFpsOption" xml:space="preserve"><value>120 (Experimental)</value></data>
+<data name="ConnectionNative120AutoSwitch.Header" xml:space="preserve"><value>Automatically use simulated display for 120 FPS</value></data>
+<data name="ConnectionNative120AutoSwitch.Description" xml:space="preserve"><value>Skip the method notice. The 120 FPS usage warning still appears on every launch.</value></data>
+<data name="DiagnosticsAutoSaveLogs.Header" xml:space="preserve"><value>Automatically save session logs</value></data>
+<data name="DiagnosticsAutoSaveLogs.Description" xml:space="preserve"><value>Save session and diagnostic logs in the app logs folder. Off by default.</value></data>
+<data name="DiagnosticsEnvironmentText.Text" xml:space="preserve"><value>Not checked yet.</value></data>
+  <data name="InputHotkeyHint.Text" xml:space="preserve"><value>Press a non-modifier key together with any desired modifier keys.</value></data>
+  <data name="CommonToggleOn.Text" xml:space="preserve"><value>On</value></data>
+  <data name="CommonToggleOff.Text" xml:space="preserve"><value>Off</value></data>
   <data name="UpdateNoticeTitle" xml:space="preserve"><value>What's new in DX Manager {0}</value></data>
-  <data name="UpdateNoticeIntro" xml:space="preserve"><value>Here are the main changes in this version. Your existing settings are preserved.</value></data>
-  <data name="UpdateNoticeFps" xml:space="preserve"><value>• Added an experimental maximum 120 FPS option. The default remains 60 FPS. Heat, battery and burn-in warnings appear before every 120 FPS start.</value></data>
-  <data name="UpdateNoticeScreenOff" xml:space="preserve"><value>• 120 FPS disables phone screen-off; switching back to 30/60 FPS restores your previous setting. Actual FPS depends on the device, app and input activity.</value></data>
-  <data name="UpdateNoticeScrcpy" xml:space="preserve"><value>• Updated scrcpy to 5.0.1, including official fixes for Windows H.265 hardware decoding and other decoding issues.</value></data>
-  <data name="UpdateNoticeCompanion" xml:space="preserve"><value>• Included DX Companion: {0}. Install or update it on your phone manually through Settings.</value></data>
+  <data name="UpdateNoticeIntro" xml:space="preserve"><value>Highlights of DX Manager 3.0.0.</value></data>
+  <data name="UpdateNoticeFps" xml:space="preserve"><value>• Native DeX is the default activation mode. After disconnection, it waits about 30 seconds for the same phone to reconnect.</value></data>
+  <data name="UpdateNoticeScreenOff" xml:space="preserve"><value>• A 120 FPS DeX launch uses simulated display after you accept the switch.</value></data>
+  <data name="UpdateNoticeScrcpy" xml:space="preserve"><value>• New settings enable manual Enter / Shift+Enter switching. Enable AI app automatic line breaks in Settings when needed.</value></data>
+  <data name="UpdateNoticeCompanion" xml:space="preserve"><value>• Includes the shared DX Companion {0}. Install or update it under Settings → Companion.</value></data>
   <data name="UpdateNoticeConfirm" xml:space="preserve"><value>OK</value></data>
-  <data name="ExperimentalFpsOption" xml:space="preserve"><value>120 (Experimental)</value></data>
   <data name="ConnectionUsb.Content" xml:space="preserve"><value>USB</value></data>
   <data name="ConnectionWireless.Content" xml:space="preserve"><value>Wi-Fi</value></data>
-  <data name="DiagnosticsEnvironmentText.Text" xml:space="preserve"><value>The environment check has not started.</value></data>
   <data name="DiagnosticsReportStatusText.Text" xml:space="preserve"><value>Save a report with private data masked.</value></data>
 </root>

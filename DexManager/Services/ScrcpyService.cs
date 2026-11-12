@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -232,6 +232,7 @@ namespace DexManager.Services
                 _processRunner);
         }
 
+        public int LastExitCode { get; private set; }
         public event EventHandler RunningChanged;
 
         public void RequestShutdown()
@@ -362,6 +363,16 @@ namespace DexManager.Services
                     running ? _displayId : 0,
                     running && _stayAwakeRequested,
                     running && _turnScreenOffRequested);
+            }
+        }
+
+        public bool TryGetCachedDisplayForWindow(IntPtr window, out int displayId)
+        {
+            lock (_syncRoot)
+            {
+                displayId = _displayId;
+                return window != IntPtr.Zero && window == _mainWindowHandle &&
+                    _process != null && displayId > 0;
             }
         }
 
@@ -680,7 +691,7 @@ namespace DexManager.Services
                         _mainWindowHandle = IntPtr.Zero;
                         _fileTransferSessionId = transferSessionId;
 
-                        _logService.Info(LocalizationService.Format(
+                        _logService.Progress(LocalizationService.Format(
                             "Log.Scrcpy.Start",
                             arguments));
                     }
@@ -916,6 +927,7 @@ namespace DexManager.Services
                 if (ReferenceEquals(_process, process) && !_stopping)
                 {
                     serial = _targetSerial;
+                    try { LastExitCode = process.ExitCode; } catch (InvalidOperationException) { LastExitCode = 2; }
                     _process = null;
                     _stayAwakeRequested = false;
                     _turnScreenOffRequested = false;
@@ -930,7 +942,7 @@ namespace DexManager.Services
 
             if (!ownedProcess) return;
             _fileTransferCoordinator.EndSession(transferSessionId);
-            _logService.Info(DeviceLogFormatter.ForSerial(
+            _logService.Progress(DeviceLogFormatter.ForSerial(
                 serial,
                 LocalizationService.Get(
                     "Log.Scrcpy.ProcessExited")));
@@ -971,7 +983,7 @@ namespace DexManager.Services
                     _fileTransferCoordinator.BindWindow(
                         transferSessionId,
                         handle);
-                    _logService.Info(DeviceLogFormatter.ForSerial(
+                    _logService.Progress(DeviceLogFormatter.ForSerial(
                         GetActiveSerialForProcess(process),
                         LocalizationService.Format(
                             "Log.Scrcpy.WindowReady",
@@ -1211,7 +1223,7 @@ namespace DexManager.Services
         private void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (!string.IsNullOrWhiteSpace(e.Data))
-                _logService.Info(DeviceLogFormatter.ForSerial(
+                _logService.ToolOutput("INFO",DeviceLogFormatter.ForSerial(
                     GetActiveSerialForProcess(sender as Process),
                     "[scrcpy] " + e.Data));
         }
@@ -1222,10 +1234,7 @@ namespace DexManager.Services
             var message = DeviceLogFormatter.ForSerial(
                 GetActiveSerialForProcess(sender as Process),
                 "[scrcpy] " + e.Data);
-            if (DeviceLogFormatter.IsInformationalScrcpyErrorLine(e.Data))
-                _logService.Info(message);
-            else
-                _logService.Warning(message);
+            _logService.ToolOutput(DeviceLogFormatter.IsInformationalScrcpyErrorLine(e.Data)?"INFO":"WARN",message);
         }
 
         private string GetActiveSerialForProcess(Process process)

@@ -10,3 +10,7 @@ companion/licenses/** -text -whitespace
 
 # Official scrcpy hashes include the original license bytes.
 DexManager/tools/scrcpy/** -text -whitespace
+
+# Preserve the pinned native dependency and license bytes.
+NativeDex/vendor/** -text
+DexManager/licenses/ScrcpyDex-APACHE-2.0.txt -text

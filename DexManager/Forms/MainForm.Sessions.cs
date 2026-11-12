@@ -134,6 +134,8 @@ namespace DexManager.Forms
                 var orchestrator = _orchestrator;
                 var launchDirtyState = _modeSettingsDirty;
                 var launchSettings = CaptureSelectedRunSettings();
+                launchSettings = PrepareNative120Start(launchSettings);
+                if(launchSettings==null)return;
                 var scrcpySettings = launchSettings.Scrcpy;
                 if (!await ConfirmExperimentalFrameRateAsync(scrcpySettings.MaxFps)) return;
                 if (string.IsNullOrWhiteSpace(serial))
@@ -237,7 +239,7 @@ namespace DexManager.Forms
                 var launchContext = _selectedDeviceContext;
                 var service = _singleWindowService;
                 var launchDirtyState = _modeSettingsDirty;
-                if (!await ConfirmExperimentalFrameRateAsync(settings.MaxFps)) return;
+                if (!await ConfirmSingleWindowFrameRateAsync(settings.MaxFps, _orchestrator)) return;
                 if (string.IsNullOrWhiteSpace(serial))
                 {
                     throw new InvalidOperationException(

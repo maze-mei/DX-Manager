@@ -4,7 +4,7 @@
 
 The official Android project is now published under [companion/](../companion/README.md).
 It is the version-pinned public snapshot of the canonical shared component used by both PC editions.
-Current release: **2.1.6 / code13 / protocol1 / Android 13+**.
+Current release: **3.0.0 / code16 / guardian 1 and 3 / Android 13+**.
 
 The Windows source build uses the included snapshot when the maintainer's shared directory is absent.
 See [Building](../docs/BUILDING.md). Do not restore this old directory as a second editable Android project.

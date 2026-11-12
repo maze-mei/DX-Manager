@@ -1054,3 +1054,55 @@ kept on disk but detached from current instructions. No binaries or image pixels
 Open publication preparation: new screenshots, standalone public shared-Companion dependency/setup,
 and preservation of remote-only macOS material during future integration.
 See DOCUMENTATION_AUDIT_2026-10-16.md and SCREENSHOT_PLAN_v2.5.0.md for exact file actions and shot names.
+
+## 2026-11-08 Windows v3.0.0 release preparation
+
+The local release/v3.0.0 worktree starts at the published main commit
+f391baae391b5aca39d68905645af3982fb777cc. It combines the tested Windows
+Native DeX work with the published updater, first-run notice, environment
+diagnostics, and macOS source. New settings enable manual Enter switching
+and leave AI app automatic line breaks off. The test worktree was preserved.
+
+The Store workroom confirmed ScrcpyDeX v1.1 commit eebbba903b73d54bbd13210096ea28fe31e51200
+and Apache-2.0 attribution. The original LICENSE matches the pinned GitHub
+blob. The Windows license tab reads the notice and the full license from
+the package. Both files also appear in helper13. The shared code15 APK and
+its certificate match the official snapshot. The Android share label still
+contains the original test wording.
+
+Windows Release built with zero warnings and errors. The regression suites
+passed, including first-run consent30, updates48, English localization38,
+settings84, native Java233, native Windows198 and FPS/document checks394.
+English and Korean screenshots show the compiled settings page. The license
+tab's text was checked directly because WinForms DrawToBitmap cannot capture
+the RichTextBox body.
+
+The final output is E:\vs\dex system\dist\v3.0.0. The stable archive name is
+DX-Manager-win-x64.zip and its inner folder is DX Manager v3.0.0. Verified
+all 40 archive files and preserved the existing v2.5.0 executable and ZIP.
+The source and release are local, pending the maintainer's upload request.
+
+ZIP SHA256: 87E8D949385B5C4C4A1E62B3633A7A8EE272FFC537D2AC83B9F50122FB043A64
+EXE SHA256: 2BF75167663320DE97947C36F3011A4165FCA8B0AC5682E47B435A35AAF2B8F2
+Helper SHA256: FA143F8726BA08338AC907B868FDD31B742308BFFA0E7106F81ECEE83484D6EA
+
+## 2026-11-09 Windows v3.0.0 About and shared Companion update
+
+The Korean and English About panels use the Store wording for scrcpy 5.0.1,
+the ScrcpyDeX v1.1 Apache 2.0 attribution and the support email. The shared
+Companion 3.0.0 build advances to code 16 with the official signing certificate.
+It uses the public share and accessibility service labels and reads its About
+version from the installed package. The public source snapshot matches the
+canonical release across 130 source files and the signed APK.
+
+The x64 Release build passed with zero warnings and errors. The Windows
+verification suites passed, including 44 localization checks. The Android
+signed build, lint and 98 unit tests passed. Phone installation remains untested.
+
+The fixed local v3.0.0 folder and ZIP now use the verified code 16 build.
+All 40 archived file hashes match the staged payload. The replacement touched
+only the EXE, Korean resource DLL, Companion APK and ZIP.
+
+ZIP SHA256: BC82B14764A66B49B5B4255C8B54A5E1E6D20AD7F5C566CECB6C6D28F83E8389
+EXE SHA256: EE15B86C20911411F3F2AE053C4D2954B781D9553770A22506FAE0EBE14CFA4C
+APK SHA256: 43443968AFA2DCF59DA251A3EA909AC5A55064DF8E8158A11C369BACB26F6A29

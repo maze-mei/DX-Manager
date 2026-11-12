@@ -38,7 +38,7 @@
     <string name="cleanup_stay_awake_short">Turn off Stay awake</string>
     <string name="cleanup_stay_awake_detail">Developer options &gt; Stay awake is enabled.</string>
     <string name="cleanup_both_button_short">Clean up all</string>
-    <string name="guardian_disconnect_cleanup_short">Automatically clean up when the DX Manager connection ends.</string>
+    <string name="guardian_disconnect_cleanup_short">Simulated-display cleanup timing. Native DeX uses its separate grace of about 30 seconds.</string>
     <string name="transfer_page_title">File transfer</string>
     <string name="transfer_page_subtitle">Send only the files or folder you explicitly select.</string>
     <string name="transfer_transport_connected">%1$s connection · Ready to receive</string>
@@ -118,11 +118,11 @@
     <string name="permission_description">This protected Android permission cannot be granted inside the app. Use the verified permission button in DX Manager.</string>
     <string name="widget_tile_hint">Add the DX Companion Quick Settings tile or compact 2 × 1 home-screen widget for one-tap cleanup. Their action follows the selections above.</string>
     <string name="guardian_disconnect_cleanup_title">Cleanup after connection loss</string>
-    <string name="guardian_disconnect_cleanup_description">After the configured USB or Wi-Fi connection is lost, DX Companion waits for this time before removing the remaining virtual display and turning off Stay awake. Reconnecting cancels the cleanup.</string>
+    <string name="guardian_disconnect_cleanup_description">After connection loss, wait this long before cleaning up simulated displays and Stay awake. Reconnection cancels cleanup. Native DeX independently cleans up about 30 seconds after loss is detected; its audio/power correction happens immediately.</string>
     <string-array name="guardian_cleanup_delay_entries">
-        <item>Clean up immediately after disconnection</item>
+        <item>Clean up immediately after disconnection (default)</item>
         <item>After 1 minute</item>
-        <item>After 5 minutes (default)</item>
+        <item>After 5 minutes</item>
         <item>After 10 minutes</item>
         <item>After 30 minutes</item>
         <item>Do not clean up automatically</item>
@@ -170,4 +170,20 @@
     <string name="transfer_failed">Transfer failed: %1$s</string>
     <string name="transfer_canceled">Transfer canceled.</string>
     <string name="transfer_cancel">Cancel</string>
+    <string name="foreground_accessibility_label">App switch detection</string>
+    <string name="foreground_accessibility_description">Enables automatic Shift+Enter for AI apps. Only active app and display information is used; typed content is not saved or sent. Enable DX Companion in Accessibility settings.</string>
+    <string name="foreground_accessibility_button">Open Accessibility settings</string>
+    <string name="foreground_accessibility_enabled">App switch detection: enabled</string>
+    <string name="foreground_accessibility_disabled">App switch detection: disabled · Default Enter</string>
+
+    <string name="native_display_active">Native DeX display</string>
+    <string name="native_display_pending">Native DeX display · waiting for reconnection</string>
+    <string name="home_native_dex_running">Native DeX is running</string>
+    <string name="home_native_dex_retained">Native DeX waiting for a viewer</string>
+    <string name="home_native_dex_in_use_detail">The DeX screen is in use on your PC.</string>
+    <string name="home_native_dex_retained_detail">Waiting for the PC viewer. After connection loss, the display cleans up in about 30 seconds.</string>
+    <string name="home_native_dex_running_detail">A DX Manager Native DeX session is running on your phone.</string>
+    <string name="target_status_unknown">Not confirmed</string>
+    <string name="native_display_checking">Checking the Native DeX display state</string>
+    <string name="home_cleanup_checking">Internal DeX state needs confirmation</string>
 </resources>

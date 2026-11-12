@@ -17,7 +17,10 @@ namespace DexManager.Services
         private readonly KeyMappingSettings _settings;
         private readonly LogService _logService;
         private readonly NativeMethods.LowLevelKeyboardProc _callback;
+        private readonly ForegroundAppCache _foregroundApps;
+        private volatile AppKeyRuleResolver _appRules;
         private IntPtr _hookHandle;
+        private bool _powerHeld;
         private bool _enterHeld;
         private volatile bool _hangulHeld;
         private bool _scrollLockHeld;
@@ -36,7 +39,8 @@ namespace DexManager.Services
             AdbService adbService,
             AppSettings appSettings,
             KeyMappingSettings settings,
-            LogService logService)
+            LogService logService,
+            ForegroundAppCache foregroundApps = null)
         {
             _scrcpyService = scrcpyService;
             _singleWindowService = singleWindowService;
@@ -45,11 +49,19 @@ namespace DexManager.Services
             _settings = settings;
             _logService = logService;
             _callback = HookCallback;
+            _foregroundApps = foregroundApps;
+            ReloadAppRules();
+        }
+
+        internal void ReloadAppRules()
+        {
+            _appRules = new AppKeyRuleResolver(Settings.AppKeyProfiles);
         }
 
         public void Start()
         {
             if (_hookHandle != IntPtr.Zero) return;
+            ReloadAppRules();
 
             using (var process = Process.GetCurrentProcess())
             using (var module = process.MainModule)
@@ -67,17 +79,17 @@ namespace DexManager.Services
                     LocalizationService.Get(
                         "Error.KeyMapping.HookFailed"));
 
-            _logService.Info(LocalizationService.Get(
+            _logService.Progress(LocalizationService.Get(
                 "Log.KeyMapping.Started"));
             if (Settings.ConvertEnterToShiftEnter)
             {
                 _enterShiftMode = false;
-                _logService.Info(LocalizationService.Get(
+                _logService.Progress(LocalizationService.Get(
                     "Log.KeyMapping.EnterConversionEnabled"));
             }
             else
             {
-                _logService.InfoOnce(
+                _logService.ProgressOnce(
                     "key-mapping.enter-conversion-disabled",
                     LocalizationService.Get(
                         "Log.KeyMapping.EnterConversionDisabled"));
@@ -88,12 +100,13 @@ namespace DexManager.Services
         {
             ReleaseRightShiftMapping();
             _enterHeld = false;
+            _powerHeld = false;
             _hangulHeld = false;
             _scrollLockHeld = false;
             if (_hookHandle == IntPtr.Zero) return;
             NativeMethods.UnhookWindowsHookEx(_hookHandle);
             _hookHandle = IntPtr.Zero;
-            _logService.Info(LocalizationService.Get(
+            _logService.Progress(LocalizationService.Get(
                 "Log.KeyMapping.Stopped"));
         }
 
@@ -130,7 +143,12 @@ namespace DexManager.Services
             if (Settings.LogKeyboardDiagnostics && IsHangulKey(data))
                 LogKeyboardDiagnostic(data, message);
 
+            if(keyUp&&data.VirtualKey==0x50&&_powerHeld){_powerHeld=false;return new IntPtr(1);}
+            if(keyDown&&data.VirtualKey==0x50&&_powerHeld)return new IntPtr(1);
             if (keyUp && ReleaseOwnedKey(data)) return new IntPtr(1);
+            // Keep a converted physical press owned across app/window changes.
+            if (keyDown && data.VirtualKey == NativeMethods.VkReturn && _enterHeld)
+                return new IntPtr(1);
 
             IntPtr foreground;
             if (!IsScrcpyForeground(out foreground))
@@ -140,6 +158,9 @@ namespace DexManager.Services
                     wParam,
                     lParam);
 
+            if(keyDown&&data.VirtualKey==0x50&&IsKeyDown(0xA4)&&!IsKeyDown(0x11)&&!IsKeyDown(0x10)) {
+                if(PhonePowerKeyDispatcher.Queue(foreground,_scrcpyService,_singleWindowService,_adbService,_logService)){_powerHeld=true;return new IntPtr(1);}
+            }
             if (Settings.LogKeyboardDiagnostics &&
                 !IsHangulKey(data) &&
                 IsKeyboardDiagnosticTarget(data))
@@ -169,7 +190,7 @@ namespace DexManager.Services
                         if (!_rightShiftMappingLogged)
                         {
                             _rightShiftMappingLogged = true;
-                            _logService.Info(LocalizationService.Get(
+                            _logService.Progress(LocalizationService.Get(
                                 "Log.KeyMapping.RightShiftCompatibility"));
                         }
                     }
@@ -178,14 +199,14 @@ namespace DexManager.Services
 
             }
 
-            if (Settings.ConvertEnterToShiftEnter &&
+            if (!Settings.AutoAppEnterEnabled && Settings.ConvertEnterToShiftEnter &&
                 data.VirtualKey == NativeMethods.VkScroll)
             {
                 if (keyDown && !_scrollLockHeld)
                 {
                     _scrollLockHeld = true;
                     _enterShiftMode = !_enterShiftMode;
-                    _logService.Info(LocalizationService.Format(
+                    _logService.Progress(LocalizationService.Format(
                         "Log.KeyMapping.EnterMode",
                         _enterShiftMode
                             ? "Shift+Enter"
@@ -246,7 +267,7 @@ namespace DexManager.Services
                 return new IntPtr(1);
             }
 
-            if (Settings.ConvertEnterToShiftEnter &&
+            if (!Settings.AutoAppEnterEnabled && Settings.ConvertEnterToShiftEnter &&
                 data.VirtualKey == NativeMethods.VkReturn &&
                 _enterShiftMode)
             {
@@ -270,6 +291,18 @@ namespace DexManager.Services
                 return new IntPtr(1);
             }
 
+            if (Settings.AutoAppEnterEnabled && keyDown &&
+                data.VirtualKey == NativeMethods.VkReturn &&
+                ShouldApplyAppEnterRule(foreground))
+            {
+                if (TrySendAutomaticShiftEnter(foreground))
+                {
+                    _enterHeld = true;
+                    return new IntPtr(1);
+                }
+                // No ADB fallback. A failed injection preserves the physical Enter.
+            }
+
             if (Settings.HandleRightWindowsKey &&
                 data.VirtualKey == NativeMethods.VkRwin &&
                 keyUp)
@@ -282,6 +315,47 @@ namespace DexManager.Services
                 code,
                 wParam,
                 lParam);
+        }
+
+        private bool ShouldApplyAppEnterRule(IntPtr window)
+        {
+            if (_foregroundApps == null) return false;
+            int displayId;
+            if (!_scrcpyService.TryGetCachedDisplayForWindow(window, out displayId) &&
+                !_singleWindowService.TryGetCachedDisplayForWindow(window, out displayId))
+                return false;
+            return _appRules.ShouldConvertEnter(_foregroundApps.GetIdentity(displayId),
+                IsKeyDown(NativeMethods.VkShift), IsKeyDown(NativeMethods.VkControl),
+                IsKeyDown(NativeMethods.VkMenu),
+                IsKeyDown(NativeMethods.VkLwin) || IsKeyDown(NativeMethods.VkRwin));
+        }
+
+        private bool TrySendAutomaticShiftEnter(IntPtr window)
+        {
+            if (!IsExpectedForeground(window)) return false;
+            var inputs = new[]
+            {
+                CreateScanCodeInput(NativeMethods.LeftShiftScanCode, false),
+                CreateScanCodeInput(NativeMethods.EnterScanCode, false),
+                CreateScanCodeInput(NativeMethods.EnterScanCode, true),
+                CreateScanCodeInput(NativeMethods.LeftShiftScanCode, true)
+            };
+            var sent = NativeMethods.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(Input)));
+            if (sent == inputs.Length) return true;
+            // Release any partially injected modifiers without logging/I/O on the hook.
+            if (sent > 0)
+            {
+                var releases = sent == 2
+                    ? new[] { CreateScanCodeInput(NativeMethods.EnterScanCode, true),
+                        CreateScanCodeInput(NativeMethods.LeftShiftScanCode, true) }
+                    : new[] { CreateScanCodeInput(NativeMethods.LeftShiftScanCode, true) };
+                NativeMethods.SendInput((uint)releases.Length, releases, Marshal.SizeOf(typeof(Input)));
+            }
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                _logService.Warning("AI keymap: native Shift+Enter injection failed; ADB fallback is disabled.");
+            });
+            return false;
         }
 
         private bool IsScrcpyForeground(out IntPtr foreground)

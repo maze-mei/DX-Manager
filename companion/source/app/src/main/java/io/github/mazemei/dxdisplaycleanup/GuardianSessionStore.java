@@ -15,23 +15,32 @@ final class GuardianSessionStore {
         final String token;
         final String transport;
         final long connectedAtMillis;
+        final int protocolVersion;
 
         Session(boolean enabled, int port, String token, String transport,
                 long connectedAtMillis) {
+            this(enabled, port, token, transport, connectedAtMillis, 1);
+        }
+
+        Session(boolean enabled, int port, String token, String transport,
+                long connectedAtMillis, int protocolVersion) {
             this.enabled = enabled;
             this.port = port;
             this.token = token == null ? "" : token;
             this.transport = normalizeTransport(transport);
             this.connectedAtMillis = connectedAtMillis;
+            this.protocolVersion = protocolVersion;
         }
 
         boolean isReady() {
-            return enabled && port > 0 && port <= 65535 && !token.isEmpty();
+            return enabled && port > 0 && port <= 65535 && !token.isEmpty()
+                    && isSupportedProtocol(protocolVersion);
         }
 
         boolean matches(Session other) {
             return other != null && enabled == other.enabled
                     && port == other.port && token.equals(other.token)
+                    && protocolVersion == other.protocolVersion
                     && transport.equals(other.transport);
         }
     }
@@ -42,6 +51,9 @@ final class GuardianSessionStore {
     private static final String KEY_TOKEN = "token";
     private static final String KEY_TRANSPORT = "transport";
     private static final String KEY_CONNECTED_AT = "connected_at";
+    private static final String KEY_PROTOCOL = "protocol_version";
+
+    static boolean isSupportedProtocol(int version) { return GuardianWireProtocol.supported(version); }
 
     private GuardianSessionStore() {
     }
@@ -54,17 +66,26 @@ final class GuardianSessionStore {
                 preferences.getInt(KEY_PORT, DEFAULT_PORT),
                 preferences.getString(KEY_TOKEN, ""),
                 preferences.getString(KEY_TRANSPORT, TRANSPORT_UNKNOWN),
-                preferences.getLong(KEY_CONNECTED_AT, 0L));
+                preferences.getLong(KEY_CONNECTED_AT, 0L),
+                preferences.getInt(KEY_PROTOCOL, 1));
     }
 
     static void save(Context context, int port, String token,
                      String transport) {
+        save(context, port, token, transport, 1);
+    }
+
+    static void save(Context context, int port, String token,
+                     String transport, int protocolVersion) {
+        if (!isSupportedProtocol(protocolVersion))
+            throw new IllegalArgumentException("Unsupported Guardian protocol");
         SharedPreferences preferences = context.getSharedPreferences(
                 PREFS, Context.MODE_PRIVATE);
         String normalizedToken = token == null ? "" : token;
         String normalizedTransport = normalizeTransport(transport);
         boolean sameSession = preferences.getBoolean(KEY_ENABLED, false)
                 && preferences.getInt(KEY_PORT, DEFAULT_PORT) == port
+                && preferences.getInt(KEY_PROTOCOL, 1) == protocolVersion
                 && normalizedToken.equals(
                 preferences.getString(KEY_TOKEN, ""))
                 && normalizedTransport.equals(
@@ -79,6 +100,7 @@ final class GuardianSessionStore {
                 .edit()
                 .putBoolean(KEY_ENABLED, true)
                 .putInt(KEY_PORT, port)
+                .putInt(KEY_PROTOCOL, protocolVersion)
                 .putString(KEY_TOKEN, normalizedToken)
                 .putString(KEY_TRANSPORT, normalizedTransport)
                 .putLong(KEY_CONNECTED_AT, connectedAtMillis)

@@ -38,7 +38,7 @@
     <string name="cleanup_stay_awake_short">절전 모드 해제</string>
     <string name="cleanup_stay_awake_detail">개발자 옵션의 절전 모드 해제가 활성화되어 있습니다.</string>
     <string name="cleanup_both_button_short">모두 정리</string>
-    <string name="guardian_disconnect_cleanup_short">연결이 종료되면 자동으로 정리 작업을 실행합니다.</string>
+    <string name="guardian_disconnect_cleanup_short">보조 디스플레이 정리 시간입니다. 네이티브 DeX는 별도로 약 30초 뒤 정리합니다.</string>
     <string name="transfer_page_title">파일 전송</string>
     <string name="transfer_page_subtitle">직접 선택한 파일과 폴더만 PC로 보냅니다.</string>
     <string name="transfer_transport_connected">%1$s 연결 · 수신 준비 완료</string>
@@ -118,11 +118,11 @@
     <string name="permission_description">이 Android 보호 권한은 앱 안에서 허용할 수 없습니다. DX Manager의 검증된 권한 부여 버튼을 사용하십시오.</string>
     <string name="widget_tile_hint">DX Companion 빠른 설정 타일이나 2 × 1 홈 화면 위젯을 추가하면 한 번 눌러서 정리할 수 있습니다. 위에서 선택한 항목에 적용됩니다.</string>
     <string name="guardian_disconnect_cleanup_title">연결 해제 후 자동 정리</string>
-    <string name="guardian_disconnect_cleanup_description">설정된 USB 또는 Wi-Fi 연결이 끊어지면 이 시간 동안 기다린 뒤 남은 가상화면을 제거하고 절전모드 해제를 끕니다. 다시 연결되면 정리를 취소합니다.</string>
+    <string name="guardian_disconnect_cleanup_description">연결이 끊기면 이 시간 뒤 남은 보조 디스플레이와 절전모드 해제를 정리합니다. 재연결되면 취소합니다. 네이티브 DeX는 이 설정과 무관하게 단절 감지 후 약 30초 뒤 정리하며 사운드 전환과 절전 해제는 바로 처리합니다.</string>
     <string-array name="guardian_cleanup_delay_entries">
-        <item>연결 해제 시 바로 정리</item>
+        <item>연결 해제 시 바로 정리 (기본값)</item>
         <item>1분 후</item>
-        <item>5분 후 (기본값)</item>
+        <item>5분 후</item>
         <item>10분 후</item>
         <item>30분 후</item>
         <item>자동으로 정리하지 않음</item>
@@ -170,4 +170,20 @@
     <string name="transfer_failed">전송 실패: %1$s</string>
     <string name="transfer_canceled">전송을 취소했습니다.</string>
     <string name="transfer_cancel">취소</string>
+    <string name="foreground_accessibility_label">앱 전환 감지</string>
+    <string name="foreground_accessibility_description">AI 앱의 Enter 자동 줄바꿈에 필요합니다. 활성 앱과 화면 정보를 확인하며 입력 내용은 저장하거나 전송하지 않습니다. 접근성 설정에서 DX Companion를 켜 주세요.</string>
+    <string name="foreground_accessibility_button">접근성 설정 열기</string>
+    <string name="foreground_accessibility_enabled">앱 전환 감지: 켜짐</string>
+    <string name="foreground_accessibility_disabled">앱 전환 감지: 꺼짐 · 기본 Enter 사용</string>
+
+    <string name="native_display_active">네이티브 DeX 화면</string>
+    <string name="native_display_pending">네이티브 DeX 화면 · 재연결 대기</string>
+    <string name="home_native_dex_running">네이티브 DeX 실행 중</string>
+    <string name="home_native_dex_retained">네이티브 DeX 연결 대기</string>
+    <string name="home_native_dex_in_use_detail">PC에서 DeX 화면을 사용 중입니다.</string>
+    <string name="home_native_dex_retained_detail">PC 화면 연결을 기다립니다. 연결이 끊기면 약 30초 뒤 자동 정리됩니다.</string>
+    <string name="home_native_dex_running_detail">휴대폰에서 DX Manager의 네이티브 DeX가 실행 중입니다.</string>
+    <string name="target_status_unknown">확인 불가</string>
+    <string name="native_display_checking">네이티브 DeX 화면 상태를 확인하고 있습니다</string>
+    <string name="home_cleanup_checking">내부 DeX 상태 확인이 필요합니다</string>
 </resources>

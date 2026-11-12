@@ -15,6 +15,7 @@ namespace DexManager.Forms
         private readonly Panel _tabPanel;
         private readonly ThemedButton _noticesButton;
         private readonly ThemedButton _scrcpyButton;
+        private readonly ThemedButton _scrcpyDexButton;
         private readonly RichTextBox _contentBox;
         private readonly Panel _bottomPanel;
         private readonly ThemedButton _closeButton;
@@ -22,6 +23,7 @@ namespace DexManager.Forms
         private readonly Label _guideLabel;
         private readonly string _noticesText;
         private readonly string _scrcpyLicenseText;
+        private readonly string _scrcpyDexLicenseText;
 
         public ThirdPartyLicensesForm()
         {
@@ -37,6 +39,9 @@ namespace DexManager.Forms
                     "THIRD_PARTY_NOTICES.md"));
             _scrcpyLicenseText = ReadBundledText(
                 Path.Combine("licenses", "scrcpy-LICENSE.txt"));
+            _scrcpyDexLicenseText = ReadBundledText(Path.Combine("licenses", "ScrcpyDex-NOTICE.txt")) +
+                Environment.NewLine + Environment.NewLine +
+                ReadBundledText(Path.Combine("licenses", "ScrcpyDex-APACHE-2.0.txt"));
 
             _topPanel = new Panel
             {
@@ -97,7 +102,7 @@ namespace DexManager.Forms
                 160);
             _noticesButton.Click += delegate
             {
-                ShowDocument(_noticesText, true);
+                ShowDocument(_noticesText, _noticesButton);
             };
             _scrcpyButton = CreateTabButton(
                 LocalizationService.Get("Licenses.ScrcpyTab"),
@@ -105,10 +110,19 @@ namespace DexManager.Forms
                 190);
             _scrcpyButton.Click += delegate
             {
-                ShowDocument(_scrcpyLicenseText, false);
+                ShowDocument(_scrcpyLicenseText, _scrcpyButton);
+            };
+            _scrcpyDexButton = CreateTabButton(
+                LocalizationService.Get("Licenses.ScrcpyDexTab"),
+                370,
+                220);
+            _scrcpyDexButton.Click += delegate
+            {
+                ShowDocument(_scrcpyDexLicenseText, _scrcpyDexButton);
             };
             _tabPanel.Controls.Add(_noticesButton);
             _tabPanel.Controls.Add(_scrcpyButton);
+            _tabPanel.Controls.Add(_scrcpyDexButton);
 
             _contentBox = new RichTextBox
             {
@@ -131,7 +145,7 @@ namespace DexManager.Forms
             Controls.Add(_topPanel);
 
             ApplyCurrentTheme();
-            ShowDocument(_noticesText, true);
+            ShowDocument(_noticesText, _noticesButton);
         }
 
         private ThemedButton CreateTabButton(
@@ -170,10 +184,11 @@ namespace DexManager.Forms
             }
         }
 
-        private void ShowDocument(string text, bool noticesSelected)
+        private void ShowDocument(string text, ThemedButton selected)
         {
-            _noticesButton.Primary = noticesSelected;
-            _scrcpyButton.Primary = !noticesSelected;
+            _noticesButton.Primary = selected == _noticesButton;
+            _scrcpyButton.Primary = selected == _scrcpyButton;
+            _scrcpyDexButton.Primary = selected == _scrcpyDexButton;
             _contentBox.Text = text ?? string.Empty;
             _contentBox.SelectionStart = 0;
             _contentBox.SelectionLength = 0;
@@ -197,6 +212,7 @@ namespace DexManager.Forms
             _tabPanel.BackColor = theme.CardBackground;
             _noticesButton.BackColor = theme.CardBackground;
             _scrcpyButton.BackColor = theme.CardBackground;
+            _scrcpyDexButton.BackColor = theme.CardBackground;
             _contentBox.BackColor = theme.CardBackground;
             _contentBox.ForeColor = theme.TextSecondary;
             _closeButton.BackColor = theme.WindowBackground;

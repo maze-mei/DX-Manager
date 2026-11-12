@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -153,6 +153,7 @@ namespace DexManager.Forms
         }
         private void ApplyGeneralSettingsChanges(bool defaultsRestored)
         {
+            _logService.ConfigureAutomaticLogs(_settings.Features.AutoSaveSessionLogs,AppDomain.CurrentDomain.BaseDirectory);
             if (_lastAutoStartEnabled && !_settings.Features.AutoStartDexOnDeviceConnected) System.Threading.Interlocked.Increment(ref _autoStartSettingsGeneration);
             _lastAutoStartEnabled = _settings.Features.AutoStartDexOnDeviceConnected;
             if (defaultsRestored)
@@ -199,6 +200,7 @@ namespace DexManager.Forms
                     _settings.Features.AutoHideEnabled,
                     _settings.Timing.AutoHideIdleSeconds);
                 context.MiniBar.ApplySettings();
+                context.KeyMapping.ReloadAppRules();
                 context.Runtime.PhoneTransfers.ApplySettings();
             }
             _wirelessAdbService.SynchronizeTargetWithSettings();
@@ -267,8 +269,11 @@ namespace DexManager.Forms
             if (_exitInProgress) return;
 
             _exitInProgress = true;
+            _logService.Diagnostic("Shutdown", "Explicit application exit requested.");
+            TraceExitState("before-runtime-shutdown-request");
             RequestAllRuntimeShutdown();
             var wakeSerials = CaptureWakeSerials();
+            _logService.Diagnostic("Shutdown", "Captured wake targets: count="+wakeSerials.Count+"; serials="+string.Join(",",wakeSerials));
             var cleanupSerial = GetSelectedDeviceSerial();
             TryCleanup(
                 "mini control bar",
@@ -303,11 +308,37 @@ namespace DexManager.Forms
             return serials;
         }
 
+        private void TraceExitState(string stage)
+        {
+            try
+            {
+                foreach(var context in GetAllDeviceContexts())
+                {
+                    var scrcpy=context.Runtime.Scrcpy.GetSessionSnapshot();
+                    var native=context.Runtime.Dex.RetainedNativeLease;
+                    string original;
+                    var hasOriginal=TryGetStayAwakeOriginalForContext(context,context.ActiveSerial,out original);
+                    _logService.Diagnostic("Shutdown", "State stage="+stage+"; identity="+context.Identity+
+                        "; activeSerial="+context.ActiveSerial+"; connected="+context.WasConnected+
+                        "; generation="+context.ConnectionGeneration+"; scrcpyRunning="+scrcpy.IsRunning+
+                        "; screenOffRequested="+scrcpy.ScreenOffRequested+"; singleWindowCount="+context.Runtime.SingleWindows.RunningCount+
+                        "; nativePending="+(native!=null&&native.NativeStartRequested)+
+                        "; nativeDisplay="+(native==null?-1:native.DisplayId)+
+                        "; originalStayAwake="+(hasOriginal?original:"<not-recorded>"));
+                }
+            }
+            catch(Exception error){_logService.Diagnostic("Shutdown","State snapshot unavailable: "+error.GetType().Name+": "+error.Message);}
+        }
+
         private async Task RunExitCleanupAsync(
             IList<string> wakeSerials,
             string cleanupSerial)
         {
+            _logService.Diagnostic("Shutdown","Runtime session cleanup begin; wakeTargetCount="+wakeSerials.Count);
+            var runtimeCleanupWatch=System.Diagnostics.Stopwatch.StartNew();
             await CleanupAllRuntimeSessionsAsync().ConfigureAwait(false);
+            _logService.Diagnostic("Shutdown","Runtime session cleanup returned; elapsedMs="+runtimeCleanupWatch.ElapsedMilliseconds);
+            TraceExitState("after-runtime-session-cleanup");
             var supplementalCleanup = new[]
             {
                 TryCleanupAsync(
@@ -349,6 +380,7 @@ namespace DexManager.Forms
                 // Prevent a late callback from starting the ADB server again
                 // between kill-server and process exit.
                 _adbService.BeginProcessShutdown();
+                _logService.Diagnostic("Shutdown","ADB server cleanup finished; new process creation is now blocked.");
             }
         }
 
@@ -356,12 +388,16 @@ namespace DexManager.Forms
             string operation,
             Func<Task> action)
         {
+            var watch=System.Diagnostics.Stopwatch.StartNew();
+            _logService.Diagnostic("Shutdown","Cleanup step begin: "+operation);
             try
             {
                 await action().ConfigureAwait(false);
+                _logService.Diagnostic("Shutdown","Cleanup step completed: "+operation+"; elapsedMs="+watch.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
+                _logService.Diagnostic("Shutdown","Cleanup step failed: "+operation+"; elapsedMs="+watch.ElapsedMilliseconds+"; error="+ex.GetType().Name+": "+ex.Message);
                 _logService.Error(
                     LocalizationService.Format(
                         "Log.Main.CleanupFailed",

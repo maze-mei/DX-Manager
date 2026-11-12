@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
@@ -34,6 +34,15 @@ namespace DexManager
             Application.SetCompatibleTextRenderingDefault(false);
 
             var logService = new LogService();
+
+
+            UnhandledExceptionEventHandler unhandled = delegate(object sender, UnhandledExceptionEventArgs failure)
+            {
+                logService.Error("Unhandled application exception; terminating="+failure.IsTerminating,
+                    failure.ExceptionObject as Exception);
+                logService.FlushAutomaticLogs(500);
+            };
+            AppDomain.CurrentDomain.UnhandledException += unhandled;
             ProcessRunner processRunner = null;
             MainForm mainForm = null;
             var activation = new SingleInstanceActivationService(SingleInstanceName);
@@ -56,10 +65,13 @@ namespace DexManager
             {
                 var settingsService = new SettingsService(logService);
                 var settings = settingsService.Load();
+                logService.ConfigureAutomaticLogs(settings.Features.AutoSaveSessionLogs,AppDomain.CurrentDomain.BaseDirectory);
+            logService.Diagnostic("Lifecycle", "Process started; autorun="+IsAutoRun(args)+
+                "; nativeHelperVersion="+NativeDexHelperRelease.Version+"; automaticLogs="+logService.AutomaticLogDirectory);
                 LocalizationService.Apply(settings.Language);
                 logService.SetLogDirectory(
                     settingsService.ResolvePath(settings.Paths.LogFolder));
-                logService.Info(
+                logService.Progress(
                     LocalizationService.Get("Log.Program.Starting"));
 
                 processRunner = new ProcessRunner(logService);
@@ -88,7 +100,7 @@ namespace DexManager
                     "ADB",
                     adbPath,
                     EnvironmentVariableTarget.Process);
-                logService.Info(LocalizationService.Format(
+                logService.Progress(LocalizationService.Format(
                     "Log.Program.ScrcpyAdbPath",
                     adbPath));
                 var adbService = new AdbService(
@@ -186,7 +198,8 @@ namespace DexManager
                     adbService,
                     settings,
                     settings.KeyMappings,
-                    logService);
+                    logService,
+                    activeRuntime.CompanionGuardian.ForegroundApps);
 
                 mainForm = new MainForm(
                     settingsService,
@@ -247,24 +260,33 @@ namespace DexManager
             }
             finally
             {
-                activation.Dispose();
-                // Explicit app exit performs the final package-owned process
-                // sweep. During Windows shutdown, do not race the OS by
-                // terminating ADB/scrcpy processes from this finally block.
-                var windowsShutdown = mainForm != null &&
-                    mainForm.ShouldDeferProcessCleanupToWindows;
-                if (!windowsShutdown)
+                var windowsShutdown = mainForm != null && mainForm.ShouldDeferProcessCleanupToWindows;
+                logService.Diagnostic("Shutdown", "Program.finally begin; windowsShutdown="+windowsShutdown);
+                try
                 {
-                    if (processRunner != null)
-                        processRunner.BeginShutdown();
-                    bundledProcessCleanup.TerminateRemainingProcesses();
-                }
+                    activation.Dispose();
+                    // Explicit app exit performs the final package-owned process
+                    // sweep. During Windows shutdown, do not race the OS by
+                    // terminating ADB/scrcpy processes from this finally block.
+                    if (!windowsShutdown)
+                    {
+                        if (processRunner != null)
+                            processRunner.BeginShutdown();
+                        bundledProcessCleanup.TerminateRemainingProcesses();
+                    }
 
-                if (_singleInstanceMutex != null)
+                    if (_singleInstanceMutex != null)
+                    {
+                        _singleInstanceMutex.ReleaseMutex();
+                        _singleInstanceMutex.Dispose();
+                        _singleInstanceMutex = null;
+                    }
+                }
+                finally
                 {
-                    _singleInstanceMutex.ReleaseMutex();
-                    _singleInstanceMutex.Dispose();
-                    _singleInstanceMutex = null;
+                    logService.Diagnostic("Shutdown", "Program.finally complete; closing automatic logs.");
+                    AppDomain.CurrentDomain.UnhandledException -= unhandled;
+                    logService.CompleteAutomaticLogs(windowsShutdown ? 250 : 2000);
                 }
             }
         }

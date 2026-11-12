@@ -51,18 +51,41 @@ internal static class LocalizationUiIntegrationTests
             foreach(var value in (IEnumerable)items.GetValue(root,null))if(value!=null)Text(value.ToString(),view+"/item");
         foreach(Control child in root.Controls)Scan(child,view);
     }
+    private static bool ContainsText(Control control, string value)
+    {
+        return control.Text.Contains(value) ||
+            control.Controls.Cast<Control>().Any(child => ContainsText(child, value));
+    }
+
+    private static void CheckAbout(SettingsForm options, AppLanguage language)
+    {
+        Call(options, "ShowPage", 5);
+        PumpMessages();
+        var page = (Control)((IList)Field(options, "_pages"))[5];
+        Check(ContainsText(page, "scrcpy 5.0.1") && ContainsText(page, "ScrcpyDeX v1.1") &&
+              !ContainsText(page, "scrcpy 4.1"), "About shows the current runtime and native license in " + language);
+        Check(ContainsText(page, language == AppLanguage.Korean ? "버그 신고 및 문의" : "Bug reports and support"),
+              "About shows the localized support label in " + language);
+    }
+
     private static void Capture(Form form,string label)
     {
         using(var bitmap=new Bitmap(form.Width,form.Height))
-        using(var stream=new MemoryStream())
         {
-            form.DrawToBitmap(bitmap,new Rectangle(Point.Empty,bitmap.Size));bitmap.Save(stream,ImageFormat.Png);
-            Console.WriteLine("IMAGE:"+label+":"+Convert.ToBase64String(stream.ToArray()));
+            form.DrawToBitmap(bitmap,new Rectangle(Point.Empty,bitmap.Size));
+            bitmap.Save(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,label+".png"),ImageFormat.Png);
         }
+    }
+    private static void PumpMessages()
+    {
+        // The fixture has no Application.Run loop to keep the UI context installed.
+        var context = SynchronizationContext.Current;
+        Application.DoEvents();
+        SynchronizationContext.SetSynchronizationContext(context);
     }
     private static void Show(Form form)
     {
-        form.StartPosition=FormStartPosition.Manual;form.Location=new Point(-4000,-4000);form.ShowInTaskbar=false;form.Show();Application.DoEvents();
+        form.StartPosition=FormStartPosition.Manual;form.Location=new Point(-4000,-4000);form.ShowInTaskbar=false;form.Show();PumpMessages();
     }
     private static void Resources()
     {
@@ -113,7 +136,7 @@ internal static class LocalizationUiIntegrationTests
                     var help=(Button)Field(main,"_helpSidebarButton");var settingsButton=(Button)Field(main,"_settingsSidebarButton");
                     foreach(var size in new[]{new Size(1184,760),new Size(1200,768),new Size(1600,960)})
                     {
-                        main.ClientSize=size;Call(main,"LayoutDesktopContent");Application.DoEvents();
+                        main.ClientSize=size;Call(main,"LayoutDesktopContent");PumpMessages();
                         var measure=Product.GetType("DexManager.Forms.UiText").GetMethods(BindingFlags.Public|BindingFlags.Static).Single(x=>x.Name=="Measure" && x.GetParameters().Length==5);
                         using(var bitmap=new Bitmap(1,1))using(var graphics=Graphics.FromImage(bitmap))
                         {
@@ -122,7 +145,7 @@ internal static class LocalizationUiIntegrationTests
                         }
                         Check(help.Font.Size<settingsButton.Font.Size,"only English help uses the smaller sidebar font");
                     }
-                    main.ClientSize=new Size(1184,760);Application.DoEvents();
+                    main.ClientSize=new Size(1184,760);PumpMessages();
                     for(var mode=0;mode<=3;mode++){Call(main,"DisplayMode",mode);Scan(main,"English main mode"+mode+"/"+theme);}
                     Call(main,"DisplayMode",0);Capture(main,"English-Main-"+theme);
                     using(var options=new SettingsForm(store,settings,adb,wifi,null,null,null,null,log,null,null,null,null,null,null,null,
@@ -133,13 +156,15 @@ internal static class LocalizationUiIntegrationTests
                         {
                             Call(options,"ShowPage",page);
                             foreach(DictionaryEntry card in (IDictionary)Field(options,"_storeCards"))card.Value.GetType().GetProperty("Expanded").SetValue(card.Value,true,null);
-                            Application.DoEvents();Scan(options,"English settings page"+page+"/"+theme);
+                            PumpMessages();Scan(options,"English settings page"+page+"/"+theme);
                             if(page==4)Capture(options,"English-Diagnostics-Initial-"+theme);
                         }
+                        CheckAbout(options, AppLanguage.English);
+                        Capture(options,"English-About-"+theme);
                         Call(options,"ShowPage",4);Call(options,"RefreshStoreEnvironment");
                         var label=(Label)((IDictionary)Field(options,"_storeEditors"))["DiagnosticEnvironmentText"];
                         var deadline=DateTime.UtcNow.AddSeconds(3);
-                        while(!label.Text.Contains("5.0.1") && DateTime.UtcNow<deadline){Application.DoEvents();Thread.Sleep(10);}
+                        while(!label.Text.Contains("5.0.1") && DateTime.UtcNow<deadline){PumpMessages();Thread.Sleep(10);}
                         Check(label.Text.Contains("5.0.1"),"English environment check completes");Scan(options,"English diagnostics complete/"+theme);
                     }
                     using(var helpForm=new HelpForm())
@@ -155,10 +180,21 @@ internal static class LocalizationUiIntegrationTests
                     using(var transfer=new FileTransferStatusForm(runtime.FileTransfers,theme,"Fixture phone")){Show(transfer);Scan(transfer,"English PC transfer/"+theme);}
                     using(var transfer=new PhoneTransferStatusForm(theme,"Fixture phone")){Show(transfer);Scan(transfer,"English phone transfer/"+theme);}
                     using(var logs=new LogForm(log)){Scan(logs,"English session log/"+theme);}
-                    using(var notices=(Form)Activator.CreateInstance(Product.GetType("DexManager.Forms.UpdateCheckDialog"),Hidden,null,
-                        new object[]{"2.5.0",(Func<Task<UpdateCheckResult>>)(()=>Task.FromResult(new UpdateCheckResult(UpdateCheckOutcome.Current)))},null))
+                    using(var licenses=new ThirdPartyLicensesForm())
                     {
-                        Show(notices);ReleaseUpdate release;ReleaseUpdate.TryCreate("2.5.1","https://github.com/maze-mei/DX-Manager/releases/tag/v2.5.1",out release);
+                        Show(licenses);
+                        var tab=(Button)Field(licenses,"_scrcpyDexButton");
+                        tab.PerformClick();
+                        var text=((RichTextBox)Field(licenses,"_contentBox")).Text;
+                        Check(tab.Text.Contains("ScrcpyDeX") && text.Contains("Aureliano Peixoto") &&
+                              text.Contains("TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION"),
+                              "Native DeX tab shows attribution and the full Apache license");
+                        Capture(licenses,"English-Native-License-"+theme);
+                    }
+                    using(var notices=(Form)Activator.CreateInstance(Product.GetType("DexManager.Forms.UpdateCheckDialog"),Hidden,null,
+                        new object[]{"3.0.0",(Func<Task<UpdateCheckResult>>)(()=>Task.FromResult(new UpdateCheckResult(UpdateCheckOutcome.Current)))},null))
+                    {
+                        Show(notices);ReleaseUpdate release;ReleaseUpdate.TryCreate("3.0.1","https://github.com/maze-mei/DX-Manager/releases/tag/v3.0.1",out release);
                         foreach(var outcome in new[]{UpdateCheckOutcome.Available,UpdateCheckOutcome.Current,UpdateCheckOutcome.Failed,UpdateCheckOutcome.Busy})
                         {Call(notices,"DisplayResult",new UpdateCheckResult(outcome,outcome==UpdateCheckOutcome.Available?release:null));Scan(notices,"English update "+outcome+"/"+theme);}
                     }
@@ -166,11 +202,17 @@ internal static class LocalizationUiIntegrationTests
                 }
             }
             // Korean Help keeps the same size as all other sidebar buttons.
-            settings.Language=AppLanguage.Korean;LocalizationService.Apply(AppLanguage.Korean);
+            settings.Language=AppLanguage.Korean;settings.Theme=AppTheme.Light;LocalizationService.Apply(AppLanguage.Korean);
             using(var main=new MainForm(store,settings,log,adb,wifi,runtime.Scrcpy,runtime.SingleWindows,runtime.ScreenOff,launch,monitor,runtime.Dex,captures,autoHide,new AutoStartService(log),environment,keymap,runtime.FileTransfers,runtime.PhoneTransfers,sessions,runtime,registry,factory,paths,capture,false))
             {
                 main.Shown-=(EventHandler)Delegate.CreateDelegate(typeof(EventHandler),main,typeof(MainForm).GetMethod("MainForm_Shown",Hidden));
                 Show(main);Check(((Button)Field(main,"_helpSidebarButton")).Font.Size==((Button)Field(main,"_settingsSidebarButton")).Font.Size,"Korean Help font remains unchanged");
+                using(var options=new SettingsForm(store,settings,adb,wifi,null,null,null,null,log,null,null,null,null,null,null,null))
+                {
+                    Show(options);
+                    CheckAbout(options, AppLanguage.Korean);
+                    Capture(options,"Korean-About-Light");
+                }
                 Call(main,"HideToTray",false);
             }
         }
@@ -180,9 +222,17 @@ internal static class LocalizationUiIntegrationTests
     {
         try
         {
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
             Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
             CultureInfo.CurrentUICulture=CultureInfo.GetCultureInfo("ko-KR");LocalizationService.Apply(AppLanguage.English);
-            Resources();Ui();Check(strings>3000,"Broad English resource/control scan ran: "+strings);
+            var previousContext = SynchronizationContext.Current;
+            using (var uiContext = new WindowsFormsSynchronizationContext())
+            {
+                SynchronizationContext.SetSynchronizationContext(uiContext);
+                try { Resources(); Ui(); }
+                finally { SynchronizationContext.SetSynchronizationContext(previousContext); }
+            }
+            Check(strings>3000,"Broad English resource/control scan ran: "+strings);
             Console.WriteLine("English UI scan checked "+strings+" strings.");
             foreach(var failure in Failures)Console.WriteLine("FAIL "+failure);
             Console.WriteLine("English localization checks: "+checks+"; failures: "+Failures.Count);

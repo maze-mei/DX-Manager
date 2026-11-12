@@ -26,6 +26,8 @@ $companionRelease = Get-Content -LiteralPath (Join-Path $companionSharedRoot 're
 $companionApkSource = Join-Path $companionSharedRoot $companionRelease.ApkRelativePath
 $companionApkSha256 = $companionRelease.ApkSha256
 $companionFontLicense = Join-Path $companionSharedRoot 'licenses\Pretendard-LICENSE.txt'
+$nativeInfo = Get-Content -LiteralPath (Join-Path $repoRoot 'NativeDex\build-info.json') -Raw | ConvertFrom-Json
+& (Join-Path $PSScriptRoot 'Sync-EmbeddedDocumentation.ps1') -CheckOnly
 
 function Assert-ChildPath([string]$Parent, [string]$Child) {
     $parentPath = [IO.Path]::GetFullPath($Parent).TrimEnd('\') + '\'
@@ -174,7 +176,10 @@ $requiredFiles = @(
     "licenses\zlib-LICENSE.txt",
     "licenses\dav1d-LICENSE.txt",
     "licenses\Fluent-System-Icons-LICENSE.txt",
-    "licenses\Pretendard-LICENSE.txt"
+    "licenses\Pretendard-LICENSE.txt",
+    "licenses\ScrcpyDex-APACHE-2.0.txt",
+    "licenses\ScrcpyDex-NOTICE.txt",
+    "tools\native-dex\dxm-native-dex.jar"
 )
 foreach ($item in $requiredFiles) {
     $path = Join-Path $releaseRoot $item
@@ -214,6 +219,18 @@ if ($Version -notmatch '^[0-9A-Za-z][0-9A-Za-z._-]*$') {
     throw "The version contains unsupported filename characters: $Version"
 }
 
+$builtVersion = (Get-Item -LiteralPath (Join-Path $releaseRoot 'DXManager.exe')).VersionInfo.ProductVersion
+if ($builtVersion -ne $Version) { throw "The compiled executable reports $builtVersion, expected $Version." }
+$nativeHelper = Join-Path $releaseRoot 'tools\native-dex\dxm-native-dex.jar'
+if ((Get-FileHash -LiteralPath $nativeHelper -Algorithm SHA256).Hash -ne $nativeInfo.Sha256) {
+    throw 'Native DeX helper does not match the pinned build metadata.'
+}
+$nativeLicense = Join-Path $releaseRoot 'licenses\ScrcpyDex-APACHE-2.0.txt'
+if ((Get-FileHash -LiteralPath $nativeLicense).Hash -ne
+    (Get-FileHash -LiteralPath (Join-Path $repoRoot 'NativeDex\vendor\LICENSE')).Hash) {
+    throw 'The bundled ScrcpyDeX license does not match the upstream license.'
+}
+
 # Keep the asset name stable for GitHub /releases/latest/download links.
 $zipPath = Join-Path $distRoot "DX-Manager-win-x64.zip"
 Assert-ChildPath $distRoot $packageRoot
@@ -241,7 +258,8 @@ Copy-Item -LiteralPath (Join-Path $repoRoot "DexManager\config\README.txt") `
 # Copy only runtime files and required notices; never recurse through build output.
 $runtimePin = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'scrcpy-runtime.json') -Raw | ConvertFrom-Json
 $payloadFiles = @('DXManager.exe', 'DXManager.exe.config') + $requiredFiles + @(
-    $runtimePin.Files | ForEach-Object { 'tools\scrcpy\' + $_.Name }
+    $runtimePin.Files | Where-Object {$_.Name -notin @('open_a_terminal_here.bat','scrcpy-noconsole.vbs')} |
+        ForEach-Object { 'tools\scrcpy\' + $_.Name }
 )
 foreach ($relative in ($payloadFiles | Sort-Object -Unique)) {
     $target = Join-Path $packageRoot $relative

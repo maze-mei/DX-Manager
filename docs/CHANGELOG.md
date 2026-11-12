@@ -1,4 +1,14 @@
-﻿# Changelog
+# Changelog
+
+## v3.0.0 Windows
+
+Native DeX with a reconnect grace, simulated display for confirmed 120 FPS
+launches, optional Bluetooth restoration, and optional AI app line breaks.
+New settings enable manual Enter / Shift+Enter switching. The release
+contains the signed shared Companion 3.0.0 APK and ScrcpyDeX Apache 2.0
+license and modification notices.
+
+[English and Korean release notes](RELEASE_NOTES_v3.0.0.md)
 
 ## Windows2.5.0 documentation/release preparation — 2026-10-24
 

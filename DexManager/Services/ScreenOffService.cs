@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -237,11 +237,7 @@ namespace DexManager.Services
             var message = DeviceLogFormatter.ForSerial(
                 serial,
                 "[screen-off scrcpy] " + data);
-            if (warning &&
-                !DeviceLogFormatter.IsInformationalScrcpyErrorLine(data))
-                _logService.Warning(message);
-            else
-                _logService.Info(message);
+            _logService.ToolOutput(warning&&!DeviceLogFormatter.IsInformationalScrcpyErrorLine(data)?"WARN":"INFO",message);
 
             if (data.IndexOf(
                 ConfirmationText,

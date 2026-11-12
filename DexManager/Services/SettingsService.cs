@@ -164,7 +164,7 @@ namespace DexManager.Services
                 }
             }
 
-            _logService.Info(LocalizationService.Format(
+            _logService.Progress(LocalizationService.Format(
                 "Log.Settings.Loaded",
                 sourcePath));
             return settings;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -240,7 +240,8 @@ namespace DexManager.Forms
                 _singleWindowService,
                 _captureCoordinator,
                 ShowMainWindow,
-                _logService);
+                _logService,
+                adbService);
             _isAutoRun = isAutoRun;
             _lastDeviceState = DeviceState.Disconnected();
             _selectedMode = 0;
@@ -519,6 +520,7 @@ namespace DexManager.Forms
             FormClosed += MainForm_FormClosed;
             _deviceMonitor.StateChanged += DeviceMonitor_StateChanged;
             _scrcpyService.RunningChanged += ScrcpyService_RunningChanged;
+            _orchestrator.NativeDisplayReleased += NativeDisplayReleased;
             _singleWindowService.RunningChanged +=
                 SingleWindowService_RunningChanged;
             _captureCoordinator.ExitHotkeyPressed += CaptureCoordinator_ExitHotkeyPressed;
@@ -552,7 +554,7 @@ namespace DexManager.Forms
             if (_exitInProgress || IsDisposed) return;
             ShowLocalUpdateNotice(existingInstallation, System.IO.Path.GetDirectoryName(_settingsService.SettingsFilePath));
             if (_exitInProgress || IsDisposed) return;
-            _logService.Info(
+            _logService.Progress(
                 LocalizationService.Get("Log.Main.Shown"));
             try { _captureCoordinator.Start(); }
             catch (Exception ex)

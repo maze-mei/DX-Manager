@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using DexManager.Models;
 using DexManager.Utils;
@@ -106,7 +106,8 @@ namespace DexManager.Services
                 _settingsService,
                 _logService,
                 _settings,
-                _runtimeSessions);
+                _runtimeSessions,
+                new NativeDexSessionService(_adbService, _logService, _runtimeSessions));
             var services = new DeviceRuntimeServiceSet(
                 fileTransfers,
                 phoneTransfers,

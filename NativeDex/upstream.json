@@ -1,0 +1,71 @@
+{
+  "Repository": "https://github.com/Aureliano021/ScrcpyDex",
+  "Files": [
+    {
+      "OriginalSha256": "D1EC9C2D348F1A324D96AFAA2B82AC8F9FC4BA5B19D47FB75B3D9C7334546FC9",
+      "LocalPath": "NativeDex/vendor/LICENSE",
+      "UpstreamPath": "LICENSE",
+      "AdaptedSha256": "D1EC9C2D348F1A324D96AFAA2B82AC8F9FC4BA5B19D47FB75B3D9C7334546FC9",
+      "Changes": "Unmodified upstream file; original notices retained."
+    },
+    {
+      "OriginalSha256": "805C565465A771D81FD2DA79A8A33FD72C4C1B1B2F8A25C3C8A6E93A55B4A256",
+      "LocalPath": "NativeDex/vendor/server/src/com/scrcpydex/server/DexActivator.java",
+      "UpstreamPath": "server/src/com/scrcpydex/server/DexActivator.java",
+      "AdaptedSha256": "3E85AF2F2803AEFFF8A575620441318665B037FECBD276BF9EE6A45D8068DC88",
+      "Changes": "Unique display/peer identity; idle preflight; owned disconnect; bounded RTSP parser and CSeq correlation; cancellable TCP retries; owned UDP sockets and stop cleanup. Optional validated initial WFD video-mode announcement; legacy announcement preserved. Expose unchanged original FHD capabilities and retain30fps source compatibility."
+    },
+    {
+      "OriginalSha256": "84724968DBDCA3E909951764562B77F6209642D835E57DF558CC45658A48A624",
+      "LocalPath": "NativeDex/vendor/server/src/com/scrcpydex/server/DisplayWatch.java",
+      "UpstreamPath": "server/src/com/scrcpydex/server/DisplayWatch.java",
+      "AdaptedSha256": "F2BAD39B5521C6611ACA367AAE0F974B836ADF2F248ED4133A37071712004EF7",
+      "Changes": "Exact session-specific display name; retained/unregistered listener; verified live display checks; actual metrics and change-only logs."
+    },
+    {
+      "OriginalSha256": "5CF92CABE1EDCB7DAC34FC722A2AFF723E3B959756AA3C4D70216B87E3072027",
+      "LocalPath": "NativeDex/vendor/server/src/com/scrcpydex/server/FakeContext.java",
+      "UpstreamPath": "server/src/com/scrcpydex/server/FakeContext.java",
+      "AdaptedSha256": "5CF92CABE1EDCB7DAC34FC722A2AFF723E3B959756AA3C4D70216B87E3072027",
+      "Changes": "Unmodified upstream file; original notices retained."
+    },
+    {
+      "OriginalSha256": "74310493C9602F5FDE17A6F84BD4787D8275BB518212F84062541CC5818C07EB",
+      "LocalPath": "NativeDex/vendor/server/src/com/scrcpydex/server/Ln.java",
+      "UpstreamPath": "server/src/com/scrcpydex/server/Ln.java",
+      "AdaptedSha256": "2E2315FBC4635B075CB4EC5256F05C4ED798525B6712E41CF26FEF453FC5C155",
+      "Changes": "Send upstream diagnostics to stderr so stdout is reserved for the token-scoped DX Manager control protocol; synchronize timestamp formatting."
+    },
+    {
+      "OriginalSha256": "9D3417278F4AEB47CF15B355AC8C9567477C4C026C6E2C8A1FF1ED84B8C57C6E",
+      "LocalPath": "NativeDex/vendor/server/src/com/scrcpydex/server/Workarounds.java",
+      "UpstreamPath": "server/src/com/scrcpydex/server/Workarounds.java",
+      "AdaptedSha256": "9D3417278F4AEB47CF15B355AC8C9567477C4C026C6E2C8A1FF1ED84B8C57C6E",
+      "Changes": "Unmodified upstream file; original notices retained."
+    },
+    {
+      "OriginalSha256": "525A78408A2A74568F77DF6C0BAF29FDC6E4E87ACCDB512B06F3D7D48B6EAE16",
+      "LocalPath": "NativeDex/vendor/server/src/com/scrcpydex/server/wrappers/ServiceManager.java",
+      "UpstreamPath": "server/src/com/scrcpydex/server/wrappers/ServiceManager.java",
+      "AdaptedSha256": "525A78408A2A74568F77DF6C0BAF29FDC6E4E87ACCDB512B06F3D7D48B6EAE16",
+      "Changes": "Unmodified upstream file; original notices retained."
+    },
+    {
+      "OriginalSha256": "FD7F10719729B51C057E43090376F0A63B343C96460DD1F33CD644B1C90762BC",
+      "LocalPath": "NativeDex/vendor/server/src/com/scrcpydex/server/wrappers/DisplayManager.java",
+      "UpstreamPath": "server/src/com/scrcpydex/server/wrappers/DisplayManager.java",
+      "AdaptedSha256": "90E1AF8A45AFAF8B02B9ED7AA6C87F36C388AA458A3633A82639301EB3BA70EE",
+      "Changes": "Refuse existing WFD sessions; disconnect only a matching receiver address; fail closed on unknown status; injectable fake manager for tests."
+    }
+  ],
+  "Commit": "eebbba903b73d54bbd13210096ea28fe31e51200",
+  "Version": "v1.1",
+  "License": "Apache-2.0",
+  "Project": "ScrcpyDeX",
+  "ModificationDates": [
+    "2026-10-26",
+    "2026-10-27"
+  ],
+  "Guide": "NativeDex/README.md",
+  "SeparateUpstreamNotice": false
+}
