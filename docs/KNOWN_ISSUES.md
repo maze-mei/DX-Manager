@@ -2,11 +2,18 @@
 
 ## Windows v3.0.0
 
-- The Windows release's native DeX and Companion integration tests use
-  simulated devices. Keep physical-device results separate from those checks.
-- The macOS implementation has a separate build and verification scope.
+- Native DeX runs at up to 60 FPS. The experimental 120 FPS setting uses a
+  simulated display and requires the phone screen to stay on. Actual FPS varies
+  with the phone, app and connection.
+- After disconnection, the phone can end its Native DeX display before the
+  30-second reconnect window expires. DX Manager creates a new display at the
+  next start if the earlier display is no longer available.
+- Automatic line breaks require app switch detection in DX Companion. When
+  app information is unavailable, Enter keeps its ordinary behavior.
 
-## Current scope — 2026-10-24
+See the [English FAQ](FAQ_EN.md), [한국어 FAQ](FAQ_KO.md) and [macOS guide](MACOS_GUIDE.md).
+
+## Windows v2.5.0 release record — 2026-10-24
 
 Windows2.5.0 / scrcpy5.0.1 / official Companion2.1.6. See [FAQ](FAQ_EN.md), [한국어 FAQ](FAQ_KO.md) and [exact verification](VERIFICATION_v2.5.0.md).
 
@@ -65,7 +72,7 @@ Documentation preparation does not authorize commit/push/tag/release.
 <details>
 <summary>Earlier implementation/preparation records (historical)</summary>
 
-These dated records describe earlier states. Use the current sections above for2.5.0.
+These records describe earlier builds and test environments.
 
 
 ## 2026-10-19 portable 120 FPS preparation

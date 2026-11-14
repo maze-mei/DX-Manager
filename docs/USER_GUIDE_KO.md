@@ -49,9 +49,6 @@ Framework 4.x가 이 요구 사항을 충족합니다.
 5. 상단 상태가 휴대폰 연결 상태로 바뀔 때까지 기다립니다.
 6. **DeX 시작**을 누릅니다.
 
-<p align="center">
-  <img src="images/ko/guide-device-connected-ko.png" width="900" alt="휴대폰 연결을 인식한 DX Manager">
-</p>
 
 승인된 USB 또는 무선 기기를 감지하면 DX Manager는 설정된 기기 시작
 대기시간이 지난 뒤 세션 시작 명령을 보냅니다. 기본값은 1초이며, 연결 직후
@@ -90,9 +87,6 @@ scrcpy 창 제목에는 휴대폰 표시 이름이 포함됩니다. DX Companion
 받은 파일은 설정된 PC 저장 폴더 아래 휴대폰 이름별 하위 폴더에 나누어
 저장됩니다.
 
-<p align="center">
-  <img src="images/en/guide-device-selection-v2-en.png" width="760" alt="USB 또는 무선 ADB 설정 대상 휴대폰 선택">
-</p>
 
 ## 3. DeX 모드
 
@@ -127,9 +121,6 @@ DeX를 열기 전에 듣던 Bluetooth 장치로 소리를 돌리려면 **설정 
 
 왼쪽 메뉴에서 **DeX**를 선택합니다. 시작 앱이 **선택 안 함**이어도 데스크톱을 열 수 있습니다. 시작 앱을 고르면 DeX를 열 때 그 앱도 실행됩니다.
 
-<p align="center">
-  <img src="images/ko/guide-dex-running-ko.png" width="900" alt="DeX 실행 중 화면">
-</p>
 
 ### 화면 설정
 
@@ -213,9 +204,6 @@ PC로 소리를 전달하지 않으려면 메인 화면의 **고급 옵션**에�
 기능으로 각각 별도의 화면을 만들며, DeX와 단일창 3개를 동시에 실행할 수
 있습니다.
 
-<p align="center">
-  <img src="images/ko/readme-single-window-ko.png" width="900" alt="서로 다른 해상도의 단일창 두 개를 실행한 화면">
-</p>
 
 - **동적 창 크기 (`-x`)**: 창 크기에 맞춰 가상 디스플레이 크기 조정
 - 단일창 제목: `DX Manager - 앱 이름`
@@ -449,9 +437,6 @@ DX Manager는 로컬 날짜 기준으로 하루 한 번 GitHub 업데이트를 �
 보고서를 만듭니다. 외부 ADB·scrcpy 메시지에는 환경별 정보가 남을 수 있으므로
 공유하기 전에 내용을 한 번 확인하십시오.
 
-<p align="center">
-  <img src="images/en/guide-device-diagnostics-v2-en.png" width="760" alt="선택 기기 진단과 DX Companion 앱 상태">
-</p>
 
 진단 페이지에서 **고급 옵션 표시**를 누르면 기기 감시 주기, 가상
 디스플레이 감지 제한시간, ADB Wake-up, 프로세스 제한시간과 캡처 선택
@@ -469,9 +454,6 @@ DX Manager는 로컬 날짜 기준으로 하루 한 번 GitHub 업데이트를 �
 표시됩니다. 이 권한은 정리 앱이 Android의 가상화면 설정을 삭제하기 위한
 것이며 임의의 ADB 명령 실행 권한을 제공하지 않습니다.
 
-<p align="center">
-  <img src="images/ko/guide-advanced-options-ko.png" width="900" alt="진단 메뉴의 고급 옵션">
-</p>
 
 ### 앱 보안과 다중 디스플레이 제한
 
@@ -528,9 +510,6 @@ AI Enter 자동 줄바꿈을 사용할 때만 접근성을 켭니다. 설정 순
    (DX Companion)를 선택합니다.
 4. 폴더는 DX Companion 앱의 **전송 → 폴더 선택**에서 보냅니다.
 
-<p align="center">
-  <img src="images/en/guide-companion-file-transfer-en.png" width="420" alt="DX Companion 앱 파일 및 폴더 전송 화면">
-</p>
 
 파일은 기본적으로 **다운로드 → DX Manager → 휴대폰 이름** 폴더에 저장됩니다.
 **설정 → 경로 → 파일 전송 경로**의 **휴대폰 → PC 파일 전송**에서 **PC 수신 폴더**를

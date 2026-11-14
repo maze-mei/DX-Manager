@@ -52,9 +52,6 @@ PC.
 5. Wait for the device-connected status.
 6. Select **Start DeX**.
 
-<p align="center">
-  <img src="images/en/guide-device-connected-en.png" width="900" alt="DX Manager after detecting the connected phone">
-</p>
 
 After detecting an authorized USB or wireless device, DX Manager waits for
 the configured device-start delay before sending session start commands. The
@@ -97,9 +94,6 @@ Scrcpy window titles include the phone display name. Files received from DX
 Companion app are stored under a phone-name subfolder inside the configured PC
 destination.
 
-<p align="center">
-  <img src="images/en/guide-device-selection-v2-en.png" width="760" alt="Selecting a target phone for USB or wireless ADB settings">
-</p>
 
 ## 3. DeX Mode
 
@@ -134,9 +128,6 @@ Explicit Stop, application exit and Windows shutdown clean up immediately. Phone
 
 Select **DeX** in the left navigation. DeX can open its desktop with **None** selected as the start app. If you select an app, it opens when DeX starts.
 
-<p align="center">
-  <img src="images/en/guide-dex-running-en.png" width="900" alt="DX Manager while DeX is running">
-</p>
 
 ### Display Settings
 
@@ -463,9 +454,6 @@ Device names, serial numbers, IP addresses, tokens and local paths are masked.
 Review the file before sharing it because third-party ADB/scrcpy messages may
 still contain environment-specific details.
 
-<p align="center">
-  <img src="images/en/guide-device-diagnostics-v2-en.png" width="760" alt="DX Manager selected-device diagnostics and DX Companion app status">
-</p>
 
 Select **Show advanced options** on the Diagnostics page to access device
 monitoring intervals, virtual-display detection timeout, ADB wake-up settings,
@@ -540,9 +528,6 @@ Enable accessibility only when using AI Enter rules. Follow **Companion app → 
 4. Android's Share menu does not provide folders. To send a folder, use DX
    Companion app's **Send folder > Select folder** action instead.
 
-<p align="center">
-  <img src="images/en/guide-companion-file-transfer-en.png" width="420" alt="DX Companion app file and folder transfer screen">
-</p>
 
 Files go to **Downloads → DX Manager → phone name** by default. To change it,
 open **Settings → Paths / ADB → File transfer paths**, expand **Phone → PC file transfer**,

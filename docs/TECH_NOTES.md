@@ -1,6 +1,23 @@
 # Technical notes
 
-## Current Windows architecture — 2026-10-25
+## Windows v3.0.0 architecture
+
+The portable app uses WinForms, .NET Framework 4.6.2, scrcpy 5.0.1 and
+DX Companion 3.0.0 (code 16). The Windows x64 release is based on `224d740`.
+
+`DexOrchestrator` selects Native DeX or a simulated display for each session.
+The native helper can reuse its display during the 30-second reconnect window.
+Confirmed 120 FPS launches use simulated display and keep the phone screen on.
+[Native DeX helper](../NativeDex/README.md)
+
+`CompanionGuardianService` receives app-switch events through the authenticated
+local connection. `ForegroundAppCache` holds the active app for each display.
+The keyboard handler uses that cache when applying the optional Enter rules.
+[DX Companion source and APK](../companion/README.md)
+
+See the [v3.0.0 build guide](BUILDING.md) and [release checksums](HANDOFF.md).
+
+## Windows v2.5.0 architecture — 2026-10-25
 
 Baseline: code checkpoint `ccc10a9`, Windows2.5.0, .NET Framework4.6.2 x64, scrcpy5.0.1 and official Companion2.1.6/code13.
 These notes describe the portable product; Store WinUI and the public macOS .NET8 implementation are separate.

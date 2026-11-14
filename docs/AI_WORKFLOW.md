@@ -1,6 +1,6 @@
 ﻿# Work, documentation and release workflow
 
-## English — 2026-10-24
+## English
 
 1. Read AGENTS/current handoff/TODO, then inspect the active branch and changes. Preserve user work.
 2. Windows portable, Store WinUI and macOS are separate implementation scopes. Store stays read-only in this workroom.
@@ -10,9 +10,8 @@
 ### Windows code verification
 
 Use the approved .NET Framework 4.6.2 x64 Release environment and `scripts/Verify-OfficialBuild.ps1`.
-Its current fixtures cover702 checks, including48 update,196 desktop and 36 English-localization checks.
-The English fixture scans application-owned resource/control text, all Settings pages and initial/completed diagnostics;
-it checks English Help fit and unchanged Korean size. Native OS/vendor/user data are separate.
+The suite covers device isolation, transfers, update checks, first-run consent,
+Native DeX, 120 FPS, and the English and Korean interface.
 
 The maintainer verifier uses fixed paths and test-only roots. See [Building](BUILDING.md) for prerequisites.
 Repeat relevant code gates when code/embedded resources change. For packaging an identical verified EXE, confirm byte identity
@@ -29,23 +28,23 @@ A documentation-only pass does not rebuild/install Android.
 ### Artifacts and personal state
 
 - Fixed preview: overwrite `E:/vs/dex system/dist/DX Manager Preview`, preserving config/logs/captures/receive data.
-- Final: `scripts/Build-FinalRelease.ps1` backs up the previous final, then packages
-  `E:/vs/dex system/dist/DX-Manager-win-x64.zip` with one versioned root folder.
-- Final39-file contents are explicit: executable/config, Korean resources, proxy, legacy ADB, pinned scrcpy,
-  verified official APK, required licenses, compact README/config README.
+- `scripts/Build-FinalRelease.ps1` builds a fresh `DX-Manager-win-x64.zip` and
+  versioned application folder in the chosen output directory.
+- The v3.0.0 ZIP contains 40 files, including the Windows executable, Korean
+  resources, ADB proxy, legacy ADB, scrcpy, Native DeX helper, signed Companion
+  APK, licenses and short README files.
 - Exclude settings, onboarding/update state, private paths/serials/tokens, logs/captures, source guides/images, PDBs,
   signing material and test programs. Vendor runtime images are not guide screenshots.
 - Check extracted ZIP hashes against final files, version identity, fresh-consent state and original APK/runtime pins.
 
-Keep the Windows asset name `DX-Manager-win-x64.zip` identical across releases for the fixed latest-download URL.
-Every release selected as latest for that URL must include it. A specific old-tag URL does not redirect to a new file.
-Preserve superseded local upload archives outside dist before removing duplicate delivery names.
+Use `DX-Manager-win-x64.zip` for the latest Windows release. When retiring an
+old direct download URL, rename the existing asset in place to retain its
+download count. Keep the latest download URL on the new release.
 
 ### GitHub documents and images
 
 English precedes Korean in bilingual pages. Keep historical release facts/license text unchanged.
-Use reviewed real portable photos with accurate state/language captions; never present fixture/Store/private-test captures as the portable release.
-Current selection omits single-window photos and uses diagnostics before checking plus default-size connection pages.
+Use reviewed captures of the portable UI. Identify sample device data in the caption.
 Do not regenerate/edit original screenshot pixels without the user's instruction.
 
 Inventory current public main before replacing its README. Preserve macOS documentation/source/workflow;

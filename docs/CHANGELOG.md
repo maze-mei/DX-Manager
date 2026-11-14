@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.0.0 Windows
+## v3.0.0 Windows — 2026-11-14
 
 Native DeX with a reconnect grace, simulated display for confirmed 120 FPS
 launches, optional Bluetooth restoration, and optional AI app line breaks.

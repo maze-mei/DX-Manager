@@ -48,6 +48,7 @@ and file transfer around [scrcpy](https://github.com/Genymobile/scrcpy).
   guides, optional session log saving and environment checks.
 
 <p align="center"><img src="docs/images/en/readme-v3-native-settings-en.png" width="950" alt="DX Manager v3.0.0 Native DeX settings"></p>
+<p align="center"><em>Native DeX settings with a sample device.</em></p>
 
 ### Download and start
 
@@ -65,7 +66,7 @@ DX Manager checks GitHub in the background at most once per local day.
 Use **Settings → About → Check for updates** to check manually. USB sessions
 work offline, and Wi-Fi ADB uses the local network.
 
-The ZIP name is stable across Windows releases. Each ZIP contains a folder
+The latest Windows download uses a fixed URL. Each ZIP contains a folder
 named for its version.
 
 ### Guides and source
@@ -119,6 +120,7 @@ DX Manager는 연결한 Galaxy 휴대폰마다 Samsung DeX와 앱별 단일창�
   세션 로그 자동 저장과 환경 검사를 제공합니다.
 
 <p align="center"><img src="docs/images/ko/readme-v3-native-settings-ko.png" width="950" alt="DX Manager v3.0.0 네이티브 DeX 설정"></p>
+<p align="center"><em>예시 기기를 선택한 네이티브 DeX 설정 화면.</em></p>
 
 ### 다운로드와 첫 실행
 
@@ -135,7 +137,7 @@ DX Manager는 연결한 Galaxy 휴대폰마다 Samsung DeX와 앱별 단일창�
 직접 확인할 수도 있습니다. USB는 인터넷 없이 사용할 수 있고 Wi-Fi ADB는 로컬
 네트워크를 사용합니다.
 
-Windows ZIP 파일명은 버전이 바뀌어도 같습니다. 압축 안의 폴더명으로 버전을 구분합니다.
+최신 Windows ZIP은 고정 주소에서 받을 수 있습니다. 압축 안의 폴더명으로 버전을 구분합니다.
 
 ### 문서와 소스
 

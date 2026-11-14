@@ -1,13 +1,16 @@
-# Current status — Windows 2.5.0
+# Current status — Windows v3.0.0
 
 ## Windows v3.0.0 release status
 
 - [x] Prepare the local release source on the published v2.5.0 base.
 - [x] Retain the GitHub update check, first-run notice and macOS source.
 - [x] Verify the Windows release build, bilingual interface and clean ZIP.
-- [ ] Publish the source and Windows ZIP after the maintainer requests upload.
+- [x] Pass antivirus testing for the final Windows executable.
+- [x] Review the README, English and Korean guides, FAQs and release notes.
 
-## English — 2026-10-25
+[GitHub release and Windows download](https://github.com/maze-mei/DX-Manager/releases/tag/v3.0.0)
+
+## Windows v2.5.0 release record — 2026-10-25
 
 ### Release scope completed
 
@@ -24,19 +27,11 @@
 - [x] Public macOS implementation preserved in separate .NET 8 projects.
 - [x] Explicit maintainer authorization to commit and publish this release.
 
-### Future work
-
-No new feature is required by this release request. Reported issues should be reviewed against [known limits](KNOWN_ISSUES.md).
-Future releases still need explicit publication approval. Do not add the private AI foreground-app/keymap experiment
-or change the Store product as part of routine portable maintenance.
-
 ### Verification boundaries
 
-Automated Windows checks are not universal Windows 7/GPU/DPI/phone/firmware or shutdown-packet guarantees.
-macOS build/runtime evidence is separate from Windows verification. See [verification](VERIFICATION_v2.5.0.md).
+See the [v2.5.0 verification record](VERIFICATION_v2.5.0.md) for its test scope and checksums.
 
 ## 한국어
 
-이번 요청 범위는 최종본·문서·공식 Companion 소스 연결·macOS 보존과 승인된 게시입니다.
-새 기능 추가나 Store 변경은 포함하지 않습니다. 실기 미확인 환경은 성공으로 확대하지 않으며
-다음 버전의 게시도 메이님의 별도 지시를 따릅니다.
+Windows v3.0.0의 실행 파일과 ZIP 해시는 [릴리스 설명](RELEASE_NOTES_v3.0.0.md)과
+[인계 문서](HANDOFF.md)에서 확인할 수 있습니다.

@@ -1106,3 +1106,11 @@ only the EXE, Korean resource DLL, Companion APK and ZIP.
 ZIP SHA256: BC82B14764A66B49B5B4255C8B54A5E1E6D20AD7F5C566CECB6C6D28F83E8389
 EXE SHA256: EE15B86C20911411F3F2AE053C4D2954B781D9553770A22506FAE0EBE14CFA4C
 APK SHA256: 43443968AFA2DCF59DA251A3EA909AC5A55064DF8E8158A11C369BACB26F6A29
+
+## 2026-11-14 Windows v3.0.0 publication
+
+The release uses the Windows binary from `224d740`. The executable passed
+antivirus testing. All 40 files in the upload ZIP match the release manifest.
+The release notes, README and current documentation use the v3.0.0 baseline.
+
+[Windows v3.0.0 release](https://github.com/maze-mei/DX-Manager/releases/tag/v3.0.0)
