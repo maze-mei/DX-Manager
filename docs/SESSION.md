@@ -1186,3 +1186,16 @@ publishing this v3.0.1 package.
 - EXE SHA-256 `E6CFEFD7213FA2FABF471A5ACDB7687864EC9B216230D772737FEDCBC62730E8`
 - ZIP SHA-256 `ABA052A30E85F2462A239420B6D830177BD4C0E71016D0C702FAE2D2E33CFD1E`
 - Package audit `.build-tools/release-prep/v3.0.1-upload-package-audit.json`
+
+## 2026-11-22 Windows v3.0.1 publication
+
+Published the maintainer-approved Windows ZIP as the latest stable release.
+The release tag points to source commit `c2dd4c3`. The public latest-download
+URL redirects to v3.0.1, and a fresh download matches the scanned ZIP and EXE
+hashes recorded above. The downloaded package contains the expected 40 files.
+
+The maintainer requested that the v3.0.0 download filename remain available
+for their external-link test. Its asset ID `747558315`, filename
+`DX-Manager-win-x64.zip`, content digest and download history were verified.
+
+[Windows v3.0.1 release](https://github.com/maze-mei/DX-Manager/releases/tag/v3.0.1)

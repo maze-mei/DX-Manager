@@ -8,6 +8,7 @@
 - [x] Pass antivirus testing for the final Windows executable.
 - [x] Review the README, English and Korean guides, FAQs and release notes.
 - [x] Verify battery-powered Wi-Fi Native DeX and simulated-to-Native transitions.
+- [x] Publish the scanned ZIP as the latest stable release and verify its public download.
 
 [GitHub release and Windows download](https://github.com/maze-mei/DX-Manager/releases/tag/v3.0.1)
 
