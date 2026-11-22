@@ -104,7 +104,8 @@ internal static partial class ExperimentalFrameRateIntegrationTests {
    using(var guide=(Form)Activator.CreateInstance(docType,true)){
     guide.Show();Application.DoEvents();Call(guide,"SwitchDocument",1);
     var texts=(RichTextBox[])Field(guide,"_documents");
-    Check(texts.All(box=>box.Text.Contains("3.0.0")&&box.Text.Contains("30")&&box.Text.Contains("120")),"both embedded full guide and FAQ are updated, not just external Markdown");
+    var versionLabel="Windows v"+typeof(HelpForm).Assembly.GetName().Version.ToString(3);
+    Check(texts.All(box=>box.Text.Contains(versionLabel)&&box.Text.Contains("30")&&box.Text.Contains("120")),"both embedded full guide and FAQ match the Windows version");
     Check(texts.All(box=>box.Text.Contains(language==AppLanguage.Korean?"접근성":"accessibility")),"both embedded documents include optional AI/accessibility instructions");
     Check(texts.All(box=>!box.Text.Contains("Real DeX")&&!box.Text.Contains("리얼 DeX")),"user-facing embedded manuals use the agreed Native DeX name");
     guide.Close();

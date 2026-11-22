@@ -30,7 +30,7 @@ A documentation-only pass does not rebuild/install Android.
 - Fixed preview: overwrite `E:/vs/dex system/dist/DX Manager Preview`, preserving config/logs/captures/receive data.
 - `scripts/Build-FinalRelease.ps1` builds a fresh `DX-Manager-win-x64.zip` and
   versioned application folder in the chosen output directory.
-- The v3.0.0 ZIP contains 40 files, including the Windows executable, Korean
+- The v3.0.1 ZIP contains 40 files, including the Windows executable, Korean
   resources, ADB proxy, legacy ADB, scrcpy, Native DeX helper, signed Companion
   APK, licenses and short README files.
 - Exclude settings, onboarding/update state, private paths/serials/tokens, logs/captures, source guides/images, PDBs,

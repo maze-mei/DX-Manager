@@ -1,21 +1,33 @@
 # Technical notes
 
-## Windows v3.0.0 architecture
+## Windows v3.0.1 architecture
 
 The portable app uses WinForms, .NET Framework 4.6.2, scrcpy 5.0.1 and
-DX Companion 3.0.0 (code 16). The Windows x64 release is based on `224d740`.
+DX Companion 3.0.0 (code 16). The Windows x64 release source is tagged `v3.0.1`.
 
 `DexOrchestrator` selects Native DeX or a simulated display for each session.
+Before a native start or reattachment, `VirtualDisplayService` checks the
+selected phone's `overlay_display_devices`. A configured simulation is cleared
+and both the setting and overlay display removal are verified before continuing.
+Display type and overlay identity distinguish simulations from scrcpy virtual
+displays, including when their resolution and DPI match. Query/removal failure
+or cancellation stops the native start before creating an owner.
 The native helper can reuse its display during the 30-second reconnect window.
 Confirmed 120 FPS launches use simulated display and keep the phone screen on.
 [Native DeX helper](../NativeDex/README.md)
+
+For a Wi-Fi Native DeX session with Stay awake enabled, Windows starts a
+control-only scrcpy connection to display 0 before launching the viewer.
+The bundled server sends activity every four seconds. It targets the phone's
+display group while the viewer keeps the DeX group's timer active. Each viewer
+owns its connection and releases it on stop or transport loss.
 
 `CompanionGuardianService` receives app-switch events through the authenticated
 local connection. `ForegroundAppCache` holds the active app for each display.
 The keyboard handler uses that cache when applying the optional Enter rules.
 [DX Companion source and APK](../companion/README.md)
 
-See the [v3.0.0 build guide](BUILDING.md) and [release checksums](HANDOFF.md).
+See the [v3.0.1 build guide](BUILDING.md) and [release checksums](HANDOFF.md).
 
 ## Windows v2.5.0 architecture — 2026-10-25
 

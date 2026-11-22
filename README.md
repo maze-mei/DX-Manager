@@ -7,7 +7,7 @@
 <a href="#english">English</a> · <a href="#korean">한국어</a> ·
 <a href="https://github.com/maze-mei/DX-Manager/releases/latest/download/DX-Manager-win-x64.zip">Windows x64 ZIP</a> ·
 <a href="docs/USER_GUIDE_EN.md">User guide</a> · <a href="docs/USER_GUIDE_KO.md">사용설명서</a> ·
-<a href="docs/RELEASE_NOTES_v3.0.0.md">v3.0.0 release notes</a> ·
+<a href="docs/RELEASE_NOTES_v3.0.1.md">v3.0.1 release notes</a> ·
 <a href="docs/MACOS_GUIDE.md">macOS</a>
 </p>
 
@@ -28,7 +28,7 @@ and PCs without internet access.
 <p align="center"><img src="docs/images/en/readme-hero-en.png" width="1100" alt="DX Manager main window in front of a running Samsung DeX desktop"></p>
 <p align="center"><small>DX Manager and a running Samsung DeX desktop on a Galaxy S26 Ultra, captured with v2.5.0.</small></p>
 
-### Windows v3.0.0
+### Windows v3.0.1
 
 | Component | Requirement |
 | --- | --- |
@@ -41,6 +41,10 @@ and PCs without internet access.
 Native DeX was tested on a Galaxy S26 Ultra running Android 17 and One UI 9.
 Simulated display has also been used on Android 16 with One UI 8.x.
 [Compatibility FAQ](docs/FAQ_EN.md#q18-the-dex-window-is-black-on-an-older-one-ui-version)
+
+In v3.0.1, **Stay awake** keeps Wi-Fi Native DeX active on battery power with
+the phone screen off. Switching to Native DeX also clears a simulated secondary
+display left on the phone. [Release notes](docs/RELEASE_NOTES_v3.0.1.md)
 
 ### Features
 
@@ -76,7 +80,7 @@ Simulated display has also been used on Android 16 with One UI 8.x.
 
 1. Download the [Windows x64 ZIP](https://github.com/maze-mei/DX-Manager/releases/latest/download/DX-Manager-win-x64.zip)
    or open the [release page](https://github.com/maze-mei/DX-Manager/releases/latest).
-2. Extract the whole **DX Manager v3.0.0** folder to a writable location and
+2. Extract the whole **DX Manager v3.0.1** folder to a writable location and
    open **DXManager.exe**. Read and confirm the first-run notice.
 3. Enable **Developer options** and **USB debugging** on the phone. Connect it
    and approve the debugging prompt.
@@ -122,7 +126,7 @@ release page. The app also shows local release notes after an upgrade.
 For bug reports, include your DX Manager version and a diagnostic report with
 personal information removed. [Report an issue](https://github.com/maze-mei/DX-Manager/issues)
 
-[User guide](docs/USER_GUIDE_EN.md) · [FAQ](docs/FAQ_EN.md) · [v3.0.0 changes and ZIP checksum](docs/RELEASE_NOTES_v3.0.0.md)
+[User guide](docs/USER_GUIDE_EN.md) · [FAQ](docs/FAQ_EN.md) · [v3.0.1 changes and ZIP checksum](docs/RELEASE_NOTES_v3.0.1.md)
 
 ### macOS, source and licenses
 
@@ -156,7 +160,7 @@ Windows 7이나 인터넷이 없는 PC에서도 일상적으로 DeX를 쓸 수 �
 <p align="center"><img src="docs/images/ko/readme-hero-ko.png" width="1100" alt="DX Manager 메인 창과 실행 중인 Samsung DeX 데스크톱"></p>
 <p align="center"><small>Galaxy S26 Ultra에서 DX Manager와 Samsung DeX를 실행한 v2.5.0 화면입니다.</small></p>
 
-### Windows v3.0.0
+### Windows v3.0.1
 
 | 구성 | 요구 사항 |
 | --- | --- |
@@ -169,6 +173,10 @@ Windows 7이나 인터넷이 없는 PC에서도 일상적으로 DeX를 쓸 수 �
 네이티브 DeX는 Galaxy S26 Ultra의 Android 17과 One UI 9에서 확인했습니다.
 보조 디스플레이 방식은 Android 16과 One UI 8.x에서도 사용했습니다.
 [호환성 FAQ](docs/FAQ_KO.md#q18-이전-one-ui-버전에서-dex-창이-검게-표시됩니다)
+
+v3.0.1에서는 **잠자기 방지**를 켜면 충전기를 빼고 폰 화면을 꺼도 Wi-Fi 네이티브
+DeX를 계속 사용할 수 있습니다. 네이티브 DeX로 전환할 때 폰에 남은 보조
+디스플레이도 자동으로 정리합니다. [변경사항](docs/RELEASE_NOTES_v3.0.1.md)
 
 ### 주요 기능
 
@@ -201,7 +209,7 @@ Windows 7이나 인터넷이 없는 PC에서도 일상적으로 DeX를 쓸 수 �
 
 1. [최신 Windows x64 ZIP](https://github.com/maze-mei/DX-Manager/releases/latest/download/DX-Manager-win-x64.zip)이나
    [릴리스 페이지](https://github.com/maze-mei/DX-Manager/releases/latest)에서 받습니다.
-2. **DX Manager v3.0.0** 폴더 전체를 쓰기 가능한 위치에 풀고 **DXManager.exe**를
+2. **DX Manager v3.0.1** 폴더 전체를 쓰기 가능한 위치에 풀고 **DXManager.exe**를
    실행합니다. 첫 실행 안내를 읽고 확인합니다.
 3. 휴대폰에서 **개발자 옵션 → USB 디버깅**을 켜고 연결한 뒤 허용 창을 승인합니다.
 4. 대상 휴대폰을 선택하고 DeX를 시작합니다. 단일창 1~3을 시작할 때는 앱을 고릅니다.
@@ -243,7 +251,7 @@ DX Manager는 하루 한 번 백그라운드에서 GitHub 업데이트를 확인
 문제를 제보할 때는 DX Manager 버전과 개인정보를 가린 진단 보고서를 함께 남겨주세요.
 [GitHub 이슈](https://github.com/maze-mei/DX-Manager/issues)
 
-[전체 사용설명서](docs/USER_GUIDE_KO.md) · [FAQ](docs/FAQ_KO.md) · [v3.0.0 변경사항과 ZIP 해시](docs/RELEASE_NOTES_v3.0.0.md)
+[전체 사용설명서](docs/USER_GUIDE_KO.md) · [FAQ](docs/FAQ_KO.md) · [v3.0.1 변경사항과 ZIP 해시](docs/RELEASE_NOTES_v3.0.1.md)
 
 ### macOS·소스·라이선스
 

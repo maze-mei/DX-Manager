@@ -18,9 +18,10 @@ foreach($process in Get-Process -Name DXManager -ErrorAction SilentlyContinue) {
     }
 }
 if(!$SkipBuild){& (Join-Path $PSScriptRoot 'Verify-OfficialBuild.ps1')}
-$parameters=@{NoArchive=$true;Version='2.5.0';OutputRoot=$stageRoot;PackageDirectoryName='payload'}
+$parameters=@{NoArchive=$true;OutputRoot=$stageRoot;PackageDirectoryName='payload'}
 $parameters.SkipBuild=$true
 & (Join-Path $PSScriptRoot 'Package-Release.ps1') @parameters
+& (Join-Path $PSScriptRoot 'Sync-ScrcpyRuntime.ps1') -DestinationRoot (Join-Path $stage 'tools\scrcpy')
 
 New-Item -ItemType Directory -Path $preview -Force | Out-Null
 if((Get-Item -LiteralPath $preview).Attributes -band [IO.FileAttributes]::ReparsePoint){throw 'Preview folder must not be a reparse point'}
@@ -50,13 +51,13 @@ if(Test-Path -LiteralPath $oldDocs) {
 $configDir=Join-Path $preview 'config'; New-Item -ItemType Directory -Path $configDir -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $stage 'config\README.txt') -Destination $configDir -Force
 [IO.File]::WriteAllText($manifest,([pscustomobject]@{Folder='DX Manager Preview';Files=$managed} | ConvertTo-Json -Depth 4),[Text.UTF8Encoding]::new($true))
-& (Join-Path $PSScriptRoot 'Sync-ScrcpyRuntime.ps1') -DestinationRoot (Join-Path $preview 'tools\scrcpy')
 $pin=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'scrcpy-runtime.json') -Raw | ConvertFrom-Json
 . (Join-Path $PSScriptRoot 'Get-CompanionRoot.ps1')
 $companionRoot=Get-DxmCompanionRoot -RepositoryRoot $repo
 $companion=Get-Content -LiteralPath (Join-Path $companionRoot 'release.json') -Raw | ConvertFrom-Json
 $identity=[pscustomobject]@{
- Version='2.5.0';Edition='Official GitHub portable';AutomaticAppTracking=$false
+ Version=(Get-Item -LiteralPath (Join-Path $preview 'DXManager.exe')).VersionInfo.ProductVersion
+ Edition='Official GitHub portable';AutomaticAppTracking=$true
  ExeSha256=(Get-FileHash -LiteralPath (Join-Path $preview 'DXManager.exe')).Hash
  ScrcpyVersion=$pin.Version;ScrcpyArchiveSha256=$pin.ArchiveSha256
  ScrcpyExeSha256=(Get-FileHash -LiteralPath (Join-Path $preview 'tools\scrcpy\scrcpy.exe')).Hash

@@ -27,7 +27,7 @@ internal static class NativeDexIntegrationTests {
  [STAThread]static int Main(string[] args){if(args.Length>0)return FakeAdb(args);try{
   Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
   root=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"native-test-state");Directory.CreateDirectory(root);
-  LocalizationService.Apply(AppLanguage.English);NativeStartReadinessTests.Run(Check);TestWakeGate();TestInitialPreparation();TestProtocol();TestSettings();TestBrowserNegotiation();TestResumedStartAppCommands();TestBluetoothStartup();TestRetention();TestRecovery();TestFailures();TestOptionalCompanion();TestControlOnlyReconnect();TestViewerPolicy();TestIsolation();TestShutdown();TestOrchestrator();TestResumeLaunchFailure();TestMainReconnectPolicy();
+  LocalizationService.Apply(AppLanguage.English);NativeStartReadinessTests.Run(Check);TestWakeGate();TestInitialPreparation();TestProtocol();TestSettings();TestBrowserNegotiation();TestResumedStartAppCommands();TestBluetoothStartup();TestRetention();TestRecovery();TestOverlayTransition();TestFailures();TestOptionalCompanion();TestControlOnlyReconnect();TestViewerPolicy();TestIsolation();TestShutdown();TestOrchestrator();TestResumeLaunchFailure();TestMainReconnectPolicy();
   Console.WriteLine("All native Windows integration tests passed: "+passed);return 0;
  }catch(Exception e){Console.Error.WriteLine(e);return 1;}}
  static VirtualDisplaySettings Metrics(){return new VirtualDisplaySettings{Width=1600,Height=900,Dpi=150};}
@@ -206,6 +206,83 @@ internal static class NativeDexIntegrationTests {
   Check(error.Message.Contains("30-second")&&f.Launches==1,"Old-owner notice explains cleanup before restart without silently replacing the display");
   Check(f.Native.Stop(lease),"An older owner can still be explicitly stopped through its owned recovery path");
  }}
+ static void TestOverlayTransition()
+ {
+  using (var fixture = new Fixture("native-from-overlay", "overlay"))
+  {
+   var lease = fixture.Native.Start("SERIAL-A", Metrics(), () => false);
+   var audit = fixture.Audit;
+   var reset = audit.IndexOf("settings delete global overlay_display_devices", StringComparison.Ordinal);
+   var launch = audit.IndexOf("NativeDexServer launch ", StringComparison.Ordinal);
+   Check(lease.IsNativeDex && reset >= 0 && launch > reset,
+       "Native DeX removes an existing simulated display before creating its owner");
+   Check(audit.Split('\n').Count(line => line.Contains("settings delete global overlay_display_devices")) == 1,
+       "The simulated-display setting is removed once for the transition");
+   var afterReset = audit.Substring(reset, launch - reset);
+   Check(afterReset.Split('\n').Count(line => line.Contains("dumpsys display")) >= 2,
+       "Creation waits for every simulated display after the setting has cleared");
+   var displays = new VirtualDisplayService(fixture.Adb, fixture.Log);
+   var remaining = displays.GetVirtualDisplays("SERIAL-A");
+   Check(remaining.Count == 1 && remaining[0].Id == 91 && remaining[0].Name == "scrcpy",
+       "The scrcpy virtual display survives alongside the removed simulated displays");
+   Check(displays.GetOverlaySetting("SERIAL-B").Contains("1920x1080"),
+       "Changing modes on one phone preserves the other phone's simulated display");
+   Check(fixture.Log.GetSessionEvents().Count(entry => entry.Kind == LogEntryKind.Progress &&
+       entry.Message.Contains("phone's simulated display")) == 2,
+       "Detection and completed removal are highlighted in the session log");
+   Check(fixture.Native.Stop(lease, "SERIAL-A"),
+       "Native cleanup still releases the new owned display after the transition");
+  }
+
+  using (var fixture = new Fixture("native-reuse-from-overlay"))
+  {
+   var original = fixture.Native.Start("SERIAL-A", Metrics(), () => false);
+   fixture.SetMode("overlay");
+   var resumed = fixture.Native.Start("SERIAL-A", Metrics(), () => false);
+   Check(ReferenceEquals(original, resumed) && fixture.Launches == 1 &&
+       fixture.Audit.Contains("settings delete global overlay_display_devices"),
+       "Reusing a native desktop also clears a newly enabled simulated display");
+   fixture.Native.Stop(resumed, "SERIAL-A");
+  }
+
+  foreach (var mode in new[] { "scrcpy-only", "no-overlay-none", "no-overlay-empty" })
+  using (var fixture = new Fixture("native-" + mode, mode))
+  {
+   var lease = fixture.Native.Start("SERIAL-A", Metrics(), () => false);
+   Check(lease.DisplayId == 73 && !fixture.Audit.Contains("settings delete global overlay_display_devices"),
+       "An absent simulated-display setting allows Native DeX without clearing displays: " + mode);
+   Check(new VirtualDisplayService(fixture.Adb, fixture.Log).GetVirtualDisplays("SERIAL-A")
+       .Any(display => display.Id == 91), "An independent scrcpy display is retained: " + mode);
+   fixture.Native.Stop(lease, "SERIAL-A");
+  }
+
+  foreach (var mode in new[] { "overlay-setting-query-fail", "overlay-display-query-fail",
+      "overlay-reset-fail", "overlay-stuck-setting", "overlay-stuck-display" })
+  using (var fixture = new Fixture("native-" + mode, mode))
+  {
+   Fails(() => fixture.Native.Start("SERIAL-A", Metrics(), () => false),
+       "Unconfirmed simulated-display cleanup stops Native DeX creation: " + mode);
+   Check(fixture.Launches == 0 && fixture.Journals == 0 && !fixture.Audit.Contains(" push "),
+       "Cleanup failure creates no native owner, journal or helper upload: " + mode);
+  }
+
+  using (var fixture = new Fixture("native-overlay-cancel-before-delete", "overlay"))
+  {
+   var error = Fails(() => fixture.Native.Start("SERIAL-A", Metrics(),
+       () => fixture.Audit.Contains("dumpsys display")), "Cancellation stops the inspected transition");
+   Check(error is OperationCanceledException &&
+       !fixture.Audit.Contains("settings delete global overlay_display_devices"),
+       "Cancellation after inspection preserves the existing simulated display");
+  }
+  using (var fixture = new Fixture("native-overlay-cancel-after-delete", "overlay"))
+  {
+   var error = Fails(() => fixture.Native.Start("SERIAL-A", Metrics(),
+       () => fixture.Audit.Contains("settings delete global overlay_display_devices")),
+       "Cancellation interrupts the simulated-display removal wait");
+   Check(error is OperationCanceledException && fixture.Launches == 0 && fixture.Journals == 0,
+       "Cancellation after removal does not start a native owner");
+  }
+ }
  static void TestFailures(){
   using(var f=new Fixture("partial","error")){
    var error=Fails(()=>f.Native.Start("SERIAL-A",Metrics(),()=>false),"Activation failure propagates");
@@ -217,10 +294,6 @@ internal static class NativeDexIntegrationTests {
    var lease=f.Native.Start("SERIAL-A",Metrics(),()=>false);f.SetMode("recover-fail");
    Check(!f.Native.Stop(lease)&&f.Journals==1,"Unconfirmed cleanup is not reported as success and preserves ownership");
    f.SetMode("normal");Check(f.Native.Stop(lease)&&f.Journals==0,"A later explicit recovery can complete");
-  }
-  using(var f=new Fixture("preflight","overlay")){
-   Fails(()=>f.Native.Start("SERIAL-A",Metrics(),()=>false),"Existing overlay blocks native activation");
-   Check(f.Launches==0&&!f.Audit.Contains(" push ")&&f.Journals==0,"Overlay preflight leaves phone resources untouched");
   }
   using(var f=new Fixture("tamper")){
    File.WriteAllText(Path.Combine(f.Directory,"tools","native-dex","dxm-native-dex.jar"),"tampered");
@@ -488,7 +561,40 @@ internal static class NativeDexIntegrationTests {
   if(args.Contains("pull")){File.Copy(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"tools","companion","DX-Companion.apk"),args.Last(),true);return 0;}
   if(all.Contains("PREPARE_NATIVE_DENSITY")){Console.WriteLine(mode=="initial-fail"?"Broadcast completed: result=1":"Broadcast completed: result=0, data=\"DXNDPI1|160\"");return 0;}
   if(all.Contains("CONFIGURE_NATIVE_SESSION")){Console.WriteLine(mode=="bad-policy"?"Broadcast completed: result=1":"Broadcast completed: result=0, data=\"DXNP2|"+"30"+"\"");return 0;}
-  if(all.Contains("settings get global overlay_display_devices")){Console.WriteLine(mode=="overlay"?"1920x1080/160,hdmi":"null");return 0;}
+  var overlayRemoved = Path.Combine(dir, "overlay-removed-" + serial + ".flag");
+  var hasOverlay = mode.StartsWith("overlay", StringComparison.Ordinal) && !File.Exists(overlayRemoved);
+  if (all.Contains("settings get global overlay_display_devices"))
+  {
+   if (mode == "overlay-setting-query-fail") { Console.Error.WriteLine("Synthetic overlay query failure"); return 1; }
+   if (mode == "no-overlay-empty") { Console.WriteLine(); return 0; }
+   Console.WriteLine(hasOverlay || mode == "overlay-stuck-setting"
+       ? "1920x1080/160,hdmi;1600x900/150,hdmi" : mode == "no-overlay-none" ? "NoNe" : "null");
+   return 0;
+  }
+  if (all.Contains("settings delete global overlay_display_devices"))
+  {
+   if (mode == "overlay-reset-fail") { Console.Error.WriteLine("Synthetic overlay removal failure"); return 1; }
+   File.WriteAllText(overlayRemoved, "removed");
+   return 0;
+  }
+  if (all.Contains("dumpsys display"))
+  {
+   if (mode == "overlay-display-query-fail") { Console.Error.WriteLine("Synthetic display query failure"); return 1; }
+   var lastOverlayPending = false;
+   if (mode == "overlay" && File.Exists(overlayRemoved))
+   {
+    var pollsFile = overlayRemoved + ".polls";
+    var polls = File.Exists(pollsFile) ? int.Parse(File.ReadAllText(pollsFile)) : 0;
+    lastOverlayPending = polls == 0;
+    File.WriteAllText(pollsFile, (polls + 1).ToString());
+   }
+   if (hasOverlay || mode == "overlay-stuck-display")
+    Console.WriteLine("mDisplayId=12\n mName=\"오버레이 #1\"\n mDisplayInfo=DisplayInfo{uniqueId \"overlay:1\", 1920 x 1080, density 160, type OVERLAY}");
+   if (hasOverlay || lastOverlayPending || mode == "overlay-stuck-display")
+    Console.WriteLine("mDisplayId=13\n mName=\"오버레이 #2\"\n mType=4\n mDisplayInfo=DisplayInfo{1600 x 900, density 150}");
+   Console.WriteLine("mDisplayId=91\n mName=\"scrcpy\"\n mDisplayInfo=DisplayInfo{uniqueId \"virtual:com.genymobile.scrcpy,2000,scrcpy,0\", 1600 x 900, density 150, type VIRTUAL}");
+   return 0;
+  }
   if(all.Contains("settings get global stay_on_while_plugged_in")){var power=Path.Combine(dir,"power-"+serial+".txt");Console.WriteLine(File.Exists(power)?File.ReadAllText(power):"0");return 0;}
   if(all.Contains("settings put global stay_on_while_plugged_in")){File.WriteAllText(Path.Combine(dir,"power-"+serial+".txt"),args.Last());return 0;}
   if(all.Contains("settings delete global stay_on_while_plugged_in")){var power=Path.Combine(dir,"power-"+serial+".txt");if(File.Exists(power))File.Delete(power);return 0;}

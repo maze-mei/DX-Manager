@@ -344,6 +344,12 @@
   <data name="Log.ScreenOff.Starting" xml:space="preserve"><value>Starting the screen-off helper scrcpy sequentially.</value></data>
   <data name="Log.ScreenOff.Confirmed" xml:space="preserve"><value>Confirmed that screen-off was reapplied to the phone.</value></data>
   <data name="Log.ScreenOff.ConfirmationFailed" xml:space="preserve"><value>Could not confirm that screen-off was reapplied to the phone.</value></data>
+  <data name="Log.NativeWifiKeepActive.Started" xml:space="preserve"><value>Native DeX Wi-Fi stay awake is active. Sending activity signals to the phone's main display every 4 seconds.</value></data>
+  <data name="Log.NativeWifiKeepActive.Disconnected" xml:space="preserve"><value>Native DeX Wi-Fi disconnected. Stay awake for the phone's main display stopped.</value></data>
+  <data name="Log.NativeWifiKeepActive.Stopped" xml:space="preserve"><value>Native DeX Wi-Fi stay awake for the phone's main display stopped.</value></data>
+  <data name="Log.NativeWifiKeepActive.StartFailed" xml:space="preserve"><value>Could not establish the Native DeX Wi-Fi stay-awake connection for the phone's main display.</value></data>
+  <data name="Log.NativeWifiKeepActive.StartFailedDetail" xml:space="preserve"><value>Could not start Native DeX Wi-Fi stay awake for the phone's main display. {0}</value></data>
+  <data name="Log.NativeWifiKeepActive.StopFailed" xml:space="preserve"><value>Could not stop the Native DeX Wi-Fi stay-awake connection. {0}</value></data>
   <data name="Error.Scrcpy.AppListLoadFailed" xml:space="preserve"><value>Could not load the scrcpy app list: {0}</value></data>
   <data name="Error.Scrcpy.AppListParseFailed" xml:space="preserve"><value>Could not parse the scrcpy app-list output.</value></data>
   <data name="Log.Scrcpy.AppListLoaded" xml:space="preserve"><value>Loaded the scrcpy app list: {0} app(s)</value></data>
@@ -847,7 +853,9 @@ DX Manager is independently developed and is not an official Samsung application
   <data name="Log.Native.PhoneAwake" xml:space="preserve"><value>[{0}] Phone is awake. Continuing DeX creation and DPI verification.</value></data>
   <data name="Log.Native.WakeUnknown" xml:space="preserve"><value>[{0}] Phone wake state is unavailable; continuing with strict DPI verification.</value></data>
   <data name="Error.Native.WakeQueryFailed" xml:space="preserve"><value>Could not read the phone power state. Check its connection and start DeX again.</value></data>
-  <data name="Log.Native.InitialCompatibility" xml:space="preserve"><value>Initial-metrics preparation is unavailable for this combination; the compatible post-creation adjustment path will be used. Companion app code9 and a supported mode/DPI are required for creation without later resizing.</value></data>
+  <data name="Log.Native.RemovingOverlay" xml:space="preserve"><value>Removing the phone's simulated display before starting Native DeX ({0}).</value></data>
+  <data name="Log.Native.OverlayRemoved" xml:space="preserve"><value>The phone's simulated display has been removed. Starting Native DeX.</value></data>
+  <data name="Log.Native.InitialCompatibility" xml:space="preserve"><value>Resolution and DPI will be applied after display creation. Starting at the selected resolution requires DX Companion code {0} or later, phone cleanup permission, and a supported resolution.</value></data>
   <data name="Log.Native.InitialPrepared" xml:space="preserve"><value>Prepared initial DeX configuration: {0}x{1}, DPI {2}. Verifying the created display metrics.</value></data>
   <data name="Error.Native.InitialPreparation" xml:space="preserve"><value>Could not prepare the initial DeX configuration. The display was not launched; check Companion app permission and other active displays.</value></data>
   <data name="Log.Native.InitialLowerDpi" xml:space="preserve"><value>After confirming initial DPI {0}, apply the selected DPI {1}. The selected resolution and saved DPI setting are preserved.</value></data>

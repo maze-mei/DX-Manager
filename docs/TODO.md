@@ -1,14 +1,15 @@
-# Current status — Windows v3.0.0
+# Current status — Windows v3.0.1
 
-## Windows v3.0.0 release status
+## Windows v3.0.1 release status
 
-- [x] Prepare the local release source on the published v2.5.0 base.
+- [x] Prepare the release source on the published v3.0.0 base.
 - [x] Retain the GitHub update check, first-run notice and macOS source.
 - [x] Verify the Windows release build, bilingual interface and clean ZIP.
 - [x] Pass antivirus testing for the final Windows executable.
 - [x] Review the README, English and Korean guides, FAQs and release notes.
+- [x] Verify battery-powered Wi-Fi Native DeX and simulated-to-Native transitions.
 
-[GitHub release and Windows download](https://github.com/maze-mei/DX-Manager/releases/tag/v3.0.0)
+[GitHub release and Windows download](https://github.com/maze-mei/DX-Manager/releases/tag/v3.0.1)
 
 ## Windows v2.5.0 release record — 2026-10-25
 
@@ -33,5 +34,5 @@ See the [v2.5.0 verification record](VERIFICATION_v2.5.0.md) for its test scope 
 
 ## 한국어
 
-Windows v3.0.0의 실행 파일과 ZIP 해시는 [릴리스 설명](RELEASE_NOTES_v3.0.0.md)과
+Windows v3.0.1의 실행 파일과 ZIP 해시는 [릴리스 설명](RELEASE_NOTES_v3.0.1.md)과
 [인계 문서](HANDOFF.md)에서 확인할 수 있습니다.

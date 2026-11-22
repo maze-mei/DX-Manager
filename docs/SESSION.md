@@ -1114,3 +1114,75 @@ antivirus testing. All 40 files in the upload ZIP match the release manifest.
 The release notes, README and current documentation use the v3.0.0 baseline.
 
 [Windows v3.0.0 release](https://github.com/maze-mei/DX-Manager/releases/tag/v3.0.0)
+
+## 2026-11-15 Wi-Fi Native DeX stay awake on battery
+
+The phone's default display and Native DeX used separate activity timers on
+the tested Galaxy. A control-only scrcpy 5.0.1 connection to display 0 kept
+the phone's activity timer fresh with the physical panel off. In the battery
+trial, the phone returned to its 60-second timeout after the connection closed.
+
+The Windows preview starts and owns this connection for Wi-Fi Native DeX
+when Stay awake is enabled. It logs connection readiness, normal stop and
+transport loss. The x64 Release build and Windows regression suites passed.
+The scrcpy integration suite passed 28 checks, including TCP and mDNS launch,
+normal stop, viewer disconnection and failed viewer startup. The user confirmed
+that Wi-Fi Native DeX stayed active with the phone on battery and the panel off.
+Their session log recorded the four-second activity signal and its shutdown.
+
+The fixed preview was refreshed with eight existing user files preserved.
+Its EXE SHA-256 is `6BECCB9EAD553673B5270D08F9D5CF021547179EDB2A72ED717BBAE94B2D4B91`.
+
+## 2026-11-15 Windows v3.0.1 local release build
+
+Packaged Wi-Fi Native DeX Stay awake for Windows x64. The English and Korean
+update notice, user guide and FAQ cover this behavior. The initial display
+fallback warning now reads the required Companion code from the bundle metadata.
+
+The .NET Framework 4.6.2 Release build and official regression suite passed,
+including all 28 scrcpy runtime checks. The package reuses the signed shared
+DX Companion 3.0.0 (code 16) and pinned scrcpy 5.0.1 and Native DeX helper.
+All 40 ZIP files match the extracted package. The device check was on the preview.
+
+- Release folder `E:\vs\dex system\dist\v3.0.1\DX Manager v3.0.1`
+- ZIP `E:\vs\dex system\dist\v3.0.1\DX-Manager-win-x64.zip`
+- SHA-256 audit `.build-tools/release-prep/v3.0.1-package-audit.json`
+
+## 2026-11-20 Native DeX transition from a simulated display
+
+Native starts now clear the selected phone's `overlay_display_devices` setting
+and wait for its simulated displays to disappear before creating or reattaching
+Native DeX. This replaces the previous startup error for a remaining simulation.
+Display type and overlay identity distinguish simulated displays from scrcpy
+virtual displays, including matching resolution and DPI. Logs show detection
+and completed removal in English and Korean. The embedded guide and FAQ cover
+this transition in both languages.
+
+The x64 Release build passed with zero warnings and errors. Official regression
+checks passed, including 224 native Windows checks and the existing 28 scrcpy
+runtime checks. Transition cases cover delayed removal of multiple simulations,
+an independent scrcpy display, another phone's overlay, a retained native owner,
+query/delete failures, removal timeouts and cancellation before/after deletion.
+On 2026-11-22, the maintainer confirmed that the transition works on their phone.
+
+The fixed preview was updated at
+`E:\vs\dex system\dist\DX Manager Preview\DXManager.exe` with nine existing
+user files preserved. Its executable matches the verified build, with SHA-256
+`E6CFEFD7213FA2FABF471A5ACDB7687864EC9B216230D772737FEDCBC62730E8`.
+The previously staged v3.0.1 release folder/ZIP retain their recorded hashes.
+
+## 2026-11-22 Windows v3.0.1 upload files prepared locally
+
+The upload package includes the Wi-Fi battery stay-awake fix and simulated-display
+cleanup before Native DeX. Its executable is byte-identical to the preview that
+the maintainer tested. The ZIP's 40 files match the extracted package, and the
+version, x64 executable header and pinned Android/scrcpy components were verified.
+The maintainer confirmed a clean antivirus scan and authorized publication on
+2026-11-22. Their current instruction preserves the v3.0.0 asset name while
+publishing this v3.0.1 package.
+
+- Folder `E:\vs\dex system\dist\v3.0.1-upload\DX Manager v3.0.1`
+- ZIP `E:\vs\dex system\dist\v3.0.1-upload\DX-Manager-win-x64.zip`
+- EXE SHA-256 `E6CFEFD7213FA2FABF471A5ACDB7687864EC9B216230D772737FEDCBC62730E8`
+- ZIP SHA-256 `ABA052A30E85F2462A239420B6D830177BD4C0E71016D0C702FAE2D2E33CFD1E`
+- Package audit `.build-tools/release-prep/v3.0.1-upload-package-audit.json`

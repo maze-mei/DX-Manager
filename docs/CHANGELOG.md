@@ -1,5 +1,22 @@
 # Changelog
 
+## v3.0.1 Windows — 2026-11-22
+
+### English
+
+- Keep Wi-Fi Native DeX active on battery power when Stay awake is enabled.
+- Clear an existing simulated secondary display before starting Native DeX,
+  while preserving scrcpy virtual displays.
+- Update bilingual startup messages, guides and FAQs.
+
+[English and Korean release notes](RELEASE_NOTES_v3.0.1.md)
+
+### 한국어
+
+- 충전기를 연결하지 않은 Wi-Fi 네이티브 DeX에서도 잠자기 방지가 작동합니다.
+- 네이티브 DeX 실행 전 보조 디스플레이를 자동 정리하고 scrcpy 가상 화면은 유지합니다.
+- 한·영 실행 안내, 사용설명서와 FAQ를 갱신했습니다.
+
 ## v3.0.0 Windows — 2026-11-14
 
 Native DeX with a reconnect grace, simulated display for confirmed 120 FPS

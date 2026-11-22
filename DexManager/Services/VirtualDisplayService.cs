@@ -32,6 +32,9 @@ namespace DexManager.Services
         private static readonly Regex OverlaySizeRegex = new Regex(
             @"(?<width>\d{3,5})x(?<height>\d{3,5})/(?<dpi>\d{2,4})",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex OverlayIdentityRegex = new Regex(
+            @"\b(?:mUniqueId|uniqueId)\s*=?\s*""?overlay:|\b(?:mType|type)\s*=?\s*(?:OVERLAY|4)\b",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private readonly AdbService _adbService;
         private readonly LogService _logService;
@@ -186,6 +189,20 @@ namespace DexManager.Services
                 .ToList();
         }
 
+        public void RemoveOverlayForNativeDex(
+            string serial,
+            Func<bool> cancellationRequested)
+        {
+            var current = GetOverlaySetting(serial);
+            if (!HasOverlaySetting(current)) return;
+
+            var before = GetVirtualDisplays(serial);
+            _logService.Progress(LocalizationService.Format(
+                "Log.Native.RemovingOverlay", current));
+            RemoveExistingOverlay(serial, before, 3000, cancellationRequested, 0);
+            _logService.Progress(LocalizationService.Get("Log.Native.OverlayRemoved"));
+        }
+
         public bool Reset(string serial)
         {
             var result = ShellForSerial(
@@ -289,6 +306,9 @@ namespace DexManager.Services
             Func<bool> cancellationRequested,
             int existingDisplayId)
         {
+            if (cancellationRequested != null && cancellationRequested())
+                throw new OperationCanceledException();
+
             var result = ShellForSerial(
                 serial,
                 DeleteOverlaySettingCommand);
@@ -311,9 +331,13 @@ namespace DexManager.Services
                     throw new OperationCanceledException();
 
                 Thread.Sleep(150);
+                if (cancellationRequested != null && cancellationRequested())
+                    throw new OperationCanceledException();
+
                 after = GetVirtualDisplays(serial);
                 var setting = GetOverlaySetting(serial);
                 if (!HasOverlaySetting(setting) &&
+                    !after.Any(IsOverlayDisplay) &&
                     (existingDisplayId <= 0 ||
                         !after.Any(display =>
                             display.Id == existingDisplayId)))
@@ -388,11 +412,9 @@ namespace DexManager.Services
         private static bool IsOverlayDisplay(DisplayInfo display)
         {
             if (display == null) return false;
-            var marker = (display.Name ?? string.Empty) + " " +
-                (display.RawText ?? string.Empty);
-            return marker.IndexOf(
-                    "overlay",
-                    StringComparison.OrdinalIgnoreCase) >= 0;
+            return OverlayIdentityRegex.IsMatch(display.RawText ?? string.Empty) ||
+                (display.Name ?? string.Empty).StartsWith(
+                    "Overlay #", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool MatchesDisplaySettings(

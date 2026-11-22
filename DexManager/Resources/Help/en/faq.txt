@@ -1,6 +1,6 @@
 DX Manager Frequently Asked Questions
 
-Windows v3.0.0
+Windows v3.0.1
 Covers Native DeX,30-second grace,experimental 120 FPS and optional AI detection. Some pictures show the earlier UI.
 
 English user guide · Korean FAQ
@@ -201,6 +201,8 @@ screen-off or stay-awake behavior, DX Manager manages it using the combined
 state of all sessions. When all related sessions stop, or DX Manager exits
 normally, it attempts to restore the phone screen and stay-awake state.
 
+For Wi-Fi Native DeX on battery power, enable Stay awake (-w) before opening DeX to keep the session active with the phone screen off.
+
 Q15. The phone screen stays on while it is charging.
 
 DX Manager restores the original Stay awake (-w) setting when
@@ -339,6 +341,8 @@ The default destination is Downloads → DX Manager → phone name. To change it
 Q25. What is the difference between Native and simulated DeX?
 
 Native uses the phone’s Samsung DeX environment and is the fresh default. Simulated display keeps the existing creation path and experimental 120 FPS. Choose in Settings → Connection, then stop/start DeX. App/device UI, bounds and compatibility may differ.
+
+Starting Native DeX automatically removes simulated secondary displays configured on the phone. Virtual displays created by scrcpy remain available.
 
 Q26. Does selecting120 FPS change my saved DeX mode?
 

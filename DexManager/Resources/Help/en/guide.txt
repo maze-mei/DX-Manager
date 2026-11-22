@@ -1,6 +1,6 @@
 DX Manager User Guide
 
-Windows v3.0.0
+Windows v3.0.1
 Uses shared DX Companion 3.0.0 (code 16) and scrcpy 5.0.1. Some pictures show an earlier interface.
 
 1. Requirements
@@ -98,6 +98,8 @@ Choose Native or simulated display
 
 Choose Native DeX or Simulated secondary display under Settings → Connection → Native DeX. Native is the fresh default. An explicitly saved mode is preserved. Stop and start DeX after changing it.
 
+When starting Native DeX, DX Manager removes any simulated secondary displays configured on that phone and waits for their removal. Virtual displays created by scrcpy remain available.
+
 Native uses the phone's Samsung DeX environment. Simulated display keeps the existing path: it can show a small secondary-screen preview on the phone, starts quickly and offers experimental 120 FPS. Device/app behavior and desktop UI can differ between these paths.
 
 120 FPS and phone screen-on
@@ -152,6 +154,8 @@ Run Options
 - HID mouse (-M): sends the mouse as an Android input device
 - Force-stop selected app: stops the existing app process before launch
 - Stay awake (-w): keeps the phone awake during the session
+
+In Wi-Fi Native DeX, Stay awake also works on battery power with the phone screen off.
 
 Turn phone screen off (-S) does not lock the phone. It only turns off the
 physical panel while the device remains active. Touch, long-press, and

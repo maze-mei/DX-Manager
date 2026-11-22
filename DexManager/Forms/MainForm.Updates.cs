@@ -97,13 +97,14 @@ namespace DexManager.Forms
                 var notices = new PortableUpdateNoticeService(directory);
                 if (notices.ShouldShowNotice(existingInstallation))
                 {
+                    var version = typeof(MainForm).Assembly.GetName().Version.ToString(3);
                     var text = string.Join(Environment.NewLine + Environment.NewLine,
                         new[] { "Intro", "Fps", "ScreenOff", "Scrcpy", "Companion" }
                         .Select(key => string.Format(StoreUiText.Get("UpdateNotice" + key, ""),
-                            DisplayCleanupPermissionService.BundledVersionName)));
+                            version, DisplayCleanupPermissionService.BundledVersionName)));
                     using (var dialog = new DesktopDialog(
                         string.Format(StoreUiText.Get("UpdateNoticeTitle", "What's new in DX Manager {0}"),
-                            typeof(MainForm).Assembly.GetName().Version.ToString(3)),
+                            version),
                         text, false, MessageBoxButtons.OK, MessageBoxDefaultButton.Button1))
                     {
                         dialog.SetPrimaryButtonText(StoreUiText.Get("UpdateNoticeConfirm", "Got it"));

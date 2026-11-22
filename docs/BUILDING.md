@@ -1,4 +1,4 @@
-# Building DX Manager v3.0.0 for Windows
+# Building DX Manager v3.0.1 for Windows
 
 ## English
 
@@ -18,7 +18,7 @@ MSBuild.exe DexManager.sln /t:Build /p:Configuration=Release /m:1
 
 The executable is in DexManager/bin/Release. The last command packages
 DX-Manager-win-x64.zip in the repository's dist directory, with a
-DX Manager v3.0.0 folder inside. Use -OutputRoot for an empty destination
+DX Manager v3.0.1 folder inside. Use -OutputRoot for an empty destination
 elsewhere. The ZIP includes runtime files, license texts and a short README.
 The full guides and FAQ are embedded in the executable.
 
@@ -64,7 +64,7 @@ MSBuild.exe DexManager.sln /t:Build /p:Configuration=Release /m:1
 ~~~
 
 실행파일은 DexManager/bin/Release에 생성됩니다. 마지막 명령은 dist에
-DX-Manager-win-x64.zip을 만들며, 압축 안에 DX Manager v3.0.0 폴더가 있습니다.
+DX-Manager-win-x64.zip을 만들며, 압축 안에 DX Manager v3.0.1 폴더가 있습니다.
 다른 비어 있는 위치에 포장하려면 -OutputRoot를 지정하세요. ZIP에는 실행 파일,
 번들 도구, 라이선스와 짧은 README가 들어갑니다. 전체 사용설명서와 FAQ는 앱에서 봅니다.
 

@@ -108,12 +108,12 @@ namespace DexManager.Services
             return Task.Run(delegate { lock(_operationGate) {
                 if(lossIsCurrent!=null&&!lossIsCurrent())return;
                 if(_currentSession!=null&&!string.Equals(_currentSession.Serial,serial,StringComparison.OrdinalIgnoreCase))return;
-                if(UsesNativeDisplay)SuspendNativeCore();else StopCore();
+                if(UsesNativeDisplay)SuspendNativeCore(true);else StopCore();
             }});
         }
-        private void SuspendNativeCore() {
+        private void SuspendNativeCore(bool transportLost = false) {
             if(_nativeDex!=null){_nativeDex.Suspend();_nativeDex.RefreshRetainedPresence();}
-            _scrcpyService.Stop();ClearSession(_currentSession);
+            _scrcpyService.Stop(transportLost);ClearSession(_currentSession);
         }
 
         public bool SignalNativeStopWithoutAdb()
@@ -275,7 +275,7 @@ namespace DexManager.Services
                     _scrcpyService.Start(
                         runSettings.Scrcpy,
                         lease.DisplayId,
-                        serial, experimentalFpsConfirmed);
+                        serial, experimentalFpsConfirmed, lease.IsNativeDex);
                     scrcpyStarted = true;
                 });
 

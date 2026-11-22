@@ -6,7 +6,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$version = '3.0.0'
+$assemblyInfo = Get-Content -LiteralPath (Join-Path $repo 'DexManager\Properties\AssemblyInfo.cs') -Raw
+$versionMatch = [regex]::Match($assemblyInfo, 'AssemblyInformationalVersion\("([0-9A-Za-z][0-9A-Za-z._-]*)"\)')
+if (!$versionMatch.Success) { throw 'A valid AssemblyInformationalVersion was not found.' }
+$version = $versionMatch.Groups[1].Value
 $folder = "DX Manager v$version"
 if (!$OutputRoot) { $OutputRoot = Join-Path $repo 'dist' }
 $dist = [IO.Path]::GetFullPath($OutputRoot)

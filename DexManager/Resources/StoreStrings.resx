@@ -665,11 +665,11 @@ Authorized phones: {5}</value></data>
   <data name="CommonToggleOn.Text" xml:space="preserve"><value>On</value></data>
   <data name="CommonToggleOff.Text" xml:space="preserve"><value>Off</value></data>
   <data name="UpdateNoticeTitle" xml:space="preserve"><value>What's new in DX Manager {0}</value></data>
-  <data name="UpdateNoticeIntro" xml:space="preserve"><value>Highlights of DX Manager 3.0.0.</value></data>
+  <data name="UpdateNoticeIntro" xml:space="preserve"><value>In DX Manager {0}, Stay awake keeps Wi-Fi Native DeX active even when the phone is running on battery power.</value></data>
   <data name="UpdateNoticeFps" xml:space="preserve"><value>• Native DeX is the default activation mode. After disconnection, it waits about 30 seconds for the same phone to reconnect.</value></data>
   <data name="UpdateNoticeScreenOff" xml:space="preserve"><value>• A 120 FPS DeX launch uses simulated display after you accept the switch.</value></data>
   <data name="UpdateNoticeScrcpy" xml:space="preserve"><value>• New settings enable manual Enter / Shift+Enter switching. Enable AI app automatic line breaks in Settings when needed.</value></data>
-  <data name="UpdateNoticeCompanion" xml:space="preserve"><value>• Includes the shared DX Companion {0}. Install or update it under Settings → Companion.</value></data>
+  <data name="UpdateNoticeCompanion" xml:space="preserve"><value>• Includes the shared DX Companion {1}. Check the installed version under Settings → Companion.</value></data>
   <data name="UpdateNoticeConfirm" xml:space="preserve"><value>OK</value></data>
   <data name="ConnectionUsb.Content" xml:space="preserve"><value>USB</value></data>
   <data name="ConnectionWireless.Content" xml:space="preserve"><value>Wi-Fi</value></data>

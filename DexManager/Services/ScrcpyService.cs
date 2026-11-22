@@ -184,6 +184,7 @@ namespace DexManager.Services
         private readonly LogService _logService;
         private readonly ScrcpyRuntimeInfo _runtimeInfo;
         private Process _process;
+        private ScrcpyPhoneKeepActive _phoneKeepActive;
         private bool _stayAwakeRequested;
         private bool _turnScreenOffRequested;
         private int _runningMaxFps;
@@ -239,6 +240,7 @@ namespace DexManager.Services
         {
             lock (_processStartSync)
                 Interlocked.Exchange(ref _shutdownRequested, 1);
+            StopPhoneKeepActive(null, false);
         }
 
         public bool IsRunning
@@ -625,6 +627,12 @@ namespace DexManager.Services
             int displayId,
             string serial, bool experimentalFpsConfirmed = false)
         {
+            Start(settings, displayId, serial, experimentalFpsConfirmed, false);
+        }
+
+        internal void Start(ScrcpySettings settings, int displayId, string serial,
+            bool experimentalFpsConfirmed, bool nativeDisplay)
+        {
             FrameRateRules.RequireConsent(settings.MaxFps, experimentalFpsConfirmed);
             var started = false;
             _launchCoordinator.RunExclusive(delegate
@@ -696,6 +704,13 @@ namespace DexManager.Services
                             arguments));
                     }
 
+                    if (nativeDisplay && settings.StayAwake && AdbService.IsWirelessSerial(serial) &&
+                        _runtimeInfo.SupportsKeepActiveLongOption)
+                    {
+                        // Connect to display 0 before the DeX launch applies screen-off.
+                        TryStartPhoneKeepActive(process, serial);
+                    }
+
                     lock (_processStartSync)
                     {
                         if (Interlocked.CompareExchange(
@@ -720,7 +735,11 @@ namespace DexManager.Services
                 }
                 catch
                 {
-                    if (process != null) AbortStart(process);
+                    if (process != null)
+                    {
+                        StopPhoneKeepActive(process, false);
+                        AbortStart(process);
+                    }
                     else _fileTransferCoordinator.EndSession(
                         transferSessionId);
                     throw;
@@ -731,6 +750,11 @@ namespace DexManager.Services
         }
 
         public void Stop()
+        {
+            Stop(false);
+        }
+
+        internal void Stop(bool transportLost)
         {
             var stopped = false;
             _launchCoordinator.RunExclusive(delegate
@@ -748,6 +772,7 @@ namespace DexManager.Services
 
                 try
                 {
+                    StopPhoneKeepActive(process, transportLost);
                     EnsureProcessStopped(process);
                     CompleteExplicitStop(process);
                     stopped = true;
@@ -916,10 +941,58 @@ namespace DexManager.Services
             };
         }
 
+        private void TryStartPhoneKeepActive(Process viewer, string serial)
+        {
+            try
+            {
+                ScrcpyPhoneKeepActive connection;
+                lock (_processStartSync)
+                {
+                    if (_shutdownRequested != 0 || _disposed != 0 || _adbService.IsProcessShutdownRequested)
+                        return;
+
+                    var arguments = "--serial " + Quote(serial) + " " + ScrcpyPhoneKeepActive.Arguments;
+                    var process = CreateProcess(arguments, true, null);
+                    connection = new ScrcpyPhoneKeepActive(process, viewer, serial, _logService);
+                    lock (_syncRoot) _phoneKeepActive = connection;
+                    connection.Start();
+                }
+
+                if (connection.WaitForConnection(Math.Min(_processTimeoutMs, 5000))) return;
+                if (_shutdownRequested == 0)
+                    _logService.Warning(DeviceLogFormatter.ForSerial(serial,
+                        LocalizationService.Get("Log.NativeWifiKeepActive.StartFailed")));
+            }
+            catch (Exception error)
+            {
+                _logService.Warning(DeviceLogFormatter.ForSerial(serial, LocalizationService.Format(
+                    "Log.NativeWifiKeepActive.StartFailedDetail", error.Message)));
+            }
+            StopPhoneKeepActive(viewer, false);
+        }
+
+        private void StopPhoneKeepActive(Process viewer, bool transportLost)
+        {
+            ScrcpyPhoneKeepActive connection;
+            lock (_syncRoot) connection = DetachPhoneKeepActiveLocked(viewer);
+            if (connection != null) connection.Stop(transportLost);
+        }
+
+        private ScrcpyPhoneKeepActive DetachPhoneKeepActiveLocked(Process viewer)
+        {
+            var connection = _phoneKeepActive;
+            if (connection == null || (viewer != null && !ReferenceEquals(connection.Viewer, viewer)))
+                return null;
+            _phoneKeepActive = null;
+            return connection;
+        }
+
         private void Process_Exited(object sender, EventArgs e)
         {
             var process = sender as Process;
             var ownedProcess = false;
+            var transportLost = false;
+            ScrcpyPhoneKeepActive keepActive = null;
             string transferSessionId = null;
             string serial = null;
             lock (_syncRoot)
@@ -928,6 +1001,8 @@ namespace DexManager.Services
                 {
                     serial = _targetSerial;
                     try { LastExitCode = process.ExitCode; } catch (InvalidOperationException) { LastExitCode = 2; }
+                    transportLost = LastExitCode == 2;
+                    keepActive = DetachPhoneKeepActiveLocked(process);
                     _process = null;
                     _stayAwakeRequested = false;
                     _turnScreenOffRequested = false;
@@ -941,6 +1016,7 @@ namespace DexManager.Services
             }
 
             if (!ownedProcess) return;
+            if (keepActive != null) keepActive.Stop(transportLost);
             _fileTransferCoordinator.EndSession(transferSessionId);
             _logService.Progress(DeviceLogFormatter.ForSerial(
                 serial,
@@ -1036,6 +1112,7 @@ namespace DexManager.Services
         private void CleanupStaleProcess()
         {
             Process stale = null;
+            ScrcpyPhoneKeepActive keepActive = null;
             string transferSessionId = null;
             lock (_syncRoot)
             {
@@ -1044,6 +1121,7 @@ namespace DexManager.Services
                     !IsProcessRunning(_process))
                 {
                     stale = _process;
+                    keepActive = DetachPhoneKeepActiveLocked(stale);
                     _process = null;
                     _stayAwakeRequested = false;
                     _turnScreenOffRequested = false;
@@ -1056,6 +1134,7 @@ namespace DexManager.Services
             }
 
             if (stale == null) return;
+            if (keepActive != null) keepActive.Stop(false);
             _fileTransferCoordinator.EndSession(transferSessionId);
             RaiseRunningChanged();
             QueueDrainAndDispose(stale);

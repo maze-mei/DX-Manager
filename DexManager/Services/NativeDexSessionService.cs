@@ -87,6 +87,7 @@ namespace DexManager.Services
             _log.Diagnostic("NativeDeX","Start requested; serial="+serial+"; identity="+identity+
                 "; requested="+settings.Width+"x"+settings.Height+"@"+settings.Dpi+"; resumeOnly="+resumeOnly+
                 "; stayAwake="+stayAwake+"; restoreStayAwake="+restoreStayAwake);
+            new VirtualDisplayService(_adb, _log).RemoveOverlayForNativeDex(serial, canceled);
             lock (_sync)
             {
                 if (_lease != null && _lease.NativeDeviceIdentity == identity && _lease.Serial == serial &&
@@ -123,10 +124,6 @@ namespace DexManager.Services
             if(resumeOnly)return null;
             WaitForPhoneAwake(serial,identity,canceled);
             _log.Progress(LocalizationService.Format("Log.Native.Creating",settings.Width,settings.Height,settings.Dpi));
-            var overlay=_adb.ShellForSerial(serial,"settings get global overlay_display_devices",false);
-            var value=(overlay.StandardOutput??"").Trim();
-            if(!overlay.IsSuccess||(!string.IsNullOrEmpty(value)&&value!="null"&&value!="none"))
-                throw new InvalidOperationException("An overlay remains. Stop the existing DeX display before selecting native DeX.");
             var lease=new VirtualDisplayLease {IsNativeDex=true,Serial=serial,NativeDeviceIdentity=identity,
                 NativeSessionToken=NativeDexProtocol.NewToken(),NativeProtocolVersion=NativeDexProtocol.Version,NativeStayAwakeRequested=stayAwake,
                 NativeKeepBluetoothAudioOnStart=settings.KeepBluetoothAudioOnDexStart,
@@ -234,7 +231,9 @@ namespace DexManager.Services
         private void PrepareInitialMetrics(VirtualDisplayLease lease,string serial,VirtualDisplaySettings settings) {
             bool supported=settings.Width==1600&&settings.Height==900||settings.Width==1920&&settings.Height==1080;
             if(!lease.NativeCompanionConfigured||lease.NativeCompanionVersion<DisplayCleanupPermissionService.BundledVersionCode||!supported){
-                _log.Warning(LocalizationService.Get("Log.Native.InitialCompatibility"));return;
+                _log.Warning(LocalizationService.Format("Log.Native.InitialCompatibility",
+                    DisplayCleanupPermissionService.BundledVersionCode));
+                return;
             }
             int initialDpi=Math.Max(160,settings.Dpi);
             var command="am broadcast --receiver-foreground -n "+DisplayCleanupPermissionService.PackageName+"/io.github.mazemei.dxdisplaycleanup.NativeSessionReceiver -a "+DisplayCleanupPermissionService.PackageName+".PREPARE_NATIVE_DENSITY --es native_token "+lease.NativeSessionToken+" --ei density "+initialDpi;

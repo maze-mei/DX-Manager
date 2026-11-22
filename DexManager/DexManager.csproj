@@ -233,6 +233,7 @@
     <Compile Include="Services\MiniControlBarManager.cs" />
     <Compile Include="Services\ScrcpyLaunchCoordinator.cs" />
     <Compile Include="Services\ScrcpyService.cs" />
+    <Compile Include="Services\ScrcpyPhoneKeepActive.cs" />
     <Compile Include="Services\ScreenOffService.cs" />
     <Compile Include="Services\SingleWindowService.cs" />
     <Compile Include="Services\SettingsService.cs" />
